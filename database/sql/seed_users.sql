@@ -1,0 +1,2 @@
+-- TODO (Bạn 2 — nhận diện/đăng nhập, nếu nhóm cần tài khoản): tự thêm dữ liệu kiểm thử khi đến mốc tương ứng.
+-- Cố ý để trống. Chương trình chưa đọc file này. Không BEGIN/COMMIT ở đây.

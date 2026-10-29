@@ -1,0 +1,16 @@
+[Dd]ebug/
+[Rr]elease/
+[Bb]in/
+[Oo]bj/
+dist/
+.vs/
+.idea/
+*.suo
+*.user
+*.db-shm
+*.db-wal
+database/uniexam.db
+database/examdesk.db
+database/profiles/
+database/attachments/
+database/exports/
