@@ -1,0 +1,40 @@
+#nullable enable
+namespace ExamDesk.UI.Reports;
+
+partial class GradingReviewControl
+{
+    private System.ComponentModel.IContainer? components = null;
+    private Label _lblTitle = null!;
+    private Label _lblHint = null!;
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) components?.Dispose();
+        base.Dispose(disposing);
+    }
+
+    private void InitializeComponent()
+    {
+        _lblTitle = new Label();
+        _lblHint = new Label();
+        SuspendLayout();
+        _lblTitle.AutoSize = true;
+        _lblTitle.Location = new Point(24, 24);
+        _lblTitle.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
+        _lblTitle.Text = "Kết quả và phúc khảo";
+        _lblHint.AutoSize = true;
+        _lblHint.Location = new Point(24, 72);
+        _lblHint.Text = "GV-12 → GV-14 • Bạn 2 phụ trách\nKhung UI chưa triển khai. Thêm control tại đây; chưa gọi Service/SQLite.";
+        AutoScaleDimensions = new SizeF(7F, 15F);
+        AutoScaleMode = AutoScaleMode.Font;
+        BackColor = Color.White;
+        Font = new Font("Segoe UI", 9F);
+        Controls.Add(_lblHint);
+        Controls.Add(_lblTitle);
+        Name = "GradingReviewControl";
+        Size = new Size(1000, 600);
+        ResumeLayout(false);
+        PerformLayout();
+    }
+}
+

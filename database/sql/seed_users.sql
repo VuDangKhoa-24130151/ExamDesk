@@ -1,2 +1,2 @@
--- TODO (Bạn 2 — nhận diện/đăng nhập, nếu nhóm cần tài khoản): tự thêm dữ liệu kiểm thử khi đến mốc tương ứng.
--- Cố ý để trống. Chương trình chưa đọc file này. Không BEGIN/COMMIT ở đây.
+-- TODO (Bạn 1 — danh mục và tài khoản; phối hợp Bạn 3 về nhận diện sinh viên): bổ sung khi đến giai đoạn dữ liệu.
+-- Chưa cần làm để dựng UI. Ứng dụng hiện chưa đọc file này.
