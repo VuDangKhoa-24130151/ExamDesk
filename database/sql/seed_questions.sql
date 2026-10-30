@@ -1,2 +1,2 @@
--- TODO (Bạn 1 — môn học, câu hỏi, đề): tự thêm dữ liệu kiểm thử khi đến mốc tương ứng.
--- Cố ý để trống. Chương trình chưa đọc file này. Không BEGIN/COMMIT ở đây.
+-- TODO (Bạn 1 — môn học và câu hỏi): bổ sung khi đến giai đoạn dữ liệu.
+-- Chưa cần làm để dựng UI. Ứng dụng hiện chưa đọc file này.
