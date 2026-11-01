@@ -4,7 +4,7 @@
 -- CREATE TABLE IF NOT EXISTS khong nang cap database cu.
 PRAGMA foreign_keys = ON;
 
--- Dung chung; Ban 2 hoan thien nhan dien/dang nhap neu can tai khoan.
+-- Dung chung; Ban 1 hoan thien dang nhap; Ban 3 nhan dien sinh vien neu can tai khoan.
 CREATE TABLE IF NOT EXISTS Users (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     Username TEXT NOT NULL UNIQUE,
@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS Users (
     ClassName TEXT NOT NULL DEFAULT ''
 );
 
--- Ban 1: ngan hang cau hoi va de thi.
+-- Ban 1: ngan hang cau hoi. Ban 2: de thi.
 CREATE TABLE IF NOT EXISTS Subjects (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     Code TEXT NOT NULL UNIQUE,
@@ -52,10 +52,10 @@ CREATE TABLE IF NOT EXISTS ExamPaperQuestions (
     PRIMARY KEY (PaperId, QuestionId),
     UNIQUE (PaperId, OrderIndex)
 );
--- TODO Ban 1: khoa sua/xoa cau hoi da gan de, giu nguyen de/anh de bao toan lich su.
+-- TODO Ban 1 va Ban 2: khoa sua/xoa cau hoi da gan de, giu nguyen de/anh de bao toan lich su.
 -- FK chi bao ve tham chieu, khong ngan UPDATE noi dung.
 
--- Ban 3 quan ly ca; Ban 2 doc ca de lam bai.
+-- Ban 2 quan ly ca; Ban 3 doc ca de lam bai.
 CREATE TABLE IF NOT EXISTS ExamSessions (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     SessionCode TEXT NOT NULL UNIQUE,

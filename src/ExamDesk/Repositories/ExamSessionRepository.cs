@@ -2,18 +2,18 @@ using ExamDesk.Models;
 
 namespace ExamDesk.Repositories;
 
-// Khung dành cho Bạn 2. Chưa triển khai nghiệp vụ hoặc SQL.
+// Bạn 2 phụ trách. Stub cho giai đoạn nghiệp vụ; UI hiện tại chưa gọi các hàm này.
 public sealed class ExamSessionRepository
 {
-    // TODO (Bạn 2): SELECT các ca mở.
-    public List<ExamSession> FindOpenSessions()
+    // TODO (Bạn 2): SELECT ca thi.
+    public List<ExamSession> FindSessions()
         => throw new NotImplementedException("Bạn 2: chưa triển khai.");
 
-    // TODO (Bạn 2): Đọc đúng thứ tự đề; không hiển thị đáp án chuẩn trong lúc thi.
-    public List<Question> FindQuestionsByPaperId(int paperId)
+    // TODO (Bạn 2): INSERT ca thi có tham số.
+    public int InsertSession(ExamSession session)
         => throw new NotImplementedException("Bạn 2: chưa triển khai.");
 
-    // TODO (Bạn 2): SELECT theo ca/MSSV có tham số.
-    public bool HasStudentSubmitted(int sessionId, string studentCode)
+    // TODO (Bạn 2): UPDATE trạng thái ca.
+    public void SetSessionOpen(int sessionId, bool isOpen)
         => throw new NotImplementedException("Bạn 2: chưa triển khai.");
 }

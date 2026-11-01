@@ -1,19 +1,187 @@
+using ExamDesk.UI.Administration;
+using ExamDesk.UI.ExamManagement;
+using ExamDesk.UI.Reports;
+using ExamDesk.UI.DataManagement;
+using ExamDesk.UI.Student;
+using ExamDesk.UI.Shared;
+
 namespace ExamDesk.UI;
 
-// File chung: Bạn 2 điều phối. Chưa triển khai menu hoặc phân quyền.
+// File chung: Bạn 1 điều phối. Đây là cửa sổ tích hợp UI, chưa phải đăng nhập/phân quyền.
 public sealed class MainForm : Form
 {
+    private static readonly Font ActiveMenuFont = new("Segoe UI", 10F, FontStyle.Bold);
+    private static readonly Color MenuHoverColor = ColorTranslator.FromHtml("#1E4276");
+
+    private readonly Panel _content = new() { Dock = DockStyle.Fill, Padding = new Padding(0) };
+    private readonly List<Button> _menuButtons = [];
+    private int _nextTabIndex;
+
     public MainForm()
     {
-        Text = "ExamDesk — Khung sườn";
-        ClientSize = new Size(800, 500);
+        AutoScaleMode = AutoScaleMode.Font;
+        Text = "UniExam — Khung tích hợp UI";
+        ClientSize = new Size(1280, 680);
+        MinimumSize = new Size(1000, 600);
         StartPosition = FormStartPosition.CenterScreen;
-        Controls.Add(new Label
+        Font = UiStyle.BodyFont;
+        BackColor = UiStyle.Background;
+        ForeColor = UiStyle.Text;
+
+        var menu = new FlowLayoutPanel
         {
-            Text = "Khung dự án ExamDesk\n\nChưa triển khai chức năng. Xem CONTEXT.md để nhận phần việc.",
+            Dock = DockStyle.Left,
+            Width = 224,
+            Padding = new Padding(12),
+            BackColor = UiStyle.Sidebar,
+            ForeColor = Color.White,
+            FlowDirection = FlowDirection.TopDown,
+            WrapContents = false,
+            AutoScroll = true
+        };
+
+        var brandLabel = new Label
+        {
+            Text = "UniExam",
+            Font = UiStyle.TitleFont,
+            ForeColor = Color.White,
+            BackColor = UiStyle.Sidebar,
+            AutoSize = false,
+            Width = 200,
+            Height = 48,
+            TextAlign = ContentAlignment.MiddleLeft,
+            Padding = new Padding(8, 0, 0, 0),
+            Margin = new Padding(0, 4, 0, 12)
+        };
+        menu.Controls.Add(brandLabel);
+
+        var note = new Label
+        {
+            Dock = DockStyle.Bottom,
+            Height = 44,
+            Padding = new Padding(12),
+            Font = UiStyle.SmallFont,
+            ForeColor = UiStyle.TextMuted,
+            BackColor = UiStyle.Background,
+            TextAlign = ContentAlignment.MiddleLeft,
+            Text = "CHẾ ĐỘ DỰNG UI • Các màn hình là khung trống, chưa đăng nhập hoặc kết nối SQLite."
+        };
+
+        AddMenu(menu, "Chọn vai trò", () => ShowScreen(CreateRoleSelectionPlaceholder()));
+        var dashboardButton = AddMenu(menu, "Tổng quan", () => ShowScreen(new DashboardControl()));
+        AddMenu(menu, "Ngân hàng câu hỏi", () => ShowScreen(new QuestionBankControl()));
+        AddMenu(menu, "Đề thi", () => ShowScreen(new ExamPaperControl()));
+        AddMenu(menu, "Ca thi", () => ShowScreen(new SessionManagementControl()));
+        AddMenu(menu, "Kết quả và thống kê", () => ShowScreen(new GradingReviewControl()));
+        AddMenu(menu, "Dữ liệu và sao lưu", () => ShowScreen(new DataManagementControl()));
+        AddMenu(menu, "Mở UI đăng nhập GV", () => { using var form = new LoginForm(); form.ShowDialog(this); });
+        AddMenu(menu, "Mở UI sinh viên", () => { using var form = new StudentExamForm(); form.ShowDialog(this); });
+
+        Controls.Add(_content);
+        Controls.Add(menu);
+        Controls.Add(note);
+
+        SetActiveMenuButton(dashboardButton);
+        ShowScreen(new DashboardControl());
+    }
+
+    private Button AddMenu(FlowLayoutPanel menu, string text, Action open)
+    {
+        var button = new Button
+        {
+            Tag = text,
+            Text = "   " + text,
+            Width = 200,
+            Height = 40,
+            Margin = new Padding(0, 0, 0, 8),
+            FlatStyle = FlatStyle.Flat,
+            BackColor = UiStyle.Sidebar,
+            ForeColor = Color.White,
+            Font = UiStyle.BodyFont,
+            TextAlign = ContentAlignment.MiddleLeft,
+            Padding = new Padding(8, 0, 8, 0),
+            Cursor = Cursors.Hand,
+            TabStop = true,
+            TabIndex = _nextTabIndex++
+        };
+        button.FlatAppearance.BorderSize = 0;
+        button.FlatAppearance.MouseOverBackColor = MenuHoverColor;
+        button.FlatAppearance.MouseDownBackColor = UiStyle.Primary;
+        button.Click += (_, _) =>
+        {
+            SetActiveMenuButton(button);
+            open();
+        };
+
+        _menuButtons.Add(button);
+        menu.Controls.Add(button);
+        return button;
+    }
+
+    private void SetActiveMenuButton(Button activeButton)
+    {
+        foreach (var btn in _menuButtons)
+        {
+            var baseText = btn.Tag as string ?? string.Empty;
+            var isSelected = ReferenceEquals(btn, activeButton);
+            btn.BackColor = isSelected ? UiStyle.Primary : UiStyle.Sidebar;
+            btn.Font = isSelected ? ActiveMenuFont : UiStyle.BodyFont;
+            btn.Text = isSelected ? $"▶ {baseText}" : $"   {baseText}";
+        }
+    }
+
+    private static UserControl CreateRoleSelectionPlaceholder()
+    {
+        var placeholder = new UserControl
+        {
+            AutoScaleMode = AutoScaleMode.Font,
+            BackColor = UiStyle.Surface,
+            ForeColor = UiStyle.Text,
+            Font = UiStyle.BodyFont
+        };
+
+        var layout = new FlowLayoutPanel
+        {
             Dock = DockStyle.Fill,
-            TextAlign = ContentAlignment.MiddleCenter
-        });
-        // TODO (Bạn 2, phối hợp nhóm): nối đăng nhập và điều hướng các Form.
+            Padding = new Padding(24),
+            FlowDirection = FlowDirection.TopDown,
+            WrapContents = false,
+            AutoScroll = true
+        };
+
+        var titleLabel = new Label
+        {
+            AutoSize = true,
+            Font = UiStyle.TitleFont,
+            ForeColor = UiStyle.Text,
+            Margin = new Padding(0, 0, 0, 12),
+            Text = "Chọn vai trò"
+        };
+
+        var hintLabel = new Label
+        {
+            AutoSize = true,
+            Font = UiStyle.SmallFont,
+            ForeColor = UiStyle.TextMuted,
+            Text = "AUTH-01 – sẽ dựng ở bước sau"
+        };
+
+        layout.Controls.Add(titleLabel);
+        layout.Controls.Add(hintLabel);
+        placeholder.Controls.Add(layout);
+        return placeholder;
+    }
+
+    private void ShowScreen(UserControl screen)
+    {
+        // Khung xem UI: chuyển màn hình hủy control cũ; form thật cần hỏi khi có sửa chưa lưu.
+        while (_content.Controls.Count > 0)
+        {
+            var previous = _content.Controls[0];
+            _content.Controls.Remove(previous);
+            previous.Dispose();
+        }
+        screen.Dock = DockStyle.Fill;
+        _content.Controls.Add(screen);
     }
 }
