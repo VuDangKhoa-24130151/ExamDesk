@@ -201,27 +201,96 @@ public partial class QuestionBankControl : UserControl
 
     private void OnAddClick(object? sender, EventArgs e)
     {
+        using var dialog = new QuestionEditorDialog();
+        var owner = FindForm();
+        var dialogResult = owner is not null ? dialog.ShowDialog(owner) : dialog.ShowDialog();
+        if (dialogResult != DialogResult.OK || dialog.Result is null)
+        {
+            return;
+        }
+
+        var nextId = AdminPreviewData.Questions.Count > 0
+            ? AdminPreviewData.Questions.Max(q => q.Id) + 1
+            : 101;
+
+        dialog.Result.Id = nextId;
+        AdminPreviewData.Questions.Add(dialog.Result);
+        EnsureQuestionVisibleInFilter(dialog.Result);
+        RefreshGrid(nextId);
+
         MessageBox.Show(
             this,
-            "GV-05/GV-06 sẽ dựng ở bước sau",
-            "Thêm câu hỏi (GV-05)",
+            "Đã lưu (minh họa – chưa lưu CSDL)",
+            "Lưu câu hỏi",
             MessageBoxButtons.OK,
             MessageBoxIcon.Information);
     }
 
     private void OnEditClick(object? sender, EventArgs e)
     {
-        if (GetSelectedQuestion() is null)
+        var selected = GetSelectedQuestion();
+        if (selected is null)
         {
             return;
         }
 
+        using var dialog = new QuestionEditorDialog();
+        dialog.LoadQuestion(selected);
+        var owner = FindForm();
+        var dialogResult = owner is not null ? dialog.ShowDialog(owner) : dialog.ShowDialog();
+        if (dialogResult != DialogResult.OK || dialog.Result is null)
+        {
+            return;
+        }
+
+        var index = AdminPreviewData.Questions.FindIndex(q => q.Id == selected.Id);
+        if (index >= 0)
+        {
+            AdminPreviewData.Questions[index] = dialog.Result;
+        }
+
+        EnsureQuestionVisibleInFilter(dialog.Result);
+        RefreshGrid(dialog.Result.Id);
+
         MessageBox.Show(
             this,
-            "GV-05/GV-06 sẽ dựng ở bước sau",
-            "Sửa câu hỏi (GV-05)",
+            "Đã lưu (minh họa – chưa lưu CSDL)",
+            "Lưu câu hỏi",
             MessageBoxButtons.OK,
             MessageBoxIcon.Information);
+    }
+
+    private void EnsureQuestionVisibleInFilter(Question savedQuestion)
+    {
+        _suppressFilterEvents = true;
+
+        var selectedSubjectId = (_cboSubject.SelectedItem as FilterOption<int?>)?.Value;
+        if (selectedSubjectId.HasValue && selectedSubjectId.Value != savedQuestion.SubjectId)
+        {
+            _cboSubject.SelectedIndex = 0;
+        }
+
+        var selectedChapter = (_cboChapter.SelectedItem as FilterOption<int?>)?.Value;
+        if (selectedChapter.HasValue && selectedChapter.Value != savedQuestion.Chapter)
+        {
+            _cboChapter.SelectedIndex = 0;
+        }
+
+        var selectedDifficulty = (_cboDifficulty.SelectedItem as FilterOption<string?>)?.Value;
+        if (!string.IsNullOrEmpty(selectedDifficulty) &&
+            !string.Equals(selectedDifficulty, savedQuestion.Difficulty, StringComparison.OrdinalIgnoreCase))
+        {
+            _cboDifficulty.SelectedIndex = 0;
+        }
+
+        var keyword = _txtSearch.Text.Trim();
+        if (!string.IsNullOrEmpty(keyword) &&
+            !savedQuestion.Content.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+        {
+            _txtSearch.Clear();
+        }
+
+        _suppressFilterEvents = false;
     }
 
     private void OnPreviewClick(object? sender, EventArgs e)
