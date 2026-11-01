@@ -228,12 +228,28 @@ public partial class QuestionEditorDialog : Form
 
     private void OnPreviewClick(object? sender, EventArgs e)
     {
-        MessageBox.Show(
-            this,
-            "GV-06 Xem trước câu hỏi sẽ dựng ở bước sau.",
-            "Xem trước câu hỏi (GV-06)",
-            MessageBoxButtons.OK,
-            MessageBoxIcon.Information);
+        var selectedSubject = _cboSubject.SelectedItem as SubjectOption;
+        var draftQuestion = new Question
+        {
+            Id = _editingId,
+            SubjectId = selectedSubject?.Id ?? 0,
+            Chapter = (int)_numChapter.Value,
+            Difficulty = GetSelectedDifficulty(),
+            Content = _txtContent.Text.Trim(),
+            OptionA = _txtOptionA.Text.Trim(),
+            OptionB = _txtOptionB.Text.Trim(),
+            OptionC = _txtOptionC.Text.Trim(),
+            OptionD = _txtOptionD.Text.Trim(),
+            CorrectOption = GetSelectedCorrectOption(),
+            ImagePath = _editingImagePath
+        };
+
+        using var previewDialog = new QuestionPreviewDialog
+        {
+            AllowEdit = false
+        };
+        previewDialog.ShowQuestion(draftQuestion, selectedSubject?.DisplayText ?? string.Empty);
+        previewDialog.ShowDialog(this);
     }
 
     private void OnCancelClick(object? sender, EventArgs e)

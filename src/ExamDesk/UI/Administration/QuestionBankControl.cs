@@ -295,17 +295,32 @@ public partial class QuestionBankControl : UserControl
 
     private void OnPreviewClick(object? sender, EventArgs e)
     {
-        if (GetSelectedQuestion() is null)
+        var selected = GetSelectedQuestion();
+        if (selected is null)
         {
             return;
         }
 
-        MessageBox.Show(
-            this,
-            "GV-05/GV-06 sẽ dựng ở bước sau",
-            "Xem trước câu hỏi (GV-06)",
-            MessageBoxButtons.OK,
-            MessageBoxIcon.Information);
+        using var previewDialog = new QuestionPreviewDialog
+        {
+            AllowEdit = true
+        };
+        previewDialog.ShowQuestion(selected, AdminPreviewData.FormatSubjectCode(selected.SubjectId));
+
+        var owner = FindForm();
+        if (owner is not null)
+        {
+            previewDialog.ShowDialog(owner);
+        }
+        else
+        {
+            previewDialog.ShowDialog();
+        }
+
+        if (previewDialog.EditRequested)
+        {
+            OnEditClick(sender, e);
+        }
     }
 
     private void OnGridCellDoubleClick(object? sender, DataGridViewCellEventArgs e)
