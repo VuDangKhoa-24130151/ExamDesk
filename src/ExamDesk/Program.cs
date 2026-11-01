@@ -8,7 +8,7 @@ internal static class Program
     private static void Main()
     {
         ApplicationConfiguration.Initialize();
-        // Khung chỉ mở cửa sổ trống; chưa đăng nhập, tạo database hay nạp dữ liệu.
+        // Bạn 1 điều phối. Mở khung tích hợp UI; chưa tạo database hoặc gọi nghiệp vụ.
         Application.Run(new MainForm());
     }
 }

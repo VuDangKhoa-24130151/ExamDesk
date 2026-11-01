@@ -10,7 +10,7 @@ public sealed class ExamSession
     public bool IsOpen { get; set; }
 }
 
-// Dữ liệu trao đổi giữa Bạn 2 và Bạn 3; chưa có logic làm bài hoặc chấm điểm.
+// Bạn 3 dùng khi nộp bài; kết quả được Bạn 2 đọc để báo cáo. Chưa có logic nghiệp vụ.
 public sealed class ExamSubmission
 {
     public int SessionId { get; set; }
