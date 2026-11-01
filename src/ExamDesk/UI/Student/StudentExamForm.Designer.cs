@@ -4,6 +4,7 @@ namespace ExamDesk.UI.Student;
 partial class StudentExamForm
 {
     private System.ComponentModel.IContainer? components = null;
+    private Panel _studentContent = new() { Dock = DockStyle.Fill };
 
     protected override void Dispose(bool disposing)
     {
@@ -51,7 +52,7 @@ partial class StudentExamForm
         header.Controls.Add(studentName, 1, 0);
 
         // Thêm vùng nội dung trước để Dock.Fill nằm dưới thanh tiêu đề.
-        Controls.Add(new SessionSelectionControl());
+        Controls.Add(_studentContent);
         Controls.Add(header);
         Text = "UniExam — Chọn ca thi";
         ResumeLayout(false);

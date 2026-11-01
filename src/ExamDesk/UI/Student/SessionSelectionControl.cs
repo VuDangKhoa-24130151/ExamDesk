@@ -4,6 +4,7 @@ namespace ExamDesk.UI.Student;
 
 public partial class SessionSelectionControl : UserControl
 {
+    public event EventHandler? InstructionsRequested;
     public SessionSelectionControl()
     {
         InitializeComponent();
@@ -33,12 +34,9 @@ public partial class SessionSelectionControl : UserControl
         }
     }
 
-    // Chưa có SV-02 nên tạm thông báo, sau này đổi thành mở màn hướng dẫn.
     private void OpenInstructions(object? sender, EventArgs e)
     {
-        MessageBox.Show(this,
-            "Màn hướng dẫn thi đang được xây dựng. Bạn chưa bắt đầu làm bài.",
-            "Hướng dẫn thi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        InstructionsRequested?.Invoke(this, EventArgs.Empty);
     }
 
     // Khi có màn nhận diện, nút này sẽ đưa sinh viên quay về nhập mã.
