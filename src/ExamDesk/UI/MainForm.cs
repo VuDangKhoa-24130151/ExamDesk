@@ -15,6 +15,7 @@ public sealed class MainForm : Form
 
     private readonly Panel _content = new() { Dock = DockStyle.Fill, Padding = new Padding(0) };
     private readonly List<Button> _menuButtons = [];
+    private Button _dashboardButton = null!;
     private int _nextTabIndex;
 
     public MainForm()
@@ -67,8 +68,8 @@ public sealed class MainForm : Form
             Text = "CHẾ ĐỘ DỰNG UI • Các màn hình là khung trống, chưa đăng nhập hoặc kết nối SQLite."
         };
 
-        AddMenu(menu, "Chọn vai trò", () => ShowScreen(CreateRoleSelectionPlaceholder()));
-        var dashboardButton = AddMenu(menu, "Tổng quan", () => ShowScreen(new DashboardControl()));
+        var roleSelectionButton = AddMenu(menu, "Chọn vai trò", OpenRoleSelection);
+        _dashboardButton = AddMenu(menu, "Tổng quan", () => ShowScreen(new DashboardControl()));
         AddMenu(menu, "Ngân hàng câu hỏi", () => ShowScreen(new QuestionBankControl()));
         AddMenu(menu, "Đề thi", () => ShowScreen(new ExamPaperControl()));
         AddMenu(menu, "Ca thi", () => ShowScreen(new SessionManagementControl()));
@@ -81,8 +82,19 @@ public sealed class MainForm : Form
         Controls.Add(menu);
         Controls.Add(note);
 
-        SetActiveMenuButton(dashboardButton);
-        ShowScreen(new DashboardControl());
+        SetActiveMenuButton(roleSelectionButton);
+        OpenRoleSelection();
+    }
+
+    private void OpenRoleSelection()
+    {
+        var roleControl = new RoleSelectionControl();
+        roleControl.LecturerLoggedIn += (_, _) =>
+        {
+            SetActiveMenuButton(_dashboardButton);
+            ShowScreen(new DashboardControl());
+        };
+        ShowScreen(roleControl);
     }
 
     private Button AddMenu(FlowLayoutPanel menu, string text, Action open)
@@ -128,48 +140,6 @@ public sealed class MainForm : Form
             btn.Font = isSelected ? ActiveMenuFont : UiStyle.BodyFont;
             btn.Text = isSelected ? $"▶ {baseText}" : $"   {baseText}";
         }
-    }
-
-    private static UserControl CreateRoleSelectionPlaceholder()
-    {
-        var placeholder = new UserControl
-        {
-            AutoScaleMode = AutoScaleMode.Font,
-            BackColor = UiStyle.Surface,
-            ForeColor = UiStyle.Text,
-            Font = UiStyle.BodyFont
-        };
-
-        var layout = new FlowLayoutPanel
-        {
-            Dock = DockStyle.Fill,
-            Padding = new Padding(24),
-            FlowDirection = FlowDirection.TopDown,
-            WrapContents = false,
-            AutoScroll = true
-        };
-
-        var titleLabel = new Label
-        {
-            AutoSize = true,
-            Font = UiStyle.TitleFont,
-            ForeColor = UiStyle.Text,
-            Margin = new Padding(0, 0, 0, 12),
-            Text = "Chọn vai trò"
-        };
-
-        var hintLabel = new Label
-        {
-            AutoSize = true,
-            Font = UiStyle.SmallFont,
-            ForeColor = UiStyle.TextMuted,
-            Text = "AUTH-01 – sẽ dựng ở bước sau"
-        };
-
-        layout.Controls.Add(titleLabel);
-        layout.Controls.Add(hintLabel);
-        placeholder.Controls.Add(layout);
-        return placeholder;
     }
 
     private void ShowScreen(UserControl screen)
