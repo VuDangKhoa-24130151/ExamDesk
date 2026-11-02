@@ -5,6 +5,7 @@ namespace ExamDesk.UI.Student;
 public partial class SessionSelectionControl : UserControl
 {
     public event EventHandler? InstructionsRequested;
+    public event EventHandler? CloseRequested;
     public SessionSelectionControl()
     {
         InitializeComponent();
@@ -39,12 +40,9 @@ public partial class SessionSelectionControl : UserControl
         InstructionsRequested?.Invoke(this, EventArgs.Empty);
     }
 
-    // Khi có màn nhận diện, nút này sẽ đưa sinh viên quay về nhập mã.
-    private void ChangeIdentity(object? sender, EventArgs e)
+    private void GoBack(object? sender, EventArgs e)
     {
-        MessageBox.Show(this,
-            "Chức năng nhập lại mã sinh viên đang được xây dựng.",
-            "Nhập lại mã sinh viên", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        CloseRequested?.Invoke(this, EventArgs.Empty);
     }
 }
 

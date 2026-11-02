@@ -95,13 +95,13 @@ partial class SessionSelectionControl
 
         var back = new Button
         {
-            Text = "← &Nhập lại mã sinh viên", AutoSize = true, TabIndex = 1,
+            Text = "← &Quay lại cửa sổ chính", AutoSize = true, TabIndex = 1,
             MinimumSize = new Size(224, 40), BackColor = UiStyle.Surface,
             ForeColor = UiStyle.Text, FlatStyle = FlatStyle.Flat,
             Padding = new Padding(12, 4, 12, 4), Margin = new Padding(0, 12, 0, 0)
         };
         back.FlatAppearance.BorderColor = Color.FromArgb(220, 227, 237);
-        back.Click += ChangeIdentity;
+        back.Click += GoBack;
         page.Controls.Add(back, 0, 3);
         // Cho chữ tự xuống dòng theo chiều rộng từng khung khi phóng to hoặc thu nhỏ.
         heading.SizeChanged += (_, _) => WrapLabels(heading);

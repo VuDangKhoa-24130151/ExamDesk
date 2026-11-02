@@ -56,7 +56,7 @@ partial class ExamInstructionsControl
             "02  Mỗi câu chọn một đáp án. Có thể đổi hoặc bỏ lựa chọn.",
             "03  Chuyển câu bằng nút hoặc lưới số câu bên phải.",
             "04  Có thể đánh dấu để quay lại xem sau.",
-            "05  Mỗi thay đổi được lưu trên máy; hãy kiểm tra trạng thái lưu.",
+            "05  Lựa chọn chỉ giữ trong cửa sổ hiện tại, chưa lưu xuống máy.",
             "06  Hết giờ, vùng làm bài sẽ khóa và bài được tự động nộp.",
             "07  Sau khi nộp, bạn không thể thay đổi đáp án."
         };
@@ -110,7 +110,7 @@ partial class ExamInstructionsControl
             FlatStyle = FlatStyle.Flat, Enabled = false, TabIndex = 0, Margin = Padding.Empty
         };
         _startButton.FlatAppearance.BorderSize = 0;
-        // Khi có SV-03, bật nút sau khi sinh viên xác nhận đã đọc hướng dẫn.
+        // Nút bật sau khi sinh viên xác nhận đã đọc hướng dẫn.
         actions.Controls.Add(back, 0, 0);
         actions.Controls.Add(_startButton, 1, 0);
         page.Controls.Add(actions, 0, 3);
