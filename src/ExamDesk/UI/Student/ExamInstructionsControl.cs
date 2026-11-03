@@ -3,10 +3,13 @@ namespace ExamDesk.UI.Student;
 public partial class ExamInstructionsControl : UserControl
 {
     public event EventHandler? BackRequested;
+    public event EventHandler? StartRequested;
 
     public ExamInstructionsControl()
     {
         InitializeComponent();
+        _readCheckBox.CheckedChanged += (_, _) => _startButton.Enabled = _readCheckBox.Checked;
+        _startButton.Click += (_, _) => StartRequested?.Invoke(this, EventArgs.Empty);
         Resize += (_, _) => CenterContent();
         CenterContent();
     }
