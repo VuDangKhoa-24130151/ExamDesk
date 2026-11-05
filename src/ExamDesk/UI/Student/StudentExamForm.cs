@@ -71,14 +71,17 @@ public partial class StudentExamForm : Form
     private void SubmitAttempt()
     {
         if (_attempt is null || _attempt.Submitted) return;
-        // Chốt một lần và đóng cửa sổ sinh viên về khung chính.
+        // Chốt một lần và hiển thị thông tin kết thúc lượt UI.
         _attempt.Submitted = true;
-        Close();
+        var screen = new SubmissionStatusControl();
+        screen.SetAttempt(_attempt);
+        screen.CloseRequested += (_, _) => Close();
+        ShowScreen(screen, "Trạng thái nộp bài");
     }
 
     private void ConfirmClose(object? sender, FormClosingEventArgs e)
     {
-        if (_attempt is null || _attempt.Submitted) return;
+        if (_attempt is null) return;
         e.Cancel = MessageBox.Show(this,
             "Dữ liệu UI chỉ nằm trong cửa sổ này và sẽ mất khi đóng. Bạn muốn đóng?",
             "Đóng lượt thi", MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
