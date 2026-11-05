@@ -4,7 +4,6 @@ public partial class StudentExamControl : UserControl
 {
     private StudentPreviewAttempt _attempt = new();
     public event EventHandler? SubmitRequested;
-    public event EventHandler? PauseRequested;
     public event EventHandler? TimeExpired;
     public StudentExamControl() { InitializeComponent(); RenderQuestion(); }
     internal StudentExamControl(StudentPreviewAttempt attempt) : this() { _attempt = attempt; RenderQuestion(); }
@@ -20,9 +19,16 @@ public partial class StudentExamControl : UserControl
         _clock.Text = "Còn lại " + _attempt.Remaining;
         for (int i = 0; i < 30; i++)
         {
-            _numbers[i].Text = $"{i + 1}{(_attempt.Answers[i].HasValue ? "+" : "−")}{(_attempt.Flags[i] ? "*" : "")}";
+            bool answered = _attempt.Answers[i].HasValue;
+            bool flagged = _attempt.Flags[i];
+            string symbols = (answered ? "✓" : "") + (flagged ? "⚑" : "");
+            _numbers[i].Text = symbols.Length == 0 ? (i + 1).ToString() : $"{i + 1}\n{symbols}";
             _numbers[i].AccessibleDescription = $"{(_attempt.Answers[i].HasValue ? "Đã trả lời" : "Chưa trả lời")}{(_attempt.Flags[i] ? ", đánh dấu xem lại" : "")}";
-            _numbers[i].BackColor = i == _attempt.Current ? Color.FromArgb(220, 234, 255) : Color.White;
+            _numbers[i].BackColor = _attempt.Flags[i] ? ExamDesk.UI.Shared.UiStyle.Primary
+                : answered ? Color.FromArgb(234, 246, 239) : Color.White;
+            _numbers[i].ForeColor = flagged ? Color.White
+                : answered ? Color.FromArgb(20, 108, 67) : ExamDesk.UI.Shared.UiStyle.Text;
+            _numbers[i].FlatAppearance.BorderColor = i == _attempt.Current ? Color.Black : Color.FromArgb(220, 227, 237);
             _numbers[i].FlatAppearance.BorderSize = i == _attempt.Current ? 2 : 1;
         }
     }
@@ -31,7 +37,6 @@ public partial class StudentExamControl : UserControl
     {
         if (!_options[index].Checked) return;
         _attempt.Answers[_attempt.Current] = index;
-        _notice.Text = "Lựa chọn đang được giữ trong phiên UI; chưa lưu xuống máy.";
         RenderQuestion();
     }
     private void Tick(object? sender, EventArgs e)

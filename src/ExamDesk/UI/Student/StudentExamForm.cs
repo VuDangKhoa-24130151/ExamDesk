@@ -45,7 +45,6 @@ public partial class StudentExamForm : Form
         var screen = new StudentExamControl(_attempt);
         screen.SubmitRequested += (_, _) => ReviewSubmission(screen);
         screen.TimeExpired += (_, _) => SubmitAttempt();
-        screen.PauseRequested += (_, _) => ShowResume();
         ShowScreen(screen, "Làm bài");
     }
 
@@ -57,15 +56,6 @@ public partial class StudentExamForm : Form
         if (_attempt.Submitted) return;
         if (result == DialogResult.OK) SubmitAttempt();
         else if (dialog.QuestionToReview is int index) exam.GoToQuestion(index);
-    }
-
-    private void ShowResume()
-    {
-        if (_attempt is null) return;
-        var screen = new ResumeAttemptControl();
-        screen.SetAttempt(_attempt);
-        screen.ResumeRequested += (_, _) => ShowExam();
-        ShowScreen(screen, "Khôi phục lượt thi");
     }
 
     private void SubmitAttempt()
