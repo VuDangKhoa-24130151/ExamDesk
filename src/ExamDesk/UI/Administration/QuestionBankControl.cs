@@ -4,9 +4,14 @@ using ExamDesk.UI.Shared;
 namespace ExamDesk.UI.Administration;
 
 // Bạn 1: phát triển giao diện trong control này; dữ liệu minh họa riêng của phân hệ.
-public partial class QuestionBankControl : UserControl
+public partial class QuestionBankControl : UserControl, IUnsavedChangesGuard
 {
     private bool _suppressFilterEvents;
+
+    // Thêm/sửa câu hỏi thực hiện qua hộp thoại modal QuestionEditorDialog (đã tự kiểm tra thay đổi chưa lưu).
+    public bool HasUnsavedChanges => false;
+
+    public bool ConfirmLeave() => true;
 
     public QuestionBankControl()
     {

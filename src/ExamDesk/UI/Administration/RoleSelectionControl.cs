@@ -7,6 +7,8 @@ public partial class RoleSelectionControl : UserControl
 {
     public event EventHandler? LecturerLoggedIn;
 
+    public string LoggedInUsername { get; private set; } = string.Empty;
+
     public RoleSelectionControl()
     {
         InitializeComponent();
@@ -19,6 +21,7 @@ public partial class RoleSelectionControl : UserControl
         var result = owner is not null ? loginForm.ShowDialog(owner) : loginForm.ShowDialog();
         if (result == DialogResult.OK)
         {
+            LoggedInUsername = loginForm.LoggedInUsername;
             LecturerLoggedIn?.Invoke(this, EventArgs.Empty);
         }
     }
