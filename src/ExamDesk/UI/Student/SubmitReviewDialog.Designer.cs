@@ -5,7 +5,7 @@ namespace ExamDesk.UI.Student;
 partial class SubmitReviewDialog
 {
     private readonly System.Windows.Forms.Timer _clock = new() { Interval = 250 };
-    private Label _answered = null!, _unanswered = null!, _flagged = null!, _warning = null!;
+    private Label _answered = null!, _unanswered = null!, _warning = null!;
     private FlowLayoutPanel _numbers = null!;
     private Button _continueButton = null!;
 
@@ -40,16 +40,15 @@ partial class SubmitReviewDialog
 
         var counts = new TableLayoutPanel
         {
-            Dock = DockStyle.Top, AutoSize = true, ColumnCount = 3, Margin = new Padding(0, 8, 0, 12)
+            Dock = DockStyle.Top, AutoSize = true, ColumnCount = 2, Margin = new Padding(0, 8, 0, 12)
         };
-        for (int i = 0; i < 3; i++)
-            counts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / 3));
+        for (int i = 0; i < 2; i++)
+            counts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         counts.Controls.Add(Counter("Đã trả lời", UiStyle.Background, UiStyle.Primary, out _answered), 0, 0);
         counts.Controls.Add(Counter("Chưa trả lời", Color.FromArgb(255, 245, 219), Color.FromArgb(132, 83, 0), out _unanswered), 1, 0);
-        counts.Controls.Add(Counter("Đánh dấu", UiStyle.Background, UiStyle.Primary, out _flagged), 2, 0);
         content.Controls.Add(counts);
 
-        content.Controls.Add(StudentLayout.Label("Câu chưa trả lời — chọn số câu để quay lại:"));
+        content.Controls.Add(StudentLayout.Label("Chọn số câu để quay lại — ô xanh đã trả lời, ô trắng chưa trả lời:"));
         _numbers = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 138, AutoScroll = true, Margin = Padding.Empty };
         content.Controls.Add(_numbers);
         _warning = StudentLayout.Label("");

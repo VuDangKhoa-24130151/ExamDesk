@@ -45,7 +45,6 @@ public partial class StudentExamForm : Form
         var screen = new StudentExamControl(_attempt);
         screen.SubmitRequested += (_, _) => ReviewSubmission(screen);
         screen.TimeExpired += (_, _) => SubmitAttempt();
-        screen.PauseRequested += (_, _) => ShowResume();
         ShowScreen(screen, "Làm bài");
     }
 
@@ -59,26 +58,20 @@ public partial class StudentExamForm : Form
         else if (dialog.QuestionToReview is int index) exam.GoToQuestion(index);
     }
 
-    private void ShowResume()
-    {
-        if (_attempt is null) return;
-        var screen = new ResumeAttemptControl();
-        screen.SetAttempt(_attempt);
-        screen.ResumeRequested += (_, _) => ShowExam();
-        ShowScreen(screen, "Khôi phục lượt thi");
-    }
-
     private void SubmitAttempt()
     {
         if (_attempt is null || _attempt.Submitted) return;
-        // Chốt một lần và đóng cửa sổ sinh viên về khung chính.
+        // Chốt một lần và hiển thị thông tin kết thúc lượt UI.
         _attempt.Submitted = true;
-        Close();
+        var screen = new SubmissionStatusControl();
+        screen.SetAttempt(_attempt);
+        screen.CloseRequested += (_, _) => Close();
+        ShowScreen(screen, "Trạng thái nộp bài");
     }
 
     private void ConfirmClose(object? sender, FormClosingEventArgs e)
     {
-        if (_attempt is null || _attempt.Submitted) return;
+        if (_attempt is null) return;
         e.Cancel = MessageBox.Show(this,
             "Dữ liệu UI chỉ nằm trong cửa sổ này và sẽ mất khi đóng. Bạn muốn đóng?",
             "Đóng lượt thi", MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
