@@ -24,7 +24,7 @@ partial class SessionManagementControl
         _lblTitle.Text = "Ca thi";
         _lblHint.AutoSize = true;
         _lblHint.Location = new Point(24, 72);
-        _lblHint.Text = "GV-10 → GV-11 • Bạn 2 phụ trách\nKhung UI chưa triển khai. Thêm control tại đây; chưa gọi Service/SQLite.";
+        _lblHint.Text = "GV-10 → GV-11 • Bạn 3 phụ trách\nKhung UI chưa triển khai. Thêm control tại đây; chưa gọi Service/SQLite.";
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         BackColor = Color.White;
