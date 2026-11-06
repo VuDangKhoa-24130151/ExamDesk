@@ -1,2 +1,2 @@
--- TODO (Bạn 2 — đề và ca thi; phối hợp Bạn 3 về lượt thi): bổ sung khi đến giai đoạn dữ liệu.
+-- TODO (Bạn 3 — ca thi; phối hợp Bạn 1 về đề thi): bổ sung khi đến giai đoạn dữ liệu.
 -- Chưa cần làm để dựng UI. Ứng dụng hiện chưa đọc file này.

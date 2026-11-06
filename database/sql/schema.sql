@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS Users (
     ClassName TEXT NOT NULL DEFAULT ''
 );
 
--- Ban 1: ngan hang cau hoi. Ban 2: de thi.
+-- Ban 1: ngan hang cau hoi va de thi.
 CREATE TABLE IF NOT EXISTS Subjects (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     Code TEXT NOT NULL UNIQUE,
@@ -52,10 +52,10 @@ CREATE TABLE IF NOT EXISTS ExamPaperQuestions (
     PRIMARY KEY (PaperId, QuestionId),
     UNIQUE (PaperId, OrderIndex)
 );
--- TODO Ban 1 va Ban 2: khoa sua/xoa cau hoi da gan de, giu nguyen de/anh de bao toan lich su.
+-- TODO Ban 1: khoa sua/xoa cau hoi da gan de, giu nguyen de/anh de bao toan lich su.
 -- FK chi bao ve tham chieu, khong ngan UPDATE noi dung.
 
--- Ban 2 quan ly ca; Ban 3 doc ca de lam bai.
+-- Ban 3 quan ly ca va luot lam bai.
 CREATE TABLE IF NOT EXISTS ExamSessions (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     SessionCode TEXT NOT NULL UNIQUE,
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS ExamSessions (
     IsOpen INTEGER NOT NULL DEFAULT 0 CHECK (IsOpen IN (0, 1))
 );
 
--- Ban 3: ket qua va chi tiet tung cau, luu cung transaction.
+-- Ban 2: cham va luu ket qua cuoi cung trong transaction; Ban 3 quan ly tien do dang thi.
 CREATE TABLE IF NOT EXISTS ExamAttempts (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     SessionId INTEGER NOT NULL REFERENCES ExamSessions(Id) ON DELETE RESTRICT,
@@ -93,5 +93,5 @@ CREATE TABLE IF NOT EXISTS AttemptAnswers (
     UNIQUE (AttemptId, QuestionId),
     UNIQUE (AttemptId, QuestionOrder)
 );
--- TODO Ban 3: kiem tra ca/de khop nhau; dap an lay tu de chuan, khong tin UI.
+-- TODO Ban 2: kiem tra ca/de khop nhau; dap an lay tu de chuan, khong tin UI.
 -- Chinh diem co nhat ky va snapshot day du la mo rong, chua thiet ke tai day.

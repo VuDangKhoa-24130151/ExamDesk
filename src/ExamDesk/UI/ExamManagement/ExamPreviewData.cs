@@ -1,6 +1,6 @@
 namespace ExamDesk.UI.ExamManagement;
 
-// Dữ liệu tạm cho mốc UI (Bạn 2). Khi nối nghiệp vụ thay bằng ExamPaperService.
+// Dữ liệu tạm cho mốc UI (Bạn 1). Khi nối nghiệp vụ thay bằng ExamPaperService.
 internal static class ExamPreviewData
 {
     public const string StatusDraft = "Nháp";
