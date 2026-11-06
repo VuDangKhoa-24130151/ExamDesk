@@ -5,8 +5,9 @@ partial class StudentExamControl
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 1000 };
     private Label _question = null!, _clock = null!, _progress = null!;
     private readonly RadioButton[] _options = new RadioButton[4];
-    private readonly Button[] _numbers = new Button[30];
+    private Button[] _numbers = [];
     private CheckBox _flag = null!;
+    private PictureBox _image = null!;
     private Button _previous = null!, _next = null!;
     private void InitializeComponent()
     {
@@ -19,11 +20,13 @@ partial class StudentExamControl
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 320));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        layout.Controls.Add(StudentLayout.Label("Cuối kỳ .NET – Ca 01", 18, FontStyle.Bold), 0, 0);
+        layout.Controls.Add(StudentLayout.Label(_attempt.Title, 18, FontStyle.Bold), 0, 0);
         _clock = StudentLayout.Label(""); layout.Controls.Add(_clock, 1, 0);
         var content = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Color.White,
             Padding = new Padding(16), FlowDirection = FlowDirection.TopDown, WrapContents = false };
         _question = StudentLayout.Label(""); content.Controls.Add(_question);
+        _image = new PictureBox { SizeMode = PictureBoxSizeMode.Zoom, Size = new Size(480, 220), Visible = false };
+        content.Controls.Add(_image);
         string[] answers = { "A. int", "B. bool", "C. string", "D. double" };
         for (int i = 0; i < 4; i++)
         {
@@ -36,10 +39,10 @@ partial class StudentExamControl
         _previous = StudentLayout.Button("← Câu &trước", (_, _) => GoToQuestion(_attempt.Current - 1));
         _next = StudentLayout.Button("Câu &tiếp →", (_, _) => GoToQuestion(_attempt.Current + 1));
         actions.Controls.Add(_previous); actions.Controls.Add(_next);
-        actions.Controls.Add(StudentLayout.Button("&Bỏ lựa chọn", (_, _) => { _attempt.Answers[_attempt.Current] = null; RenderQuestion(); }));
+        actions.Controls.Add(StudentLayout.Button("&Bỏ lựa chọn", (_, _) => { ChangeChoice(null); }));
         content.Controls.Add(actions);
         _flag = new CheckBox { Text = "⚑ Đánh dấu &xem lại", AutoSize = true, Margin = new Padding(0, 12, 0, 12) };
-        _flag.CheckedChanged += (_, _) => { _attempt.Flags[_attempt.Current] = _flag.Checked; RenderQuestion(); };
+        _flag.CheckedChanged += (_, _) => { ChangeFlag(); };
         content.Controls.Add(_flag);
         content.SizeChanged += (_, _) => {
             int width = Math.Max(160, content.ClientSize.Width - 50);
@@ -51,9 +54,10 @@ partial class StudentExamControl
             WrapContents = false, Padding = new Padding(12), BackColor = Color.White, Margin = new Padding(16, 0, 0, 0) };
         sidebar.Controls.Add(StudentLayout.Label("Tiến độ làm bài", 12, FontStyle.Bold));
         _progress = StudentLayout.Label(""); sidebar.Controls.Add(_progress);
-        var grid = new TableLayoutPanel { AutoSize = true, ColumnCount = 5, RowCount = 6, Width = 270 };
+        var grid = new TableLayoutPanel { AutoSize = true, ColumnCount = 5, RowCount = (_attempt.Answers.Length + 4) / 5, Width = 270 };
         for (int i = 0; i < 5; i++) grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20));
-        for (int i = 0; i < 30; i++)
+        _numbers = new Button[_attempt.Answers.Length];
+        for (int i = 0; i < _numbers.Length; i++)
         {
             int index = i;
             _numbers[i] = new Button { Width = 49, Height = 56, Padding = Padding.Empty, Font = new Font("Segoe UI", 9), FlatStyle = FlatStyle.Flat, Margin = new Padding(2), AccessibleName = $"Câu {i + 1}" };

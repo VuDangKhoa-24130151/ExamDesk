@@ -95,3 +95,12 @@ CREATE TABLE IF NOT EXISTS AttemptAnswers (
 );
 -- TODO Ban 2: kiem tra ca/de khop nhau; dap an lay tu de chuan, khong tin UI.
 -- Chinh diem co nhat ky va snapshot day du la mo rong, chua thiet ke tai day.
+
+-- Ban 3: tien do dang lam; ket qua cuoi van do Ban 2 luu vao ExamAttempts.
+CREATE TABLE IF NOT EXISTS StudentDrafts (
+    SessionId INTEGER NOT NULL REFERENCES ExamSessions(Id) ON DELETE RESTRICT,
+    StudentCode TEXT NOT NULL,
+    Payload TEXT NOT NULL,
+    Revision INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY(SessionId, StudentCode)
+);

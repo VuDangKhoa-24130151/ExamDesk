@@ -1,23 +1,35 @@
 using ExamDesk.Models;
+using ExamDesk.Repositories;
+using Microsoft.Data.Sqlite;
 
 namespace ExamDesk.Services;
 
-// Bạn 3 phụ trách. Stub cho giai đoạn nghiệp vụ; UI hiện tại chưa gọi các hàm này.
+// Bạn 3: kiểm tra dữ liệu quản lý ca trước khi lưu.
 public sealed class ExamSessionService
 {
-    // TODO (Bạn 3): Lấy đề để tạo ca.
-    public List<ExamPaper> GetExamPapers()
-        => throw new NotImplementedException("Bạn 3: chưa triển khai.");
+    private readonly ExamSessionRepository _repository = new();
+    public List<ExamPaper> GetExamPapers() => _repository.FindPapers();
+    public List<ExamSession> GetSessions() => _repository.FindSessions();
 
-    // TODO (Bạn 3): Lấy các ca cho màn hình quản lý.
-    public List<ExamSession> GetSessions()
-        => throw new NotImplementedException("Bạn 3: chưa triển khai.");
-
-    // TODO (Bạn 3): Kiểm tra ca và lưu qua Repository.
     public int CreateSession(ExamSession session)
-        => throw new NotImplementedException("Bạn 3: chưa triển khai.");
+    {
+        ArgumentNullException.ThrowIfNull(session);
+        session.SessionCode = session.SessionCode.Trim();
+        session.SessionName = session.SessionName.Trim();
+        session.RoomName = session.RoomName.Trim();
+        if (session.SessionCode.Length == 0 || session.SessionName.Length == 0 || session.RoomName.Length == 0)
+            throw new ArgumentException("Vui lòng nhập mã ca, tên ca và phòng thi.");
+        if (session.PaperId <= 0) throw new ArgumentException("Vui lòng chọn đề thi.");
+        try { return _repository.InsertSession(session); }
+        catch (SqliteException ex) when (ex.SqliteExtendedErrorCode == 2067)
+        { throw new InvalidOperationException("Mã ca đã tồn tại. Hãy dùng mã khác.", ex); }
+        catch (SqliteException ex) when (ex.SqliteExtendedErrorCode == 787)
+        { throw new InvalidOperationException("Đề thi không còn tồn tại. Hãy tải lại danh sách đề.", ex); }
+    }
 
-    // TODO (Bạn 3): Mở/đóng ca qua Repository.
     public void SetSessionOpen(int sessionId, bool isOpen)
-        => throw new NotImplementedException("Bạn 3: chưa triển khai.");
+    {
+        if (sessionId <= 0) throw new ArgumentException("Vui lòng chọn ca thi.");
+        _repository.SetSessionOpen(sessionId, isOpen);
+    }
 }
