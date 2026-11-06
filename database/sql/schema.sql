@@ -1,4 +1,4 @@
--- THIET KE SQLITE BAN DAU - CHUA DUOC APP TU DONG THUC THI.
+-- SCHEMA BAN DAU - APP TU DONG THUC THI KHI KHOI DONG.
 -- Moi may mot database cuc bo. Khong co du lieu mau.
 -- Ban 1 dieu phoi schema; thay doi chung can thong nhat ca nhom.
 -- CREATE TABLE IF NOT EXISTS khong nang cap database cu.
