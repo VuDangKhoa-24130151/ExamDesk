@@ -34,14 +34,14 @@ partial class StudentExamForm
 
         var examTitle = new Label
         {
-            Text = "KỲ THI CUỐI KỲ / LẬP TRÌNH .NET",
+            Text = "UNIEXAM — SINH VIÊN",
             Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft,
             ForeColor = ExamDesk.UI.Shared.UiStyle.Text, AutoEllipsis = true,
             Margin = new Padding(0, 0, 16, 0)
         };
         var studentName = new Label
         {
-            Text = "Vũ Đăng Khoa", AutoSize = true,
+            Text = "Nhận diện bằng MSSV", AutoSize = true,
             Anchor = AnchorStyles.Right, Padding = new Padding(12, 6, 12, 6),
             MinimumSize = new Size(190, 0), Margin = Padding.Empty,
             BackColor = Color.FromArgb(234, 246, 239),

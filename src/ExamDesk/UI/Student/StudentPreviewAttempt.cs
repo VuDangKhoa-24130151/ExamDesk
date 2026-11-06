@@ -5,22 +5,36 @@ namespace ExamDesk.UI.Student;
 // State UI chỉ sống trong cửa sổ này; chưa lưu tệp hoặc gọi Service/Repository.
 internal sealed class StudentPreviewAttempt
 {
-    public int?[] Answers { get; } = new int?[30];
-    public bool[] Flags { get; } = new bool[30];
+    public ExamDesk.Models.StudentDraft? Draft { get; private set; }
+    private readonly ExamDesk.Services.StudentDraftService _service = new();
+    private readonly int?[] _demoAnswers = new int?[30];
+    private readonly bool[] _demoFlags = new bool[30];
+    private readonly DateTime _demoDeadline = DateTime.Now.AddMinutes(45);
+    public StudentPreviewAttempt() { }
+    public StudentPreviewAttempt(ExamDesk.Models.StudentDraft draft) { Draft = draft; }
+    public int?[] Answers => Draft?.Answers ?? _demoAnswers;
+    public bool[] Flags => Draft?.Flags ?? _demoFlags;
+    public string Title => Draft?.Title ?? "Làm bài demo (không lưu)";
     public int Current { get; set; }
-    public DateTime Deadline { get; } = DateTime.Now.AddMinutes(45);
+    public DateTime Deadline => Draft?.DeadlineUtc.LocalDateTime ?? _demoDeadline;
     public bool Submitted { get; set; }
     public int Answered => Answers.Count(answer => answer.HasValue);
+    public void Choose(int? choice)
+    {
+        if(Draft is null) _demoAnswers[Current]=choice;
+        else Draft=_service.Change(Draft,Current,choice);
+    }
+    public void Flag(bool value)
+    {
+        if(Draft is null) _demoFlags[Current]=value;
+        else Draft=_service.Change(Draft,Current,Answers[Current],value);
+    }
+    public void Lock() { if(Draft is not null) Draft=_service.Lock(Draft); }
     public string Remaining
     {
-        get
-        {
-            int seconds = Math.Max(0, (int)(Deadline - DateTime.Now).TotalSeconds);
-            return $"{seconds / 60:00}:{seconds % 60:00}";
-        }
+        get { int seconds=Math.Max(0,(int)(Deadline-DateTime.Now).TotalSeconds); return $"{seconds/60:00}:{seconds%60:00}"; }
     }
 }
-
 // Bố cục dùng riêng trong phân hệ Student, giữ bảng màu chung.
 internal static class StudentLayout
 {

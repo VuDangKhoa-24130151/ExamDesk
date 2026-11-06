@@ -2,22 +2,46 @@ namespace ExamDesk.UI.Student;
 
 public partial class StudentExamControl : UserControl
 {
-    private StudentPreviewAttempt _attempt = new();
+    private StudentPreviewAttempt _attempt;
+    private bool _rendering;
+    private int _imageQuestion = -1;
     public event EventHandler? SubmitRequested;
     public event EventHandler? TimeExpired;
-    public StudentExamControl() { InitializeComponent(); RenderQuestion(); }
-    internal StudentExamControl(StudentPreviewAttempt attempt) : this() { _attempt = attempt; RenderQuestion(); }
+    public StudentExamControl() : this(new StudentPreviewAttempt()) { }
+    internal StudentExamControl(StudentPreviewAttempt attempt) { _attempt = attempt; InitializeComponent(); RenderQuestion(); }
     private void RenderQuestion()
     {
-        _question.Text = $"Câu {_attempt.Current + 1:00} / 30 · C# cơ bản\n\nKiểu dữ liệu nào trong C# dùng để lưu giá trị đúng / sai?";
+        _rendering = true;
+        _question.Text = $"Câu {_attempt.Current + 1:00} / {_attempt.Answers.Length} · C# cơ bản\n\nKiểu dữ liệu nào trong C# dùng để lưu giá trị đúng / sai?";
+        if (_attempt.Draft is { } draft)
+        {
+            var question = draft.Questions[_attempt.Current];
+            _question.Text = $"Câu {_attempt.Current+1} / {draft.Questions.Count}\n\n{question.Content}";
+            if(_imageQuestion != _attempt.Current)
+            {
+                _image.Image?.Dispose(); _image.Image=null; _image.Visible=false;
+                _imageQuestion=_attempt.Current;
+                if(!string.IsNullOrWhiteSpace(question.ImagePath))
+                {
+                    try
+                    {
+                        using var original=Image.FromFile(question.ImagePath);
+                        _image.Image=new Bitmap(original); _image.Visible=true;
+                    }
+                    catch(Exception ex) when(ex is IOException or ArgumentException or OutOfMemoryException or UnauthorizedAccessException)
+                    { _question.Text += "\n[Không tải được ảnh minh họa]"; }
+                }
+            }
+            for(int i=0;i<4;i++) _options[i].Text = $"{(char)('A'+i)}. {question.Options[i]}";
+        }
         // Câu hỏi lặp để dựng giao diện, sẽ thay bằng dữ liệu ca thi sau.
         for (int i = 0; i < 4; i++) _options[i].Checked = _attempt.Answers[_attempt.Current] == i;
         _flag.Checked = _attempt.Flags[_attempt.Current];
         _previous.Enabled = _attempt.Current > 0;
-        _next.Enabled = _attempt.Current < 29;
-        _progress.Text = $"Đã trả lời {_attempt.Answered}/30 câu";
+        _next.Enabled = _attempt.Current < _attempt.Answers.Length-1;
+        _progress.Text = $"Đã trả lời {_attempt.Answered}/{_attempt.Answers.Length} câu";
         _clock.Text = "Còn lại " + _attempt.Remaining;
-        for (int i = 0; i < 30; i++)
+        for (int i = 0; i < _numbers.Length; i++)
         {
             bool answered = _attempt.Answers[i].HasValue;
             bool flagged = _attempt.Flags[i];
@@ -31,12 +55,26 @@ public partial class StudentExamControl : UserControl
             _numbers[i].FlatAppearance.BorderColor = i == _attempt.Current ? Color.Black : Color.FromArgb(220, 227, 237);
             _numbers[i].FlatAppearance.BorderSize = i == _attempt.Current ? 2 : 1;
         }
+        _rendering = false;
     }
-    internal void GoToQuestion(int index) { _attempt.Current = index; RenderQuestion(); }
+    internal void GoToQuestion(int index) { if(index<0 || index>=_attempt.Answers.Length) return; _attempt.Current = index; RenderQuestion(); }
     private void Choose(int index)
     {
-        if (!_options[index].Checked) return;
-        _attempt.Answers[_attempt.Current] = index;
+        if (_rendering || !_options[index].Checked) return;
+        ChangeChoice(index);
+    }
+    private void ChangeChoice(int? choice)
+    {
+        if (_rendering) return;
+        try { _attempt.Choose(choice); }
+        catch(Exception ex) { MessageBox.Show(this,ex.Message,"Không lưu được lựa chọn"); }
+        RenderQuestion();
+    }
+    private void ChangeFlag()
+    {
+        if (_rendering) return;
+        try { _attempt.Flag(_flag.Checked); }
+        catch(Exception ex) { MessageBox.Show(this,ex.Message,"Không lưu được cờ xem lại"); }
         RenderQuestion();
     }
     private void Tick(object? sender, EventArgs e)
@@ -48,7 +86,7 @@ public partial class StudentExamControl : UserControl
     }
     protected override void Dispose(bool disposing)
     {
-        if (disposing) _timer.Dispose();
+        if (disposing) { _timer.Dispose(); _image.Image?.Dispose(); }
         base.Dispose(disposing);
     }
 }
