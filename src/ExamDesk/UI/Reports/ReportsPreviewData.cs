@@ -63,6 +63,24 @@ internal static class ReportsPreviewData
 
      }
 
+// Dòng trong bảng kết quả
+     internal sealed class AttemptResultItem
+     {
+        public string Mssv { get; set; } = string.Empty;
+        public string HoTen { get; set; } = string.Empty;
+        public string Lop { get; set; } = string.Empty;
+        public string Ca { get; set; } = string.Empty;
+        public int SoCau { get; set; };
+        public int CauDung { get; set; };
+        public int CauBoTrong { get; set; };
+        public int CauSai => SoCau - CauDung - CauBoTrong;
+        public string CachNop { get; set; } = string.Empty;
+        public DateTime NopLuc { get; set; };
+
+        //Điểm = số đúng / tổng x 10 , làm tròn 2 chữ số
+        public double Diem => SoCau == 0 ? 0 : Math.Round((CauDung * 10.0 / SoCau, 2));
+
+
     
 }
 
