@@ -30,6 +30,7 @@ public sealed class MainForm : Form
     private readonly Button _subjectChapterButton;
     private readonly Button _classStudentButton;
     private readonly Button _questionBankButton;
+    private readonly Button _examPaperButton;
     private readonly Button _helpButton;
 
     private Button? _activeMenuButton;
@@ -89,14 +90,14 @@ public sealed class MainForm : Form
 
         // 2. Nhóm "Quản trị"
         AddMenuGroupHeader(_menu, "Quản trị");
-        _dashboardButton = AddMenu(_menu, "Tổng quan", () => new DashboardControl(), "Ctrl+1");
+        _dashboardButton = AddMenu(_menu, "Tổng quan", () => CreateDashboardScreen(), "Ctrl+1");
         _subjectChapterButton = AddMenu(_menu, "Môn và chương", () => new SubjectChapterControl(), "Ctrl+2");
         _classStudentButton = AddMenu(_menu, "Lớp và sinh viên", () => new ClassStudentControl(), "Ctrl+3");
         _questionBankButton = AddMenu(_menu, "Ngân hàng câu hỏi", () => new QuestionBankControl(), "Ctrl+4");
 
         // 3. Nhóm "Thi"
         AddMenuGroupHeader(_menu, "Thi");
-        AddMenu(_menu, "Đề thi", () => new ExamPaperControl());
+        _examPaperButton = AddMenu(_menu, "Đề thi", () => new ExamPaperControl());
         AddMenu(_menu, "Ca thi", () => new SessionManagementControl());
         AddMenu(_menu, "Kết quả và thống kê", () => new GradingReviewControl());
         AddMenu(_menu, "Dữ liệu và sao lưu", () => new DataManagementControl());
@@ -256,10 +257,53 @@ public sealed class MainForm : Form
         return roleControl;
     }
 
+    private DashboardControl CreateDashboardScreen(string? overrideLecturerName = null)
+    {
+        var effectiveName = overrideLecturerName ??
+                            (string.IsNullOrWhiteSpace(_loggedInUsername) ? null : _loggedInUsername);
+        var dashboard = new DashboardControl
+        {
+            LecturerName = effectiveName
+        };
+        dashboard.NavigateRequested += OnDashboardNavigateRequested;
+        return dashboard;
+    }
+
+    private void OnDashboardNavigateRequested(object? sender, string key)
+    {
+        switch (key)
+        {
+            case "questions":
+                _questionBankButton.PerformClick();
+                break;
+
+            case "subjects":
+                _subjectChapterButton.PerformClick();
+                break;
+
+            case "classes":
+                _classStudentButton.PerformClick();
+                break;
+
+            case "exams":
+                _examPaperButton.PerformClick();
+                break;
+
+            case "question-new":
+                var questionBank = new QuestionBankControl();
+                if (ShowScreen(questionBank, _questionBankButton))
+                {
+                    BeginInvoke(questionBank.StartAddQuestion);
+                }
+                break;
+        }
+    }
+
     private void HandleLecturerLoggedIn(string? username)
     {
         var resolvedUsername = string.IsNullOrWhiteSpace(username) ? "gv01" : username.Trim();
-        if (ShowScreen(new DashboardControl(), _dashboardButton))
+        var dashboard = CreateDashboardScreen(resolvedUsername);
+        if (ShowScreen(dashboard, _dashboardButton))
         {
             _loggedInUsername = resolvedUsername;
             UpdateLoginStatusUi();

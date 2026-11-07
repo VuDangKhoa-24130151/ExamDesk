@@ -204,6 +204,11 @@ public partial class QuestionBankControl : UserControl, IUnsavedChangesGuard
         _btnDelete.ForeColor = hasSelection ? UiStyle.ErrorText : UiStyle.TextMuted;
     }
 
+    public void StartAddQuestion()
+    {
+        OnAddClick(this, EventArgs.Empty);
+    }
+
     private void OnAddClick(object? sender, EventArgs e)
     {
         using var dialog = new QuestionEditorDialog();
