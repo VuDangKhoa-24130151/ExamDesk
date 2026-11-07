@@ -4,6 +4,7 @@ namespace ExamDesk.UI.Student;
 partial class StudentExamForm
 {
     private System.ComponentModel.IContainer? components = null;
+    private Label _studentLabel = null!, _examLabel = null!;
     private Panel _studentContent = new() { Dock = DockStyle.Fill };
 
     protected override void Dispose(bool disposing)
@@ -41,13 +42,18 @@ partial class StudentExamForm
         };
         var studentName = new Label
         {
-            Text = "Nhận diện bằng MSSV", AutoSize = true,
+            Text = "Nhận diện bằng MSSV", AutoSize = false, AutoEllipsis = true, Width = 280, Height = 40,
             Anchor = AnchorStyles.Right, Padding = new Padding(12, 6, 12, 6),
             MinimumSize = new Size(190, 0), Margin = Padding.Empty,
             BackColor = Color.FromArgb(234, 246, 239),
             ForeColor = Color.FromArgb(20, 108, 67),
             TextAlign = ContentAlignment.MiddleLeft
         };
+        header.SizeChanged+=(_,_)=>
+        {
+            studentName.Width=Math.Min((int)(360*DeviceDpi/96f),Math.Max(180,header.ClientSize.Width/3));
+        };
+        _examLabel=examTitle; _studentLabel=studentName;
         header.Controls.Add(examTitle, 0, 0);
         header.Controls.Add(studentName, 1, 0);
 

@@ -14,7 +14,19 @@ internal sealed class StudentPreviewAttempt
     public StudentPreviewAttempt(ExamDesk.Models.StudentDraft draft) { Draft = draft; }
     public int?[] Answers => Draft?.Answers ?? _demoAnswers;
     public bool[] Flags => Draft?.Flags ?? _demoFlags;
-    public string Title => Draft?.Title ?? "Làm bài demo (không lưu)";
+    public string Title => Draft is { } draft ? DisplayTitle(draft.Title) : "Làm bài demo (không lưu)";
+    internal static string DisplayTitle(string title)
+    {
+        const string prefix = "Thi thử 30 câu — ";
+        if (title.StartsWith(prefix, StringComparison.Ordinal) &&
+            DateTime.TryParseExact(title[prefix.Length..], "dd/MM HH:mm:ss",
+                System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out _))
+        {
+            return "Bài thi thử C# và SQLite";
+        }
+
+        return title;
+    }
     public int Current { get; set; }
     public DateTime Deadline => Draft?.DeadlineUtc.LocalDateTime ?? _demoDeadline;
     public bool Submitted { get; set; }

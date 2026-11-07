@@ -11,10 +11,20 @@ public partial class SubmissionStatusControl : UserControl
         CenterCard();
     }
 
+    internal Label StatusLabel => _status;
+    internal void AddAction(Control action) => _actions.Controls.Add(action);
+
     internal void SetAttempt(StudentPreviewAttempt attempt)
     {
-        string reason = DateTime.Now >= attempt.Deadline ? "Hết giờ" : "Nộp chủ động";
-        _summary.Text = $"Sinh viên: Vũ Đăng Khoa · 24130151\n\nĐã chốt: {attempt.Answered}/{attempt.Answers.Length} câu có đáp án · Lý do: {reason}";
+        if(attempt.Draft is { } draft)
+        {
+            string reason = draft.AutoSubmitted ? "Lượt thi đã hết giờ." : "Bạn đã nộp bài cho ca này.";
+            _status.Text = $"{reason} Bài đã khóa và đang chờ chấm điểm. Bạn có thể quay lại để chọn ca thi khác.";
+            _summary.Text=$"Sinh viên: {draft.StudentName} · {draft.StudentCode}\nLớp: {draft.ClassName}\n\n{attempt.Title}\nĐã trả lời: {attempt.Answered}/{attempt.Answers.Length} câu\nLý do: {(draft.AutoSubmitted ? "Hết giờ" : "Nộp chủ động")}";
+            return;
+        }
+        string previewReason = DateTime.Now >= attempt.Deadline ? "Hết giờ" : "Nộp chủ động";
+        _summary.Text = $"Sinh viên: Vũ Đăng Khoa · 24130151\n\nĐã chốt: {attempt.Answered}/{attempt.Answers.Length} câu có đáp án · Lý do: {previewReason}";
     }
 
     private void CenterCard()

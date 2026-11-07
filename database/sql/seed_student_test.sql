@@ -52,3 +52,55 @@ JOIN ExamPapers p ON p.PaperCode='TEST_DE01' AND p.SubjectId=s.Id
 WHERE NOT EXISTS (SELECT 1 FROM ExamPaperQuestions old WHERE old.PaperId=p.Id AND (old.QuestionId=q.Id OR old.OrderIndex=e.Position));
 
 COMMIT;
+
+-- De 30 cau de kiem thu day du luong lam bai. Khong thay doi de 6 cau cu.
+BEGIN IMMEDIATE;
+WITH Samples(N,Content,A,B,C,D,Answer) AS (VALUES
+(1,'Từ khóa khai báo một lớp trong C# là gì?','class','struct','namespace','using','A'),
+(2,'Kiểu nào lưu giá trị đúng hoặc sai?','int','bool','decimal','char','B'),
+(3,'Chỉ số đầu tiên của mảng C# là bao nhiêu?','1','-1','0','2','C'),
+(4,'Thuộc tính nào trả về số phần tử của một mảng?','Count() luôn bắt buộc','Size','Capacity','Length','D'),
+(5,'Toán tử nào so sánh hai số nguyên bằng nhau?','==','=','!=','=>','A'),
+(6,'Từ khóa nào tạo một đối tượng của lớp?','this','new','base','typeof','B'),
+(7,'Vòng lặp nào phù hợp để duyệt từng phần tử của một collection?','switch','if','foreach','try','C'),
+(8,'Từ khóa nào kết thúc phương thức và có thể trả về giá trị?','continue','break','throw','return','D'),
+(9,'Kiểu nào thường dùng cho số tiền cần tính toán thập phân chính xác?','decimal','bool','char','byte','A'),
+(10,'Khối nào xử lý ngoại lệ đã phát sinh trong try?','finally','catch','using','lock','B'),
+(11,'Phạm vi private cho phép truy cập thành viên chủ yếu ở đâu?','Mọi assembly','Mọi lớp kế thừa','Trong kiểu khai báo thành viên','Mọi namespace','C'),
+(12,'Từ khóa nào cho phép lớp con ghi đè một phương thức của lớp cha?','static','sealed','private','virtual','D'),
+(13,'Từ khóa nào được lớp con dùng để ghi đè phương thức virtual?','override','new luôn tương đương override','const','readonly','A'),
+(14,'List<int> biểu diễn cấu trúc nào?','Mảng cố định chỉ một phần tử','Danh sách số nguyên có thể thay đổi kích thước','Tập chuỗi duy nhất','Bảng dữ liệu SQL','B'),
+(15,'Dictionary<TKey,TValue> tổ chức dữ liệu theo dạng nào?','Chỉ mục liên tiếp bắt buộc','Cây giao diện','Cặp khóa và giá trị','Chỉ các giá trị bool','C'),
+(16,'using với đối tượng IDisposable có mục đích gì?','Chạy trên luồng mới','Bỏ qua ngoại lệ','Tự động lưu SQL','Gọi Dispose khi kết thúc phạm vi','D'),
+(17,'Sự kiện nào thường xử lý thao tác nhấn Button trong WinForms?','Click','Load','Resize','FormClosing','A'),
+(18,'Thuộc tính nào của TextBox cung cấp nội dung người dùng nhập?','Name','Text','Tag','Enabled','B'),
+(19,'Đặt Enabled=false cho Button có tác dụng gì?','Xóa Button','Ẩn Form','Vô hiệu hóa tương tác với Button','Đổi tên Button','C'),
+(20,'DockStyle.Fill làm control bố trí như thế nào?','Nằm ngoài Form','Giữ kích thước 1 pixel','Chỉ nằm ở góc dưới','Lấp đầy vùng bố trí còn lại của control cha','D'),
+(21,'Câu lệnh SQL nào đọc dữ liệu từ bảng?','SELECT','INSERT','UPDATE','DELETE','A'),
+(22,'Mệnh đề SQL nào lọc dòng theo điều kiện?','ORDER BY','WHERE','GROUP BY','LIMIT luôn thay thế WHERE','B'),
+(23,'Câu lệnh nào thêm một dòng dữ liệu?','DROP TABLE','ALTER TABLE','INSERT INTO','SELECT','C'),
+(24,'Mệnh đề nào sắp xếp kết quả truy vấn SQL?','HAVING','JOIN','WHERE','ORDER BY','D'),
+(25,'PRIMARY KEY dùng để làm gì?','Định danh duy nhất một dòng','Mã hóa mọi cột','Sắp xếp mọi truy vấn','Tự tạo giao diện','A'),
+(26,'FOREIGN KEY thể hiện điều gì?','Mật khẩu của database','Tham chiếu giữa dữ liệu ở các bảng','Độ dài tối đa chuỗi','Tên file ảnh','B'),
+(27,'Vì sao dùng tham số SQL cho dữ liệu người dùng?','Để luôn bỏ qua lỗi','Để tự động tạo bảng','Để tách dữ liệu khỏi cú pháp SQL','Để tắt ràng buộc','C'),
+(28,'Transaction giúp nhiều thao tác ghi đáp ứng yêu cầu nào?','Luôn chạy song song','Không bao giờ bị lỗi','Không cần kiểm tra dữ liệu','Cùng thành công hoặc cùng được hoàn tác','D'),
+(29,'SQL kiểm tra một cột có giá trị NULL bằng biểu thức nào?','IS NULL','= NULL','== NULL','EQUALS NULL','A'),
+(30,'SQLite trong ứng dụng này lưu dữ liệu chủ yếu ở đâu?','Chỉ trong Label','Trong file cơ sở dữ liệu trên máy','Bắt buộc trên máy chủ SQL Server','Chỉ trong biến của Form','B'))
+INSERT INTO Questions(SubjectId,Chapter,Difficulty,Content,OptionA,OptionB,OptionC,OptionD,CorrectOption,ImagePath)
+SELECT s.Id,1+(q.N-1)/10,CASE WHEN q.N<=10 THEN 'Easy' WHEN q.N<=25 THEN 'Medium' ELSE 'Hard' END,
+'[UI30_' || printf('%02d',q.N) || '] ' || q.Content,q.A,q.B,q.C,q.D,q.Answer,''
+FROM Samples q JOIN Subjects s ON s.Code='TEST_NET'
+WHERE NOT EXISTS (SELECT 1 FROM Questions old WHERE old.SubjectId=s.Id AND old.Content LIKE '[UI30_' || printf('%02d',q.N) || ']%');
+INSERT INTO ExamPapers(PaperCode,Title,SubjectId,DurationMinutes,EasyCount,MediumCount,HardCount)
+SELECT 'TEST_UI30','Đề thi thử C# và SQLite — 30 câu',Id,45,10,15,5 FROM Subjects WHERE Code='TEST_NET'
+ON CONFLICT(PaperCode) DO NOTHING;
+INSERT INTO ExamPaperQuestions(PaperId,QuestionId,OrderIndex)
+SELECT p.Id,q.Id,CAST(substr(q.Content,7,2) AS INTEGER)
+FROM ExamPapers p JOIN Questions q ON q.SubjectId=p.SubjectId
+WHERE p.PaperCode='TEST_UI30' AND q.Content GLOB '[[]UI30_[0-9][0-9]]*'
+AND NOT EXISTS (SELECT 1 FROM ExamPaperQuestions old WHERE old.PaperId=p.Id AND (old.QuestionId=q.Id OR old.OrderIndex=CAST(substr(q.Content,7,2) AS INTEGER)));
+INSERT INTO ExamSessions(SessionCode,SessionName,PaperId,RoomName,IsOpen)
+SELECT 'TEST_UI30_CA01','Thi thử 30 câu — C# và SQLite',Id,'Phòng test UI',1 FROM ExamPapers
+WHERE PaperCode='TEST_UI30' AND (SELECT COUNT(*) FROM ExamPaperQuestions WHERE PaperId=ExamPapers.Id)=30
+ON CONFLICT(SessionCode) DO NOTHING;
+COMMIT;

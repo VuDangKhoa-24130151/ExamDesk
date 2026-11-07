@@ -4,6 +4,7 @@ namespace ExamDesk.UI.Student;
 public partial class StudentExamForm : Form
 {
     private StudentPreviewAttempt? _attempt;
+    private ExamDesk.Models.User? _student;
     private readonly System.Windows.Forms.Timer _deadlineTimer = new() { Interval = 1000 };
     public StudentExamForm()
     {
@@ -25,49 +26,39 @@ public partial class StudentExamForm : Form
     private void ShowIdentity()
     {
         var screen = new StudentIdentityControl();
-        screen.PreviewRequested += (_, _) => ShowSessionSelection();
+        _examLabel.Text = "UNIEXAM — SINH VIÊN";
+        _studentLabel.Text = "Nhận diện bằng MSSV";
         screen.CloseRequested += (_, _) => Close();
-        screen.SessionSelected += (student, session, paper) =>
-        {
-            var info = new UserControl();
-            var page = StudentLayout.Page(info, session.SessionName);
-            page.Controls.Add(StudentLayout.Label($"{student.FullName} · {student.StudentCode} · Lớp {student.ClassName}"));
-            page.Controls.Add(StudentLayout.Label($"Đề {paper.PaperCode} — {paper.Title}\nPhòng {session.RoomName} · {paper.TotalQuestions} câu · {paper.DurationMinutes} phút"));
-            page.Controls.Add(StudentLayout.Label("Mỗi câu chọn một đáp án A–D, có thể đổi/bỏ lựa chọn và đánh dấu xem lại. Tiến độ được lưu sau mỗi thay đổi. Khi hết giờ bài sẽ khóa để gửi nộp. Chấm điểm đang chờ tích hợp từ Bạn 2."));
-                        var agree = new CheckBox { Text = "Tôi đã đọc hướng dẫn và xác nhận thông tin.", AutoSize = true };
-            var start = StudentLayout.Button("Bắt đầu / Khôi phục lượt thi", (_, _) =>
-            {
-                try
-                {
-                    _attempt = new StudentPreviewAttempt(new ExamDesk.Services.StudentDraftService().StartOrResume(session.Id, student));
-                    if (_attempt.Draft!.PendingSubmission) SubmitAttempt(); else ShowExam();
-                }
-                catch(Exception ex) { MessageBox.Show(this, ex.Message, "Không mở được lượt thi"); }
-            }, true);
-            start.Enabled = false;
-            agree.CheckedChanged += (_, _) => start.Enabled = agree.Checked;
-            page.Controls.Add(agree); page.Controls.Add(start);
-            page.Controls.Add(StudentLayout.Button("Quay lại chọn ca", (_, _) => ShowIdentity()));
-            ShowScreen(info, "Thông tin ca thi");
-        };
+        screen.StudentIdentified += student => ShowRealSessions(student);
         ShowScreen(screen, "Nhận diện sinh viên");
     }
-    private void ShowSessionSelection()
+    private void ShowRealSessions(ExamDesk.Models.User student)
     {
-        var screen = new SessionSelectionControl();
-        screen.InstructionsRequested += (_, _) => ShowInstructions();
-        screen.CloseRequested += (_, _) => Close();
-        ShowScreen(screen, "Chọn ca thi");
+        _student = student;
+        var screen=new SessionSelectionControl(student);
+        screen.CloseRequested+=(_,_)=>ShowIdentity();
+        screen.SessionSelected+=(session,paper)=>ShowRealInstructions(student,session,paper);
+        _studentLabel.Text=$"{student.FullName} · {student.StudentCode}";
+        _examLabel.Text="UNIEXAM — CHỌN CA THI";
+        ShowScreen(screen,"Chọn ca thi");
     }
 
-    private void ShowInstructions()
+    private void ShowRealInstructions(ExamDesk.Models.User student, ExamDesk.Models.ExamSession session, ExamDesk.Models.ExamPaper paper)
     {
-        var screen = new ExamInstructionsControl();
-        screen.BackRequested += (_, _) => ShowSessionSelection();
-        screen.StartRequested += (_, _) => { _attempt = new StudentPreviewAttempt(); ShowExam(); };
-        ShowScreen(screen, "Hướng dẫn trước khi thi");
+        var screen=new ExamInstructionsControl(student,session,paper);
+        screen.BackRequested+=(_,_)=>ShowRealSessions(student);
+        screen.StartRequested+=(_,_)=>
+        {
+            try
+            {
+                _attempt=new StudentPreviewAttempt(new ExamDesk.Services.StudentDraftService().StartOrResume(session.Id,student));
+                _examLabel.Text = _attempt.Title;
+                if(_attempt.Draft!.PendingSubmission) SubmitAttempt(); else ShowExam();
+            }
+            catch(Exception ex) { MessageBox.Show(this,ex.Message,"Không mở được lượt thi"); }
+        };
+        ShowScreen(screen,"Hướng dẫn trước khi thi");
     }
-
     private void ShowExam()
     {
         if (_attempt is null || _attempt.Submitted) return;
@@ -91,61 +82,48 @@ public partial class StudentExamForm : Form
     private void SubmitAttempt()
     {
         if (_attempt is null || _attempt.Submitted) return;
-        if (_attempt.Draft is not null)
+        try { _attempt.Lock(); }
+        catch (Exception ex)
         {
-            try { _attempt.Lock(); }
-            catch(Exception ex)
-            {
-                _deadlineTimer.Stop();
-                _studentContent.Enabled = false;
-                MessageBox.Show(this, "Chưa lưu được trạng thái nộp. Bài vẫn được giữ trong database; đóng và mở lại để thử tiếp.\n" + ex.Message, "Lỗi lưu");
-                return;
-            }
-            _attempt.Submitted = true;
-            ShowPendingSubmission();
+            _deadlineTimer.Stop();
+            _studentContent.Enabled = false;
+            MessageBox.Show(this, "Chưa lưu được trạng thái nộp. Bài vẫn được giữ trong database; đóng và mở lại để thử tiếp.\n" + ex.Message, "Lỗi lưu");
             return;
         }
-        // Chốt một lần và hiển thị thông tin kết thúc lượt UI.
         _attempt.Submitted = true;
+        ShowSubmissionStatus();
+    }
+
+    private void ShowSubmissionStatus()
+    {
+        if (_attempt is not { Submitted: true } attempt) return;
         var screen = new SubmissionStatusControl();
-        screen.SetAttempt(_attempt);
+        screen.SetAttempt(attempt);
+#if DEBUG
+        screen.AddAction(StudentLayout.Button("Xem lại bài đã nộp", (_, _) =>
+        {
+            var review = new StudentExamControl(attempt);
+            review.ExitReviewRequested += (_, _) => ShowSubmissionStatus();
+            ShowScreen(review, "Xem lại bài đã nộp");
+        }));
+#endif
+        if (_student is { } student)
+        {
+            screen.AddAction(StudentLayout.Button("← Quay lại chọn ca", (_, _) =>
+            {
+                _attempt = null;
+                ShowRealSessions(student);
+            }, true));
+        }
         screen.CloseRequested += (_, _) => Close();
         ShowScreen(screen, "Trạng thái nộp bài");
     }
 
-    private void ShowPendingSubmission()
-    {
-        var draft = _attempt!.Draft!;
-        var pageControl = new UserControl();
-        var page = StudentLayout.Page(pageControl, "Bài đã khóa — chờ chấm/lưu kết quả");
-        page.Controls.Add(StudentLayout.Label($"{draft.StudentName} · {draft.StudentCode}\n{draft.Title}\nĐã trả lời {_attempt.Answered}/{draft.Questions.Count} câu. Lựa chọn đã lưu trong SQLite."));
-        var status = StudentLayout.Label("Dịch vụ chấm điểm chưa hoàn thiện. Bài được giữ lại để gửi khi tích hợp xong; chưa có điểm chính thức.");
-        page.Controls.Add(status);
-        page.Controls.Add(StudentLayout.Button("Thử gửi bài", (_, _) =>
-        {
-            try
-            {
-                var submission = new ExamDesk.Models.ExamSubmission {
-                    SessionId=draft.SessionId, PaperId=draft.PaperId, StudentCode=draft.StudentCode,
-                    StudentName=draft.StudentName, ClassName=draft.ClassName, StartedAt=draft.StartedUtc,
-                    DeadlineUtc=draft.DeadlineUtc, IsAutoSubmitted=draft.AutoSubmitted,
-                    SelectedAnswers=draft.Questions.Select((q,i)=>(q.Id, Choice:draft.Answers[i]))
-                        .ToDictionary(x=>x.Id,x=>x.Choice.HasValue ? ((char)('A'+x.Choice.Value)).ToString() : "") };
-                var result = new ExamDesk.Services.SubmissionService().GradeAndSaveAttempt(submission);
-                status.Text = $"Đã lưu kết quả. Điểm: {result.Score:0.00}";
-            }
-            catch(NotImplementedException) { status.Text = "Dịch vụ chấm điểm của Bạn 2 chưa triển khai. Bài vẫn được giữ trong database."; }
-            catch(Exception ex) { status.Text = "Chưa gửi được bài, có thể thử lại. " + ex.Message; }
-        }, true));
-        page.Controls.Add(StudentLayout.Button("Đóng cửa sổ", (_, _) => Close()));
-        ShowScreen(pageControl, "Chờ gửi bài");
-    }
-
     private void ConfirmClose(object? sender, FormClosingEventArgs e)
     {
-        if (_attempt is null) return;
+        if (_attempt is null || _attempt.Submitted) return;
         e.Cancel = MessageBox.Show(this,
-            _attempt.Draft is null ? "Bài demo sẽ mất khi đóng. Bạn muốn đóng?" : "Tiến độ đã lưu. Đóng cửa sổ không dừng đồng hồ; mở lại cùng MSSV và ca để khôi phục. Bạn muốn đóng?",
+            "Tiến độ đã lưu. Đóng cửa sổ không dừng đồng hồ; mở lại cùng MSSV và ca để khôi phục. Bạn muốn đóng?",
             "Đóng lượt thi", MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
             MessageBoxDefaultButton.Button2) != DialogResult.Yes;
     }
