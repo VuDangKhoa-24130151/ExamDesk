@@ -3,6 +3,13 @@ using ExamDesk.Models;
 namespace ExamDesk.UI.Administration;
 
 // Dữ liệu minh họa trong bộ nhớ của phân hệ Bạn 1 (Quản trị & Ngân hàng câu hỏi).
+internal sealed class ChapterPreview
+{
+    public int SubjectId { get; set; }
+    public int Number { get; set; }
+    public string Name { get; set; } = string.Empty;
+}
+
 internal static class AdminPreviewData
 {
     public static List<Subject> Subjects { get; } =
@@ -12,7 +19,39 @@ internal static class AdminPreviewData
         new Subject { Id = 3, Code = "MMT", Name = "Mạng máy tính" }
     ];
 
+    public static List<ChapterPreview> Chapters { get; } = CreateInitialChapters();
+
     public static List<Question> Questions { get; } = CreateInitialQuestions();
+
+    public static int CountChaptersBySubject(int subjectId)
+        => Chapters.Count(c => c.SubjectId == subjectId);
+
+    public static int CountQuestionsBySubject(int subjectId)
+        => Questions.Count(q => q.SubjectId == subjectId);
+
+    public static int CountQuestionsByChapter(int subjectId, int chapterNumber)
+        => Questions.Count(q => q.SubjectId == subjectId && q.Chapter == chapterNumber);
+
+    private static List<ChapterPreview> CreateInitialChapters() =>
+    [
+        // Môn 1: LTNET – Lập trình .NET (Chương 1–4)
+        new ChapterPreview { SubjectId = 1, Number = 1, Name = "Nền tảng .NET và ngôn ngữ C#" },
+        new ChapterPreview { SubjectId = 1, Number = 2, Name = "Thiết kế giao diện với WinForms" },
+        new ChapterPreview { SubjectId = 1, Number = 3, Name = "Truy vấn LINQ và lập trình bất đồng bộ" },
+        new ChapterPreview { SubjectId = 1, Number = 4, Name = "Truy cập dữ liệu với ADO.NET và SQLite" },
+
+        // Môn 2: CSDL – Cơ sở dữ liệu (Chương 1–4)
+        new ChapterPreview { SubjectId = 2, Number = 1, Name = "Mô hình cơ sở dữ liệu quan hệ" },
+        new ChapterPreview { SubjectId = 2, Number = 2, Name = "Ngôn ngữ truy vấn có cấu trúc (SQL)" },
+        new ChapterPreview { SubjectId = 2, Number = 3, Name = "Chuẩn hóa dữ liệu và giao dịch (Transaction)" },
+        new ChapterPreview { SubjectId = 2, Number = 4, Name = "Chỉ mục, tối ưu hóa và an toàn dữ liệu" },
+
+        // Môn 3: MMT – Mạng máy tính (Chương 1–4)
+        new ChapterPreview { SubjectId = 3, Number = 1, Name = "Tổng quan mạng máy tính và mô hình OSI" },
+        new ChapterPreview { SubjectId = 3, Number = 2, Name = "Tầng ứng dụng và các giao thức mạng" },
+        new ChapterPreview { SubjectId = 3, Number = 3, Name = "Tầng giao vận (TCP/UDP)" },
+        new ChapterPreview { SubjectId = 3, Number = 4, Name = "Địa chỉ IPv4 và chia mạng con (Subnetting)" }
+    ];
 
     public static string FormatDifficulty(string? difficulty) => difficulty switch
     {

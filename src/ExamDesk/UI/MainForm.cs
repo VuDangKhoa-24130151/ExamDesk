@@ -90,11 +90,7 @@ public sealed class MainForm : Form
         // 2. Nhóm "Quản trị"
         AddMenuGroupHeader(_menu, "Quản trị");
         _dashboardButton = AddMenu(_menu, "Tổng quan", () => new DashboardControl(), "Ctrl+1");
-        _subjectChapterButton = AddMenu(
-            _menu,
-            "Môn và chương",
-            () => CreatePlaceholderScreen("Môn và chương", "GV-02 – sẽ dựng ở bước sau"),
-            "Ctrl+2");
+        _subjectChapterButton = AddMenu(_menu, "Môn và chương", () => new SubjectChapterControl(), "Ctrl+2");
         _classStudentButton = AddMenu(
             _menu,
             "Lớp và sinh viên",
