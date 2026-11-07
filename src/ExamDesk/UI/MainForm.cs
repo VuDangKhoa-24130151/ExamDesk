@@ -91,11 +91,7 @@ public sealed class MainForm : Form
         AddMenuGroupHeader(_menu, "Quản trị");
         _dashboardButton = AddMenu(_menu, "Tổng quan", () => new DashboardControl(), "Ctrl+1");
         _subjectChapterButton = AddMenu(_menu, "Môn và chương", () => new SubjectChapterControl(), "Ctrl+2");
-        _classStudentButton = AddMenu(
-            _menu,
-            "Lớp và sinh viên",
-            () => CreatePlaceholderScreen("Lớp và sinh viên", "GV-03 – sẽ dựng ở bước sau"),
-            "Ctrl+3");
+        _classStudentButton = AddMenu(_menu, "Lớp và sinh viên", () => new ClassStudentControl(), "Ctrl+3");
         _questionBankButton = AddMenu(_menu, "Ngân hàng câu hỏi", () => new QuestionBankControl(), "Ctrl+4");
 
         // 3. Nhóm "Thi"
