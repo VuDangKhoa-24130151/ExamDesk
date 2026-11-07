@@ -104,11 +104,7 @@ public sealed class MainForm : Form
 
         // 4. Trợ giúp
         AddMenuSeparator(_menu);
-        _helpButton = AddMenu(
-            _menu,
-            "Trợ giúp",
-            () => CreatePlaceholderScreen("Trợ giúp", "HELP-01 – sẽ dựng ở bước sau"),
-            "F1");
+        _helpButton = AddMenu(_menu, "Trợ giúp", () => new HelpControl(), "F1");
 
         // 5. Nhóm "Công cụ dựng UI"
         AddMenuGroupHeader(_menu, "Công cụ dựng UI");
@@ -253,6 +249,10 @@ public sealed class MainForm : Form
         roleControl.LecturerLoggedIn += (_, _) =>
         {
             HandleLecturerLoggedIn(roleControl.LoggedInUsername);
+        };
+        roleControl.OpenHelpRequested += (_, _) =>
+        {
+            _helpButton.PerformClick();
         };
         return roleControl;
     }

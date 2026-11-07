@@ -6,6 +6,7 @@ namespace ExamDesk.UI.Administration;
 public partial class RoleSelectionControl : UserControl
 {
     public event EventHandler? LecturerLoggedIn;
+    public event EventHandler? OpenHelpRequested;
 
     public string LoggedInUsername { get; private set; } = string.Empty;
 
@@ -42,11 +43,6 @@ public partial class RoleSelectionControl : UserControl
 
     private void OnHelpLinkClicked(object? sender, LinkLabelLinkClickedEventArgs e)
     {
-        MessageBox.Show(
-            this,
-            "Trợ giúp đang được dựng UI",
-            "Trợ giúp (HELP-01)",
-            MessageBoxButtons.OK,
-            MessageBoxIcon.Information);
+        OpenHelpRequested?.Invoke(this, EventArgs.Empty);
     }
 }
