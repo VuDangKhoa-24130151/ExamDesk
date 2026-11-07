@@ -14,5 +14,8 @@ database/examdesk.db
 database/profiles/
 database/attachments/
 database/exports/
-CONTEXT.md
-DESIGN.md
+
+# Local documentation (including copies, at any directory depth)
+[Cc][Oo][Nn][Tt][Ee][Xx][Tt]*.md
+[Dd][Ee][Ss][Ii][Gg][Nn]*.md
+[Rr][Ee][Aa][Dd][Mm][Ee]*

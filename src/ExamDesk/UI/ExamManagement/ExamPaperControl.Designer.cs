@@ -24,7 +24,7 @@ partial class ExamPaperControl
         _lblTitle.Text = "Đề thi";
         _lblHint.AutoSize = true;
         _lblHint.Location = new Point(24, 72);
-        _lblHint.Text = "GV-07 → GV-09 • Bạn 2 phụ trách\nKhung UI chưa triển khai. Thêm control tại đây; chưa gọi Service/SQLite.";
+        _lblHint.Text = "GV-07 → GV-09 • Bạn 1 phụ trách\nKhung UI chưa triển khai. Thêm control tại đây; chưa gọi Service/SQLite.";
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         BackColor = Color.White;
