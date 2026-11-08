@@ -5,8 +5,8 @@ internal static class ReportsPreviewData
 {
     public const string ManualSubmit = "Nộp bài";
     public const string AutoSubmit = "Hết giờ";
-    public const string CA01 = "CA01 - Cơ sở dữ liệu - 07:00 06/11";
-    public const string CA02 = "CA02 - Lập trình .NET - 09:35 06/11";
+    public const string Ca01 = "CA01 - Cơ sở dữ liệu - 07:00 06/11";
+    public const string Ca02 = "CA02 - Lập trình .NET - 09:35 06/11";
     public static List<string> Session() => new() { Ca01, Ca02 };
     public static List<string> Classes() => new() { "DH24IT01", "DH24IT02" };
 
@@ -28,9 +28,9 @@ internal static class ReportsPreviewData
         var random =new Random(attempt.Mssv.Sum(c => c));
 
         // 0 = đúng, 1 = bỏ trống, 2 = sai; xáo trộn để không dồn câu đúng lên đầu
-        var kinds = Enumerable.Repeat(0, attempt.SoDung)
-            .Concat(Enumerable.Repeat(1, attempt.SoBoTrong))
-            .Concat(Enumerable.Repeat(2, attempt.SoSai))
+        var kinds = Enumerable.Repeat(0, attempt.CauDung)
+            .Concat(Enumerable.Repeat(1, attempt.CauBoTrong))
+            .Concat(Enumerable.Repeat(2, attempt.CauSai))
             .OrderBy(_ => random.Next())
             .ToList();
         var details = new List<AnswerDetailItem>();
