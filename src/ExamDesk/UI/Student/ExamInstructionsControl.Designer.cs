@@ -53,10 +53,10 @@ partial class ExamInstructionsControl
         string[] rules =
         {
             "01  Bài thi có 30 câu trắc nghiệm, thời gian 45 phút.",
-            "02  Mỗi câu chọn một đáp án. Có thể đổi hoặc bỏ lựa chọn.",
+            "02  Mỗi câu có bốn đáp án A–D. Chọn một đáp án, có thể đổi hoặc bỏ lựa chọn.",
             "03  Chuyển câu bằng nút hoặc lưới số câu bên phải.",
             "04  Có thể đánh dấu để quay lại xem sau.",
-            "05  Mỗi thay đổi được lưu trên máy; hãy kiểm tra trạng thái lưu.",
+            "05  Lựa chọn chỉ giữ trong cửa sổ hiện tại, chưa lưu xuống máy.",
             "06  Hết giờ, vùng làm bài sẽ khóa và bài được tự động nộp.",
             "07  Sau khi nộp, bạn không thể thay đổi đáp án."
         };
@@ -88,18 +88,18 @@ partial class ExamInstructionsControl
         };
         page.Controls.Add(_readCheckBox, 0, 2);
 
-        var actions = new TableLayoutPanel
+        var actions = new FlowLayoutPanel
         {
-            Dock = DockStyle.Top, AutoSize = true, ColumnCount = 2, RowCount = 1,
+            Dock = DockStyle.Top, AutoSize = true, WrapContents = true,
             Margin = Padding.Empty, TabIndex = 1, TabStop = false
         };
-        actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+
+
         var back = new Button
         {
             Text = "← &Quay lại chọn ca", AutoSize = true, MinimumSize = new Size(180, 40),
             BackColor = UiStyle.Surface, ForeColor = UiStyle.Text,
-            FlatStyle = FlatStyle.Flat, TabIndex = 1, Margin = Padding.Empty
+            FlatStyle = FlatStyle.Flat, TabIndex = 0, Margin = new Padding(0, 0, 12, 8)
         };
         back.FlatAppearance.BorderColor = Color.FromArgb(220, 227, 237);
         back.Click += GoBack;
@@ -107,14 +107,35 @@ partial class ExamInstructionsControl
         {
             Text = "&Bắt đầu làm bài →", AutoSize = true, MinimumSize = new Size(200, 40),
             Anchor = AnchorStyles.Right, BackColor = UiStyle.Primary, ForeColor = Color.White,
-            FlatStyle = FlatStyle.Flat, Enabled = false, TabIndex = 0, Margin = Padding.Empty
+            FlatStyle = FlatStyle.Flat, Enabled = false, TabIndex = 1, Margin = new Padding(0, 0, 0, 8)
         };
         _startButton.FlatAppearance.BorderSize = 0;
-        // Khi có SV-03, bật nút sau khi sinh viên xác nhận đã đọc hướng dẫn.
-        actions.Controls.Add(back, 0, 0);
-        actions.Controls.Add(_startButton, 1, 0);
+        // Nút bật sau khi sinh viên xác nhận đã đọc hướng dẫn.
+        actions.Controls.Add(back);
+        actions.Controls.Add(_startButton);
         page.Controls.Add(actions, 0, 3);
 
+        // Khi phần nội dung hẹp, xếp hai thẻ theo chiều dọc để chữ không bị bó hẹp.
+        void FitDetails()
+        {
+            bool stacked=details.ClientSize.Width < (int)(820*DeviceDpi/96f);
+            int columns=stacked ? 1 : 2;
+            if(details.ColumnCount==columns) return;
+            details.SuspendLayout();
+            details.ColumnCount=columns; details.RowCount=stacked ? 2 : 1;
+            details.ColumnStyles.Clear(); details.RowStyles.Clear();
+            details.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,stacked ? 100 : 60));
+            if(!stacked) details.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,40));
+            details.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            if(stacked) details.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            details.SetCellPosition(instructions,new TableLayoutPanelCellPosition(0,0));
+            details.SetCellPosition(attempt,new TableLayoutPanelCellPosition(stacked ? 0 : 1,stacked ? 1 : 0));
+            instructions.Margin=new Padding(0,0,stacked ? 0 : 12,stacked ? 12 : 0);
+            attempt.Margin=new Padding(stacked ? 0 : 8,0,0,0);
+            details.ResumeLayout(true);
+        }
+        details.SizeChanged+=(_,_)=>FitDetails();
+        Load+=(_,_)=>FitDetails();
         heading.SizeChanged += (_, _) => WrapLabels(heading);
         instructions.SizeChanged += (_, _) => WrapLabels(instructions);
         attempt.SizeChanged += (_, _) => WrapLabels(attempt);

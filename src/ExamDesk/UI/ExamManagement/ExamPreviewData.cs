@@ -1,6 +1,6 @@
 namespace ExamDesk.UI.ExamManagement;
 
-// Dữ liệu tạm cho mốc UI (Bạn 2). Khi nối nghiệp vụ thay bằng ExamPaperService.
+// Dữ liệu tạm cho mốc UI (Bạn 1). Khi nối nghiệp vụ thay bằng ExamPaperService.
 internal static class ExamPreviewData
 {
     public const string StatusDraft = "Nháp";
@@ -38,6 +38,12 @@ internal static class ExamPreviewData
 internal sealed class ExamPaperItem
 {
     public string MaDe { get; set; } = string.Empty;
-    // TODO: TenDe, Mon (string); SoPhut, SoCauDe, SoCauTB, SoCauKho (int); TrangThai (string)
+    public string TenDe { get; set; } = string.Empty;
+    public string Mon { get; set; } = string.Empty;
+    public int SoPhut { get; set; }
+    public int SoCauDe { get; set; }
+    public int SoCauTB { get; set; }
+    public int SoCauKho { get; set; }
+    public string TrangThai { get; set; } = string.Empty;
     public int TongSoCau => SoCauDe + SoCauTB + SoCauKho;
 }

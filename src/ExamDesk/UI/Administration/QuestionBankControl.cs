@@ -4,9 +4,14 @@ using ExamDesk.UI.Shared;
 namespace ExamDesk.UI.Administration;
 
 // Bạn 1: phát triển giao diện trong control này; dữ liệu minh họa riêng của phân hệ.
-public partial class QuestionBankControl : UserControl
+public partial class QuestionBankControl : UserControl, IUnsavedChangesGuard
 {
     private bool _suppressFilterEvents;
+
+    // Thêm/sửa câu hỏi thực hiện qua hộp thoại modal QuestionEditorDialog (đã tự kiểm tra thay đổi chưa lưu).
+    public bool HasUnsavedChanges => false;
+
+    public bool ConfirmLeave() => true;
 
     public QuestionBankControl()
     {
@@ -45,13 +50,7 @@ public partial class QuestionBankControl : UserControl
         }
         _cboSubject.SelectedIndex = 0;
 
-        _cboChapter.Items.Clear();
-        _cboChapter.Items.Add(new FilterOption<int?>(null, "Tất cả"));
-        for (var ch = 1; ch <= 4; ch++)
-        {
-            _cboChapter.Items.Add(new FilterOption<int?>(ch, $"Chương {ch}"));
-        }
-        _cboChapter.SelectedIndex = 0;
+        PopulateChapterFilterOptions(preferredChapter: null);
 
         _cboDifficulty.Items.Clear();
         _cboDifficulty.Items.Add(new FilterOption<string?>(null, "Tất cả"));
@@ -63,11 +62,53 @@ public partial class QuestionBankControl : UserControl
         _suppressFilterEvents = false;
     }
 
+    private void PopulateChapterFilterOptions(int? preferredChapter)
+    {
+        var selectedSubjectId = (_cboSubject.SelectedItem as FilterOption<int?>)?.Value;
+
+        var chapterNumbers = AdminPreviewData.Chapters
+            .Where(c => !selectedSubjectId.HasValue || c.SubjectId == selectedSubjectId.Value)
+            .Select(c => c.Number)
+            .Concat(AdminPreviewData.Questions
+                .Where(q => !selectedSubjectId.HasValue || q.SubjectId == selectedSubjectId.Value)
+                .Select(q => q.Chapter))
+            .Where(n => n > 0)
+            .Distinct()
+            .OrderBy(n => n)
+            .ToList();
+
+        if (chapterNumbers.Count == 0)
+        {
+            chapterNumbers = [1, 2, 3, 4];
+        }
+
+        _cboChapter.Items.Clear();
+        _cboChapter.Items.Add(new FilterOption<int?>(null, "Tất cả"));
+        var targetIndex = 0;
+        foreach (var ch in chapterNumbers)
+        {
+            var idx = _cboChapter.Items.Add(new FilterOption<int?>(ch, $"Chương {ch}"));
+            if (preferredChapter.HasValue && ch == preferredChapter.Value)
+            {
+                targetIndex = idx;
+            }
+        }
+        _cboChapter.SelectedIndex = targetIndex;
+    }
+
     private void OnFilterChanged(object? sender, EventArgs e)
     {
         if (_suppressFilterEvents)
         {
             return;
+        }
+
+        if (ReferenceEquals(sender, _cboSubject))
+        {
+            var currentChapter = (_cboChapter.SelectedItem as FilterOption<int?>)?.Value;
+            _suppressFilterEvents = true;
+            PopulateChapterFilterOptions(currentChapter);
+            _suppressFilterEvents = false;
         }
 
         RefreshGrid();
@@ -77,7 +118,7 @@ public partial class QuestionBankControl : UserControl
     {
         _suppressFilterEvents = true;
         _cboSubject.SelectedIndex = 0;
-        _cboChapter.SelectedIndex = 0;
+        PopulateChapterFilterOptions(preferredChapter: null);
         _cboDifficulty.SelectedIndex = 0;
         _txtSearch.Clear();
         _suppressFilterEvents = false;
@@ -199,6 +240,11 @@ public partial class QuestionBankControl : UserControl
         _btnDelete.ForeColor = hasSelection ? UiStyle.ErrorText : UiStyle.TextMuted;
     }
 
+    public void StartAddQuestion()
+    {
+        OnAddClick(this, EventArgs.Empty);
+    }
+
     private void OnAddClick(object? sender, EventArgs e)
     {
         using var dialog = new QuestionEditorDialog();
@@ -271,10 +317,10 @@ public partial class QuestionBankControl : UserControl
         }
 
         var selectedChapter = (_cboChapter.SelectedItem as FilterOption<int?>)?.Value;
-        if (selectedChapter.HasValue && selectedChapter.Value != savedQuestion.Chapter)
-        {
-            _cboChapter.SelectedIndex = 0;
-        }
+        PopulateChapterFilterOptions(
+            selectedChapter.HasValue && selectedChapter.Value == savedQuestion.Chapter
+                ? selectedChapter
+                : null);
 
         var selectedDifficulty = (_cboDifficulty.SelectedItem as FilterOption<string?>)?.Value;
         if (!string.IsNullOrEmpty(selectedDifficulty) &&

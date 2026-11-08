@@ -368,7 +368,7 @@ partial class QuestionBankControl
 
         _btnAdd.Width = 140;
         _btnAdd.Height = 40;
-        _btnAdd.Margin = new Padding(0, 0, 12, 0);
+        _btnAdd.Margin = new Padding(0, 0, 12, 4);
         _btnAdd.TabIndex = 6;
         _btnAdd.Text = "Thêm câu hỏi";
         UiStyle.StylePrimaryButton(_btnAdd);
@@ -376,7 +376,7 @@ partial class QuestionBankControl
 
         _btnEdit.Width = 100;
         _btnEdit.Height = 40;
-        _btnEdit.Margin = new Padding(0, 0, 12, 0);
+        _btnEdit.Margin = new Padding(0, 0, 12, 4);
         _btnEdit.TabIndex = 7;
         _btnEdit.Text = "Sửa";
         UiStyle.StyleSecondaryButton(_btnEdit);
@@ -384,7 +384,7 @@ partial class QuestionBankControl
 
         _btnPreview.Width = 120;
         _btnPreview.Height = 40;
-        _btnPreview.Margin = new Padding(0, 0, 12, 0);
+        _btnPreview.Margin = new Padding(0, 0, 12, 4);
         _btnPreview.TabIndex = 8;
         _btnPreview.Text = "Xem trước";
         UiStyle.StyleSecondaryButton(_btnPreview);
@@ -392,7 +392,7 @@ partial class QuestionBankControl
 
         _btnDelete.Width = 100;
         _btnDelete.Height = 40;
-        _btnDelete.Margin = new Padding(0);
+        _btnDelete.Margin = new Padding(0, 0, 0, 4);
         _btnDelete.TabIndex = 9;
         _btnDelete.Text = "Xóa";
         UiStyle.StyleSecondaryButton(_btnDelete);

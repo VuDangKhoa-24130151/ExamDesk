@@ -36,6 +36,8 @@ public static class UiStyle
         {
             button.Height = 38;
         }
+
+        ApplyResponsiveButtonSizing(button);
     }
 
     public static void StyleSecondaryButton(Button button)
@@ -53,6 +55,78 @@ public static class UiStyle
         {
             button.Height = 38;
         }
+
+        ApplyResponsiveButtonSizing(button);
+    }
+
+    private static void ApplyResponsiveButtonSizing(Button button)
+    {
+        if (button.Dock != DockStyle.None)
+        {
+            return;
+        }
+
+        button.AutoSize = true;
+        button.AutoSizeMode = AutoSizeMode.GrowOnly;
+        if (button.Padding.Horizontal < 16)
+        {
+            button.Padding = new Padding(8, button.Padding.Top, 8, button.Padding.Bottom);
+        }
+    }
+
+    public static void ClampToWorkingArea(Form form)
+    {
+        ArgumentNullException.ThrowIfNull(form);
+
+        var screen = form.Owner is not null
+            ? Screen.FromControl(form.Owner)
+            : Screen.FromControl(form);
+        var workingArea = screen.WorkingArea;
+
+        var maxWidth = Math.Max(320, workingArea.Width - 16);
+        var maxHeight = Math.Max(260, workingArea.Height - 16);
+
+        if (form.MinimumSize.Width > maxWidth || form.MinimumSize.Height > maxHeight)
+        {
+            form.MinimumSize = new Size(
+                Math.Min(form.MinimumSize.Width, maxWidth),
+                Math.Min(form.MinimumSize.Height, maxHeight));
+        }
+
+        var targetWidth = Math.Min(form.Width, maxWidth);
+        var targetHeight = Math.Min(form.Height, maxHeight);
+        if (targetWidth != form.Width || targetHeight != form.Height)
+        {
+            form.Size = new Size(targetWidth, targetHeight);
+        }
+
+        var left = Math.Clamp(form.Left, workingArea.Left, Math.Max(workingArea.Left, workingArea.Right - form.Width));
+        var top = Math.Clamp(form.Top, workingArea.Top, Math.Max(workingArea.Top, workingArea.Bottom - form.Height));
+        if (left != form.Left || top != form.Top)
+        {
+            form.Location = new Point(left, top);
+        }
+    }
+
+    public static void FitClientHeightWithinWorkingArea(Form form, int preferredClientHeight)
+    {
+        ArgumentNullException.ThrowIfNull(form);
+
+        var screen = form.Owner is not null
+            ? Screen.FromControl(form.Owner)
+            : Screen.FromControl(form);
+        var workingArea = screen.WorkingArea;
+
+        var nonClientHeight = Math.Max(0, form.Height - form.ClientSize.Height);
+        var maxClientHeight = Math.Max(220, workingArea.Height - nonClientHeight - 24);
+        var targetClientHeight = Math.Min(preferredClientHeight, maxClientHeight);
+
+        if (targetClientHeight > form.ClientSize.Height)
+        {
+            form.ClientSize = new Size(form.ClientSize.Width, targetClientHeight);
+        }
+
+        ClampToWorkingArea(form);
     }
 
     public static void StyleGrid(DataGridView grid)
@@ -64,6 +138,7 @@ public static class UiStyle
         grid.GridColor = Border;
         grid.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
         grid.EnableHeadersVisualStyles = false;
+        grid.ScrollBars = ScrollBars.Both;
 
         grid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
         grid.MultiSelect = false;
@@ -80,8 +155,10 @@ public static class UiStyle
         grid.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
         grid.ColumnHeadersDefaultCellStyle.SelectionBackColor = Background;
         grid.ColumnHeadersDefaultCellStyle.SelectionForeColor = Text;
+        grid.ColumnHeadersDefaultCellStyle.Padding = new Padding(4, 6, 4, 6);
+        grid.ColumnHeadersDefaultCellStyle.WrapMode = DataGridViewTriState.True;
         grid.ColumnHeadersHeight = 40;
-        grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+        grid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
 
         grid.DefaultCellStyle.BackColor = Surface;
         grid.DefaultCellStyle.ForeColor = Text;

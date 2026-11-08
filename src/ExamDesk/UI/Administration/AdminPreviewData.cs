@@ -3,6 +3,21 @@ using ExamDesk.Models;
 namespace ExamDesk.UI.Administration;
 
 // Dữ liệu minh họa trong bộ nhớ của phân hệ Bạn 1 (Quản trị & Ngân hàng câu hỏi).
+internal sealed class ChapterPreview
+{
+    public int SubjectId { get; set; }
+    public int Number { get; set; }
+    public string Name { get; set; } = string.Empty;
+}
+
+internal sealed class ClassPreview
+{
+    public int Id { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string SchoolYear { get; set; } = string.Empty;
+}
+
 internal static class AdminPreviewData
 {
     public static List<Subject> Subjects { get; } =
@@ -12,7 +27,110 @@ internal static class AdminPreviewData
         new Subject { Id = 3, Code = "MMT", Name = "Mạng máy tính" }
     ];
 
+    public static List<ChapterPreview> Chapters { get; } = CreateInitialChapters();
+
+    public static List<ClassPreview> Classes { get; } =
+    [
+        new ClassPreview { Id = 1, Code = "DH23DT", Name = "Đại học Công nghệ thông tin K23A", SchoolYear = "2023-2027" },
+        new ClassPreview { Id = 2, Code = "DH23TH", Name = "Đại học Công nghệ thông tin K23B", SchoolYear = "2023-2027" },
+        new ClassPreview { Id = 3, Code = "DH24PM", Name = "Đại học Kỹ thuật phần mềm K24", SchoolYear = "2024-2028" }
+    ];
+
+    public static List<User> Students { get; } = CreateInitialStudents();
+
     public static List<Question> Questions { get; } = CreateInitialQuestions();
+
+    public static int CountChaptersBySubject(int subjectId)
+        => Chapters.Count(c => c.SubjectId == subjectId);
+
+    public static int CountQuestionsBySubject(int subjectId)
+        => Questions.Count(q => q.SubjectId == subjectId);
+
+    public static int CountQuestionsByChapter(int subjectId, int chapterNumber)
+        => Questions.Count(q => q.SubjectId == subjectId && q.Chapter == chapterNumber);
+
+    public static int CountStudentsByClass(string classCode)
+        => Students.Count(s => string.Equals(s.ClassName, classCode, StringComparison.OrdinalIgnoreCase));
+
+    private static List<User> CreateInitialStudents() =>
+    [
+        // === Lớp 1: DH23DT (14 sinh viên) ===
+        CreateStudent(1, "24130151", "Vũ Đăng Khoa", "DH23DT"),
+        CreateStudent(2, "23130001", "Nguyễn Minh An", "DH23DT"),
+        CreateStudent(3, "23130002", "Trần Thị Bảo Châu", "DH23DT"),
+        CreateStudent(4, "23130003", "Lê Hoàng Dũng", "DH23DT"),
+        CreateStudent(5, "23130004", "Phạm Ngọc Ánh Dương", "DH23DT"),
+        CreateStudent(6, "23130005", "Hoàng Gia Đạt", "DH23DT"),
+        CreateStudent(7, "23130006", "Đỗ Thu Hà", "DH23DT"),
+        CreateStudent(8, "23130007", "Bùi Quang Hải", "DH23DT"),
+        CreateStudent(9, "23130008", "Đặng Thị Minh Hiền", "DH23DT"),
+        CreateStudent(10, "23130009", "Ngô Quốc Huy", "DH23DT"),
+        CreateStudent(11, "23130010", "Dương Khánh Linh", "DH23DT"),
+        CreateStudent(12, "23130011", "Lý Thành Long", "DH23DT"),
+        CreateStudent(13, "23130012", "Mai Phương Thảo", "DH23DT"),
+        CreateStudent(14, "23130013", "Võ Quốc Tuấn", "DH23DT"),
+
+        // === Lớp 2: DH23TH (13 sinh viên) ===
+        CreateStudent(15, "23130101", "Nguyễn Hoàng Bách", "DH23TH"),
+        CreateStudent(16, "23130102", "Trần Quốc Bảo", "DH23TH"),
+        CreateStudent(17, "23130103", "Lê Thị Kim Chi", "DH23TH"),
+        CreateStudent(18, "23130104", "Phạm Thành Đạt", "DH23TH"),
+        CreateStudent(19, "23130105", "Hoàng Minh Đức", "DH23TH"),
+        CreateStudent(20, "23130106", "Vũ Thị Hương Giang", "DH23TH"),
+        CreateStudent(21, "23130107", "Đỗ Trung Hiếu", "DH23TH"),
+        CreateStudent(22, "23130108", "Bùi Ngọc Khánh", "DH23TH"),
+        CreateStudent(23, "23130109", "Đặng Tuấn Kiệt", "DH23TH"),
+        CreateStudent(24, "23130110", "Ngô Thị Trúc Lam", "DH23TH"),
+        CreateStudent(25, "23130111", "Dương Nhật Minh", "DH23TH"),
+        CreateStudent(26, "23130112", "Lý Bảo Ngọc", "DH23TH"),
+        CreateStudent(27, "23130113", "Phan Thanh Phong", "DH23TH"),
+
+        // === Lớp 3: DH24PM (13 sinh viên) ===
+        CreateStudent(28, "24140001", "Nguyễn Thị Quỳnh Anh", "DH24PM"),
+        CreateStudent(29, "24140002", "Trần Đình Khôi", "DH24PM"),
+        CreateStudent(30, "24140003", "Lê Minh Khang", "DH24PM"),
+        CreateStudent(31, "24140004", "Phạm Hồng Nhung", "DH24PM"),
+        CreateStudent(32, "24140005", "Hoàng Trọng Phúc", "DH24PM"),
+        CreateStudent(33, "24140006", "Vũ Minh Quân", "DH24PM"),
+        CreateStudent(34, "24140007", "Đỗ Thị Thanh Tâm", "DH24PM"),
+        CreateStudent(35, "24140008", "Bùi Hữu Thắng", "DH24PM"),
+        CreateStudent(36, "24140009", "Đặng Thùy Trang", "DH24PM"),
+        CreateStudent(37, "24140010", "Ngô Đức Trọng", "DH24PM"),
+        CreateStudent(38, "24140011", "Dương Thị Tuyết Vân", "DH24PM"),
+        CreateStudent(39, "24140012", "Lương Quốc Việt", "DH24PM"),
+        CreateStudent(40, "24140013", "Trịnh Hải Yến", "DH24PM")
+    ];
+
+    private static User CreateStudent(int id, string studentCode, string fullName, string classCode) => new()
+    {
+        Id = id,
+        Username = studentCode,
+        StudentCode = studentCode,
+        FullName = fullName,
+        ClassName = classCode,
+        Role = UserRole.Student
+    };
+
+    private static List<ChapterPreview> CreateInitialChapters() =>
+    [
+        // Môn 1: LTNET – Lập trình .NET (Chương 1–4)
+        new ChapterPreview { SubjectId = 1, Number = 1, Name = "Nền tảng .NET và ngôn ngữ C#" },
+        new ChapterPreview { SubjectId = 1, Number = 2, Name = "Thiết kế giao diện với WinForms" },
+        new ChapterPreview { SubjectId = 1, Number = 3, Name = "Truy vấn LINQ và lập trình bất đồng bộ" },
+        new ChapterPreview { SubjectId = 1, Number = 4, Name = "Truy cập dữ liệu với ADO.NET và SQLite" },
+
+        // Môn 2: CSDL – Cơ sở dữ liệu (Chương 1–4)
+        new ChapterPreview { SubjectId = 2, Number = 1, Name = "Mô hình cơ sở dữ liệu quan hệ" },
+        new ChapterPreview { SubjectId = 2, Number = 2, Name = "Ngôn ngữ truy vấn có cấu trúc (SQL)" },
+        new ChapterPreview { SubjectId = 2, Number = 3, Name = "Chuẩn hóa dữ liệu và giao dịch (Transaction)" },
+        new ChapterPreview { SubjectId = 2, Number = 4, Name = "Chỉ mục, tối ưu hóa và an toàn dữ liệu" },
+
+        // Môn 3: MMT – Mạng máy tính (Chương 1–4)
+        new ChapterPreview { SubjectId = 3, Number = 1, Name = "Tổng quan mạng máy tính và mô hình OSI" },
+        new ChapterPreview { SubjectId = 3, Number = 2, Name = "Tầng ứng dụng và các giao thức mạng" },
+        new ChapterPreview { SubjectId = 3, Number = 3, Name = "Tầng giao vận (TCP/UDP)" },
+        new ChapterPreview { SubjectId = 3, Number = 4, Name = "Địa chỉ IPv4 và chia mạng con (Subnetting)" }
+    ];
 
     public static string FormatDifficulty(string? difficulty) => difficulty switch
     {

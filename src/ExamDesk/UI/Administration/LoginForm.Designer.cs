@@ -55,6 +55,7 @@ partial class LoginForm
 
         // _rootLayout
         _rootLayout.Dock = DockStyle.Fill;
+        _rootLayout.AutoScroll = true;
         _rootLayout.BackColor = UiStyle.Surface;
         _rootLayout.Padding = new Padding(24);
         _rootLayout.ColumnCount = 1;

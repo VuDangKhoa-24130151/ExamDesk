@@ -1,19 +1,29 @@
 using ExamDesk.Models;
+using ExamDesk.Repositories;
 
 namespace ExamDesk.Services;
 
-// Bạn 3 phụ trách. Stub cho giai đoạn nghiệp vụ; UI hiện tại chưa gọi các hàm này.
 public sealed class StudentExamService
 {
-    // TODO (Bạn 3): Đọc các ca mở qua Repository.
-    public List<ExamSession> GetOpenSessions()
-        => throw new NotImplementedException("Bạn 3: chưa triển khai.");
-
-    // TODO (Bạn 3): Kiểm tra đề đủ câu trước khi cho bắt đầu.
+    private readonly StudentExamRepository _repository = new();
+    public User IdentifyStudent(string studentCode)
+    {
+        studentCode = studentCode.Trim();
+        if (studentCode.Length == 0) throw new ArgumentException("Vui lòng nhập mã sinh viên.");
+        return _repository.FindStudent(studentCode)
+            ?? throw new InvalidOperationException("Không tìm thấy MSSV trong danh mục sinh viên. Vui lòng kiểm tra lại hoặc liên hệ giảng viên.");
+    }
+    public List<ExamSession> GetOpenSessions() => _repository.FindOpenSessions();
     public List<Question> GetQuestionsForPaper(int paperId)
-        => throw new NotImplementedException("Bạn 3: chưa triển khai.");
-
-    // TODO (Bạn 3): Kiểm tra điều kiện thi; không thay thế unique index khi lưu.
+        => throw new NotImplementedException("Chưa nối đề thật vào màn làm bài.");
     public bool HasAlreadySubmitted(int sessionId, string studentCode)
-        => throw new NotImplementedException("Bạn 3: chưa triển khai.");
+        => _repository.HasStudentSubmitted(sessionId, studentCode.Trim());
+    public ExamPaper GetSelectedPaper(int sessionId, string studentCode)
+    {
+        var session = GetOpenSessions().FirstOrDefault(s => s.Id == sessionId)
+            ?? throw new InvalidOperationException("Ca thi đã đóng hoặc không còn tồn tại. Hãy tải lại danh sách.");
+        if (HasAlreadySubmitted(sessionId, studentCode)) throw new InvalidOperationException("Bạn đã nộp bài ở ca này.");
+        return new ExamSessionRepository().FindPapers().FirstOrDefault(p => p.Id == session.PaperId)
+            ?? throw new InvalidOperationException("Không tìm thấy đề của ca thi.");
+    }
 }
