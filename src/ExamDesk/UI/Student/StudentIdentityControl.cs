@@ -106,7 +106,7 @@ public sealed class StudentIdentityControl : UserControl
             _view.Enabled = true;
             _status.Text = "Đã tìm thấy sinh viên. Bấm Tiếp tục chọn ca để xem danh sách ca thi.";
         }
-        catch (Exception ex) { ShowError(ex.Message); }
+        catch (Exception ex) { ShowError(StudentError.Describe(ex, "Không truy cập được thông tin thi. Hãy thử tra cứu lại hoặc liên hệ giảng viên.")); }
     }
 
     private void SelectSession()
@@ -116,7 +116,7 @@ public sealed class StudentIdentityControl : UserControl
         {
             StudentIdentified?.Invoke(_student);
         }
-        catch (Exception ex) { ShowError(ex.Message); }
+        catch (Exception ex) { ShowError(StudentError.Describe(ex, "Không truy cập được thông tin thi. Hãy thử tra cứu lại hoặc liên hệ giảng viên.")); }
     }
     private void ShowError(string message) { _status.ForeColor = UiStyle.ErrorText; _status.Text = message; }
 }

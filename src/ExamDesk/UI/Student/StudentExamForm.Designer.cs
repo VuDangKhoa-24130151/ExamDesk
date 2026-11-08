@@ -1,4 +1,6 @@
 #nullable enable
+using ExamDesk.UI.Shared;
+
 namespace ExamDesk.UI.Student;
 
 partial class StudentExamForm
@@ -16,18 +18,19 @@ partial class StudentExamForm
     private void InitializeComponent()
     {
         SuspendLayout();
-        AutoScaleDimensions = new SizeF(7F, 15F);
-        AutoScaleMode = AutoScaleMode.Font;
-        Font = new Font("Segoe UI", 9F);
+        AutoScaleDimensions = new SizeF(96F, 96F);
+        AutoScaleMode = AutoScaleMode.Dpi;
+        Font = UiStyle.SmallFont;
         ClientSize = new Size(1280, 680);
         MinimumSize = new Size(1000, 600);
         StartPosition = FormStartPosition.CenterParent;
         WindowState = FormWindowState.Maximized;
+        Load += (_, _) => UiStyle.ClampToWorkingArea(this);
         // Thanh trên cùng giữ tên kỳ thi và sinh viên khi chuyển giữa các màn.
         var header = new TableLayoutPanel
         {
             Dock = DockStyle.Top, Height = 64, ColumnCount = 2, RowCount = 1,
-            BackColor = Color.White, Padding = new Padding(24, 12, 24, 12)
+            BackColor = UiStyle.Surface, Padding = new Padding(24, 12, 24, 12)
         };
         header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
@@ -45,8 +48,8 @@ partial class StudentExamForm
             Text = "Nhận diện bằng MSSV", AutoSize = false, AutoEllipsis = true, Width = 280, Height = 40,
             Anchor = AnchorStyles.Right, Padding = new Padding(12, 6, 12, 6),
             MinimumSize = new Size(190, 0), Margin = Padding.Empty,
-            BackColor = Color.FromArgb(234, 246, 239),
-            ForeColor = Color.FromArgb(20, 108, 67),
+            BackColor = UiStyle.SuccessBack,
+            ForeColor = UiStyle.SuccessText,
             TextAlign = ContentAlignment.MiddleLeft
         };
         header.SizeChanged+=(_,_)=>

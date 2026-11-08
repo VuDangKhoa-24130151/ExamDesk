@@ -7,24 +7,43 @@ namespace ExamDesk.Services;
 public sealed class StudentDraftService
 {
     private readonly StudentDraftRepository _repository = new();
+    private readonly ISubmissionGrader _grader;
+
+    public StudentDraftService() : this(new StudentExamTemporaryGrader()) { }
+    internal StudentDraftService(ISubmissionGrader grader) => _grader = grader;
     public StudentDraft StartOrResume(int sessionId, User student) => _repository.StartOrResume(sessionId, student);
+    internal StudentDraft? FindDraft(int sessionId, string studentCode) => _repository.FindDraft(sessionId, studentCode);
     public StudentDraft Change(StudentDraft draft, int index, int? answer, bool? flag = null)
+        => Change(draft, index, answer, flag, () => DateTimeOffset.UtcNow);
+
+    internal StudentDraft Change(StudentDraft draft, int index, int? answer, bool? flag, Func<DateTimeOffset> readUtc)
     {
-        if(index<0 || index>=draft.Questions.Count || answer is <0 or >3) throw new ArgumentException("Lựa chọn không hợp lệ.");
-        var next=JsonSerializer.Deserialize<StudentDraft>(JsonSerializer.Serialize(draft))!;
-        if(flag.HasValue) next.Flags[index]=flag.Value;
-        else if(next.Answers[index]!=answer)
+        if (index < 0 || index >= draft.Questions.Count || answer is < 0 or > 3)
+            throw new ArgumentException("Lựa chọn không hợp lệ.");
+
+        // Chỉ thay bản đang hiển thị sau khi bản sao đã lưu thành công.
+        var next = JsonSerializer.Deserialize<StudentDraft>(JsonSerializer.Serialize(draft))!;
+        if (flag.HasValue)
         {
-            next.Answers[index]=answer;
-            next.History.Add(new AnswerChange { QuestionId=next.Questions[index].Id,Choice=answer,AtUtc=DateTimeOffset.UtcNow });
+            next.Flags[index] = flag.Value;
         }
-        _repository.Save(next);return next;
+        else if (next.Answers[index] != answer)
+        {
+            next.Answers[index] = answer;
+            next.History.Add(new AnswerChange
+            {
+                QuestionId = next.Questions[index].Id,
+                Choice = answer,
+                AtUtc = readUtc()
+            });
+        }
+
+        _repository.Save(next, readUtc);
+        return next;
     }
-    public StudentDraft Lock(StudentDraft draft)
-    {
-        if(draft.PendingSubmission) return draft;
-        var next=JsonSerializer.Deserialize<StudentDraft>(JsonSerializer.Serialize(draft))!;
-        next.PendingSubmission=true;next.AutoSubmitted=DateTimeOffset.UtcNow>=draft.DeadlineUtc;
-        _repository.Save(next,true);return next;
-    }
+
+    public StudentDraft LockForSubmission(StudentDraft draft) => _repository.LockForSubmission(draft);
+    internal StudentDraft LockForSubmission(StudentDraft draft, Func<DateTimeOffset> readUtc)
+        => _repository.LockForSubmission(draft, readUtc);
+    public void SendForGrading(StudentDraft lockedDraft) => _grader.GradeAndSave(lockedDraft);
 }

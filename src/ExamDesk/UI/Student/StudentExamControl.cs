@@ -4,16 +4,18 @@ namespace ExamDesk.UI.Student;
 
 public partial class StudentExamControl : UserControl
 {
-    private StudentPreviewAttempt _attempt;
+    private StudentAttemptState _attempt;
     private bool _rendering;
     private int _imageQuestion = -1;
     private DateTime? _savedAt;
     private string? _saveError;
+    private string? _saveNotice;
     public event EventHandler? SubmitRequested;
     internal event EventHandler? ExitReviewRequested;
-    public event EventHandler? TimeExpired;
-    public StudentExamControl() : this(new StudentPreviewAttempt()) { }
-    internal StudentExamControl(StudentPreviewAttempt attempt)
+    internal event EventHandler? SaveExpired;
+    internal event EventHandler? DraftLocked;
+    public StudentExamControl() : this(new StudentAttemptState()) { }
+    internal StudentExamControl(StudentAttemptState attempt)
     {
         _attempt = attempt;
         _savedAt = attempt.Draft?.History.LastOrDefault()?.AtUtc.LocalDateTime;
@@ -41,7 +43,10 @@ public partial class StudentExamControl : UserControl
                         _image.Image=new Bitmap(original); _image.Visible=true;
                     }
                     catch(Exception ex) when(ex is IOException or ArgumentException or OutOfMemoryException or UnauthorizedAccessException)
-                    { _question.Text += "\n[Không tải được ảnh minh họa]"; }
+                    {
+                        System.Diagnostics.Trace.WriteLine(ex);
+                        _question.Text += "\n[Không tải được ảnh minh họa. Hãy báo giảng viên.]";
+                    }
                 }
             }
             for(int i=0;i<4;i++) _options[i].Text = $"{(char)('A'+i)}. {question.Options[i]}";
@@ -50,19 +55,24 @@ public partial class StudentExamControl : UserControl
         {
             var option = _options[i];
             option.Checked = _attempt.Answers[_attempt.Current] == i;
-            option.BackColor = option.Checked ? Color.FromArgb(234, 242, 255) : Color.White;
+            option.BackColor = option.Checked ? UiStyle.Background : UiStyle.Surface;
             option.Invalidate();
         }
         _flag.Checked = _attempt.Flags[_attempt.Current];
         _flag.Text = _flag.Checked ? "⚑ Bỏ đánh dấu &xem lại" : "⚑ Đánh dấu &xem lại";
         _previous.Enabled = _attempt.Current > 0;
         _next.Enabled = _attempt.Current < _attempt.Answers.Length-1;
-        _clearChoice.Enabled = !_attempt.Submitted && _attempt.Answers[_attempt.Current].HasValue;
+        bool locked = _attempt.Draft?.PendingSubmission == true && !_attempt.Submitted;
+        foreach (var option in _options) option.Enabled = !locked;
+        _flag.Enabled = !_attempt.Submitted && !locked;
+        _clearChoice.Enabled = !_attempt.Submitted && !locked && _attempt.Answers[_attempt.Current].HasValue;
         _progress.Text = $"Đã trả lời {_attempt.Answered}/{_attempt.Answers.Length} · Đánh dấu {_attempt.Flags.Count(flag => flag)}";
         _progressTrack.Invalidate();
-        _saveStatus.Text = _saveError ?? (_savedAt is DateTime savedAt ? $"Đã lưu lúc {savedAt:HH:mm:ss}" : "");
-        _saveStatus.BackColor = _saveError is null ? UiStyle.SuccessBack : UiStyle.ErrorBack;
-        _saveStatus.ForeColor = _saveError is null ? UiStyle.SuccessText : UiStyle.ErrorText;
+        _saveStatus.Text = _saveError ?? _saveNotice ?? (_savedAt is DateTime savedAt ? $"Đã lưu lúc {savedAt:HH:mm:ss}" : "");
+        _saveStatus.BackColor = _saveError is not null ? UiStyle.ErrorBack
+            : _saveNotice is not null ? UiStyle.WarningBack : UiStyle.SuccessBack;
+        _saveStatus.ForeColor = _saveError is not null ? UiStyle.ErrorText
+            : _saveNotice is not null ? UiStyle.WarningText : UiStyle.SuccessText;
         _saveStatus.Visible = _saveStatus.Text.Length > 0;
         UpdateClock();
         for (int i = 0; i < _numbers.Length; i++)
@@ -93,25 +103,92 @@ public partial class StudentExamControl : UserControl
         if (_rendering || !_options[index].Checked) return;
         ChangeChoice(index);
     }
-    private void ChangeChoice(int? choice)
-    {
-        if (_rendering || _attempt.Submitted) return;
-        try { _attempt.Choose(choice); MarkSaved(); }
-        catch(Exception ex)
-        {
-            _saveError = "Chưa lưu được lựa chọn";
-            MessageBox.Show(this, ex.Message, _saveError);
-        }
-        RenderQuestion();
-    }
+    internal bool IsSaving { get; private set; }
+
+    private void ChangeChoice(int? choice) => SaveChange(() => _attempt.Choose(choice));
     private void ChangeFlag()
     {
-        if (_rendering || _attempt.Submitted) return;
-        try { _attempt.Flag(_flag.Checked); MarkSaved(); }
-        catch(Exception ex)
+        bool flagged = _flag.Checked;
+        SaveChange(() => _attempt.Flag(flagged));
+    }
+
+    private async void SaveChange(Action change)
+    {
+        if (_rendering || _attempt.Submitted || IsSaving) return;
+        IsSaving = true;
+        Enabled = false;
+        UseWaitCursor = true;
+        _timer.Stop();
+        _saveStatus.Text = "Đang lưu tiến độ…";
+        _saveStatus.BackColor = UiStyle.Background;
+        _saveStatus.ForeColor = UiStyle.Primary;
+        _saveStatus.Visible = true;
+        _fitContent?.Invoke();
+        Action afterSave = RenderQuestion;
+
+        try
         {
-            _saveError = "Chưa lưu được cờ xem lại";
-            MessageBox.Show(this, ex.Message, _saveError);
+            await Task.Run(change);
+            MarkSaved();
+        }
+        catch (ExamDesk.Models.StudentDraftExpiredException)
+        {
+            afterSave = () => SaveExpired?.Invoke(this, EventArgs.Empty);
+        }
+        catch (ExamDesk.Models.StudentDraftConflictException)
+        {
+            afterSave = ReloadAfterConflict;
+        }
+        catch (Exception ex)
+        {
+            _saveError = StudentError.Describe(ex,
+                "Chưa lưu được thay đổi. Hãy chọn lại hoặc báo giảng viên nếu lỗi tiếp diễn.");
+        }
+        finally
+        {
+            IsSaving = false;
+            if (!IsDisposed)
+            {
+                UseWaitCursor = false;
+                Enabled = true;
+                _timer.Start();
+                afterSave();
+            }
+        }
+    }
+
+    private void ReloadAfterConflict()
+    {
+        _savedAt = null;
+        _saveNotice = null;
+        _saveError = "Chưa tải lại được tiến độ. Hãy đóng và mở lại lượt thi.";
+        try
+        {
+            // Chỉ hiển thị dữ liệu mới nhất, không ghi lại lựa chọn vừa bị từ chối.
+            if (_attempt.ReloadDraft())
+            {
+                _saveError = null;
+                _saveNotice = "Lượt thi đã thay đổi ở cửa sổ khác. Đã tải lại tiến độ mới nhất.";
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Trace.WriteLine(ex.ToString());
+        }
+        if (_saveError is null && _attempt.Draft is { } draft)
+        {
+            if (draft.PendingSubmission)
+            {
+                DraftLocked?.Invoke(this, EventArgs.Empty);
+                return;
+            }
+            if (_attempt.IsExpired)
+            {
+                SaveExpired?.Invoke(this, EventArgs.Empty);
+                return;
+            }
+            _imageQuestion = -1;
+            if (_numbers.Length != _attempt.Answers.Length) BuildQuestionGrid();
         }
         RenderQuestion();
     }
@@ -119,7 +196,8 @@ public partial class StudentExamControl : UserControl
     private void MarkSaved()
     {
         _saveError = null;
-        if (_attempt.Draft is not null) _savedAt = DateTime.Now;
+        _saveNotice = null;
+        if (_attempt.Draft is not null) _savedAt = DateTimeOffset.UtcNow.LocalDateTime;
     }
     private void UpdateClock()
     {
@@ -129,19 +207,16 @@ public partial class StudentExamControl : UserControl
             return;
         }
 
-        var remaining = _attempt.Deadline - DateTime.Now;
+        var remaining = _attempt.TimeRemaining;
         bool lowTime = remaining <= TimeSpan.FromMinutes(5);
         _clock.Text = (lowTime ? "Sắp hết giờ · " : "Còn lại · ") + _attempt.Remaining;
         _clock.ForeColor = lowTime ? UiStyle.WarningText : UiStyle.Primary;
-        _clock.BackColor = lowTime ? UiStyle.WarningBack : Color.FromArgb(234, 242, 255);
+        _clock.BackColor = lowTime ? UiStyle.WarningBack : UiStyle.Background;
     }
 
     private void Tick(object? sender, EventArgs e)
     {
         UpdateClock();
-        if (DateTime.Now < _attempt.Deadline || _attempt.Submitted) return;
-        _timer.Stop();
-        TimeExpired?.Invoke(this, EventArgs.Empty);
     }
     protected override void Dispose(bool disposing)
     {

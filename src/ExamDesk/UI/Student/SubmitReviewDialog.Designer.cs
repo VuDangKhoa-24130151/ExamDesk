@@ -6,7 +6,7 @@ partial class SubmitReviewDialog
 {
     private readonly System.Windows.Forms.Timer _clock = new() { Interval = 250 };
     private Label _answered = null!, _unanswered = null!, _flagged = null!, _warning = null!;
-    private FlowLayoutPanel _numbers = null!;
+    private FlowLayoutPanel _numbers = null!, _flaggedNumbers = null!;
     private Button _continueButton = null!;
 
     protected override void Dispose(bool disposing)
@@ -19,8 +19,9 @@ partial class SubmitReviewDialog
     {
         SuspendLayout();
         Text = "Kiểm tra trước khi nộp";
-        Font = new Font("Segoe UI", 10);
-        AutoScaleMode = AutoScaleMode.Font;
+        Font = UiStyle.BodyFont;
+        AutoScaleDimensions = new SizeF(96F, 96F);
+        AutoScaleMode = AutoScaleMode.Dpi;
         StartPosition = FormStartPosition.CenterParent;
         ClientSize = new Size(680, 530);
         MinimumSize = new Size(540, 360);
@@ -52,8 +53,11 @@ partial class SubmitReviewDialog
         content.Controls.Add(StudentLayout.Label("Câu chưa trả lời — chọn số câu để quay lại", 10, FontStyle.Bold));
         _numbers = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 138, AutoScroll = true, Margin = Padding.Empty };
         content.Controls.Add(_numbers);
+        content.Controls.Add(StudentLayout.Label("Câu đã đánh dấu — chọn số câu để quay lại", 10, FontStyle.Bold));
+        _flaggedNumbers = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 100, AutoScroll = true, Margin = Padding.Empty };
+        content.Controls.Add(_flaggedNumbers);
         _warning = StudentLayout.Label("");
-        _warning.ForeColor = Color.FromArgb(180, 35, 24);
+        _warning.ForeColor = UiStyle.ErrorText;
         body.Controls.Add(content);
         content.SizeChanged+=(_,_)=>
         {

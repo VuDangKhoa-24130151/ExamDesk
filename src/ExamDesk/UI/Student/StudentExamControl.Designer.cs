@@ -25,7 +25,7 @@ partial class StudentExamControl
         Padding=new Padding(24);
         var layout=new TableLayoutPanel { Dock=DockStyle.Fill,ColumnCount=2,RowCount=2 };
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
-        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,300));
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 300));
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent,100));
         var header = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, FlowDirection = FlowDirection.TopDown, WrapContents = false };
@@ -43,8 +43,8 @@ partial class StudentExamControl
         identity.ForeColor = UiStyle.TextMuted;
         identity.Margin = new Padding(0, 0, 0, 8);
         header.Controls.Add(identity);
-        _clock = new Label { Dock = DockStyle.Top, Height = 42, Font = new Font("Segoe UI", 12, FontStyle.Bold),
-            TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiStyle.Primary, BackColor = Color.FromArgb(234, 242, 255) };
+        _clock = new Label { Dock = DockStyle.Top, Height = 42, Font = StudentLayout.GetLabelFont(12, FontStyle.Bold),
+            TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiStyle.Primary, BackColor = UiStyle.Background };
         layout.Controls.Add(header, 0, 0);
         layout.Controls.Add(_clock, 1, 0);
 
@@ -76,13 +76,13 @@ partial class StudentExamControl
         _question = StudentLayout.Label("", 12, FontStyle.Bold);
         _question.Margin = new Padding(0, 4, 0, 12);
         questionCard.Controls.Add(_question);
-        _image = new PictureBox { SizeMode=PictureBoxSizeMode.Zoom, Size=new Size(480,220), Visible=false, Margin=new Padding(0,0,0,12) };
+        _image = new PictureBox { SizeMode=PictureBoxSizeMode.Zoom, Visible=false, Margin=new Padding(0,0,0,12) };
         questionCard.Controls.Add(_image);
         string[] answers=["A. int","B. bool","C. string","D. double"];
         for(int i=0;i<4;i++)
         {
             int choice=i;
-            var option = new RadioButton { Text=answers[i], AutoSize=false, Height=38, Margin=new Padding(0,3,0,3),
+            var option = new RadioButton { Text=answers[i], AutoSize=false, Margin=new Padding(0,3,0,3),
                 Padding = new Padding(10, 0, 8, 0), UseMnemonic = false, UseVisualStyleBackColor = false,
                 AutoCheck = !_attempt.Submitted, TabStop = !_attempt.Submitted,
                 TabIndex = i, AccessibleName=$"Đáp án {(char)('A'+i)}" };
@@ -100,25 +100,18 @@ partial class StudentExamControl
         body.Controls.Add(questionCard);
         var actions=new FlowLayoutPanel { AutoSize=true,WrapContents=true,Margin=new Padding(0,6,0,0) };
         _previous=StudentLayout.Button("← Câu &trước",(_,_)=>GoToQuestion(_attempt.Current-1));
-        _next=StudentLayout.Button("Câu &tiếp →",(_,_)=>GoToQuestion(_attempt.Current+1));
-        _next.BackColor = Color.FromArgb(234, 242, 255);
-        _next.ForeColor = UiStyle.Primary;
+        _next=StudentLayout.Button("Câu t&iếp →",(_,_)=>GoToQuestion(_attempt.Current+1));
         actions.Controls.Add(_previous);actions.Controls.Add(_next);
         _flag = new CheckBox { Appearance = Appearance.Button, Text = "⚑ Đánh dấu &xem lại", AutoSize = true,
-            FlatStyle = FlatStyle.Flat, Padding = new Padding(12, 4, 12, 4), MinimumSize = new Size(124, 38),
+            FlatStyle = FlatStyle.Flat, Padding = new Padding(12, 4, 12, 4),
             BackColor = UiStyle.Surface, Margin = new Padding(0, 8, 12, 8) };
         _flag.FlatAppearance.BorderColor = UiStyle.Border;
-        _flag.FlatAppearance.CheckedBackColor = Color.FromArgb(234, 242, 255);
+        _flag.FlatAppearance.CheckedBackColor = UiStyle.Background;
         _flag.Enabled = !_attempt.Submitted;
         _flag.CheckedChanged += (_, _) => ChangeFlag();
         actions.Controls.Add(_flag);
         _clearChoice = StudentLayout.Button("&Bỏ lựa chọn", (_, _) => ChangeChoice(null));
         actions.Controls.Add(_clearChoice);
-        foreach (var button in actions.Controls.OfType<Button>())
-        {
-            button.MinimumSize = new Size(124, 38);
-            button.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        }
         body.Controls.Add(actions);
         var notes = ExamCard();
         notes.Margin = new Padding(0, 12, 0, 0);
@@ -131,7 +124,7 @@ partial class StudentExamControl
         body.Controls.Add(notes);
         scroll.Controls.Add(body);layout.Controls.Add(scroll,0,1);
 
-        var right=new TableLayoutPanel { Dock=DockStyle.Fill,ColumnCount=1,RowCount=5,BackColor=UiStyle.Surface,Padding=new Padding(14) };
+        var right=new TableLayoutPanel { Dock=DockStyle.Fill,ColumnCount=1,RowCount=6,BackColor=UiStyle.Surface,Padding=new Padding(14) };
         right.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
         right.RowStyles.Add(new RowStyle(SizeType.AutoSize));right.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         right.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -152,34 +145,18 @@ partial class StudentExamControl
         };
         right.Controls.Add(_progressTrack, 0, 2);
         var gridScroll = _gridViewport = new Panel { Dock = DockStyle.Fill, AutoScroll = true, Margin = Padding.Empty };
-        var grid=new TableLayoutPanel { Dock=DockStyle.Top,AutoSize=true,ColumnCount=5,RowCount=(_attempt.Answers.Length+4)/5 };
-        for(int i=0;i<5;i++) grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,20));
-        for(int row=0;row<grid.RowCount;row++) grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        _numbers=new Button[_attempt.Answers.Length];
-        for(int i=0;i<_numbers.Length;i++)
-        {
-            int index=i;
-            _numbers[i]=new Button { Dock=DockStyle.Fill,Height=34,MinimumSize=new Size(32,34),FlatStyle=FlatStyle.Flat,Padding=Padding.Empty,Margin=new Padding(2),AccessibleName=$"Câu {i+1}" };
-            var number = _numbers[i];
-            number.Paint += (_, e) =>
-            {
-                var bounds = Rectangle.Inflate(number.ClientRectangle, -3, -2);
-                if (_attempt.Answers[index].HasValue)
-                    TextRenderer.DrawText(e.Graphics, "✓", UiStyle.SmallFont, bounds, UiStyle.SuccessText,
-                        TextFormatFlags.Left | TextFormatFlags.Top | TextFormatFlags.NoPadding);
-                if (_attempt.Flags[index])
-                    TextRenderer.DrawText(e.Graphics, "⚑", UiStyle.SmallFont, bounds, UiStyle.WarningText,
-                        TextFormatFlags.Right | TextFormatFlags.Top | TextFormatFlags.NoPadding);
-            };
-            _numbers[i].Click+=(_,_)=>GoToQuestion(index);grid.Controls.Add(_numbers[i],i%5,i/5);
-        }
-        gridScroll.Controls.Add(grid);right.Controls.Add(gridScroll,0,3);
+        BuildQuestionGrid();
+        right.Controls.Add(gridScroll,0,3);
+        right.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        var legend = StudentLayout.Label("□ Chưa trả lời   ✓ Đã trả lời\n▣ Đang xem (viền đậm)   ⚑ Đánh dấu", 9);
+        legend.ForeColor = UiStyle.TextMuted;
+        right.Controls.Add(legend, 0, 4);
         var submit = _attempt.Submitted
             ? StudentLayout.Button("← Về trạng thái nộp", (_, _) => ExitReviewRequested?.Invoke(this, EventArgs.Empty), true)
             : StudentLayout.Button("&Nộp bài", (_, _) => SubmitRequested?.Invoke(this, EventArgs.Empty), true);
         submit.Dock = DockStyle.Fill;
         submit.Margin = new Padding(0, 4, 0, 0);
-        right.Controls.Add(submit,0,4);layout.Controls.Add(right,1,1);
+        right.Controls.Add(submit,0,5);layout.Controls.Add(right,1,1);
         Controls.Add(layout);
 
         bool fitting=false;
@@ -201,6 +178,7 @@ partial class StudentExamControl
                     notes.MinimumSize = new Size(width, 0);
                     questionHeader.MinimumSize = new Size(innerWidth, 0);
                     questionHeader.MaximumSize = new Size(innerWidth, 0);
+                    _saveStatus.MaximumSize = new Size(Math.Max(1, innerWidth * 2 / 3), 0);
                     _questionNumber.MaximumSize = new Size(Math.Max(1, innerWidth - _saveStatus.PreferredWidth - 12), 0);
                     advice.MaximumSize = new Size(innerWidth, 0);
                     foreach (var option in _options)
@@ -213,13 +191,29 @@ partial class StudentExamControl
                     actions.MaximumSize = new Size(width, 0);
                 }
                 finally { body.ResumeLayout(true); }
-                _image.Width=Math.Min(innerWidth,(int)(600*DeviceDpi/96f));_image.Height=(int)(220*DeviceDpi/96f);
+                _image.Width = Math.Min(innerWidth, StudentLayout.Scale(this, 480));
+                _image.Height = Math.Min(StudentLayout.Scale(this, 220), _image.Width * 220 / 480);
+                foreach (var number in _numbers) number.MinimumSize = new Size(0, StudentLayout.Scale(this, 34));
                 int sideWidth=Math.Max(80,right.ClientSize.Width-right.Padding.Horizontal-12);
-                _progress.MaximumSize = new Size(sideWidth, 0);
+                _progress.MaximumSize = legend.MaximumSize = new Size(sideWidth, 0);
             }
             finally { fitting=false; }
         }
-        _fitContent=FitContent;scroll.SizeChanged+=(_,_)=>FitContent();right.SizeChanged+=(_,_)=>FitContent();Load+=(_,_)=>FitContent();
+        void FitColumns()
+        {
+            if (layout.ClientSize.Width <= 0) return;
+            var sideWidth = Math.Min(StudentLayout.Scale(this, 300), (int)(layout.ClientSize.Width * 0.42f));
+            if (layout.ColumnStyles[1].Width != sideWidth)
+                layout.ColumnStyles[1].Width = sideWidth;
+            FitContent();
+        }
+
+        _fitContent = FitContent;
+        layout.SizeChanged += (_, _) => FitColumns();
+        scroll.SizeChanged += (_, _) => FitContent();
+        right.SizeChanged += (_, _) => FitContent();
+        Load += (_, _) => FitColumns();
+        DpiChangedAfterParent += (_, _) => FitColumns();
         if (!_attempt.Submitted)
         {
             _timer.Tick += Tick;
@@ -241,5 +235,31 @@ partial class StudentExamControl
             e.Graphics.DrawRectangle(border, 0, 0, card.ClientSize.Width - 1, card.ClientSize.Height - 1);
         };
         return card;
+    }
+    private void BuildQuestionGrid()
+    {
+        while (_gridViewport.Controls.Count > 0) _gridViewport.Controls[0].Dispose();
+        var grid=new TableLayoutPanel { Dock=DockStyle.Top,AutoSize=true,ColumnCount=5,RowCount=(_attempt.Answers.Length+4)/5 };
+        for(int i=0;i<5;i++) grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,20));
+        for(int row=0;row<grid.RowCount;row++) grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        _numbers=new Button[_attempt.Answers.Length];
+        for(int i=0;i<_numbers.Length;i++)
+        {
+            int index=i;
+            _numbers[i]=new Button { Dock=DockStyle.Fill,FlatStyle=FlatStyle.Flat,Padding=Padding.Empty,Margin=new Padding(2),AccessibleName=$"Câu {i+1}" };
+            var number = _numbers[i];
+            number.Paint += (_, e) =>
+            {
+                var bounds = Rectangle.Inflate(number.ClientRectangle, -3, -2);
+                if (_attempt.Answers[index].HasValue)
+                    TextRenderer.DrawText(e.Graphics, "✓", UiStyle.SmallFont, bounds, UiStyle.SuccessText,
+                        TextFormatFlags.Left | TextFormatFlags.Top | TextFormatFlags.NoPadding);
+                if (_attempt.Flags[index])
+                    TextRenderer.DrawText(e.Graphics, "⚑", UiStyle.SmallFont, bounds, UiStyle.WarningText,
+                        TextFormatFlags.Right | TextFormatFlags.Top | TextFormatFlags.NoPadding);
+            };
+            _numbers[i].Click+=(_,_)=>GoToQuestion(index);grid.Controls.Add(_numbers[i],i%5,i/5);
+        }
+        _gridViewport.Controls.Add(grid);
     }
 }

@@ -4,6 +4,7 @@ public partial class ExamInstructionsControl : UserControl
 {
     public event EventHandler? BackRequested;
     public event EventHandler? StartRequested;
+    internal StudentAttemptClock? ResumeClock { get; }
 
     public ExamInstructionsControl()
     {
@@ -14,32 +15,32 @@ public partial class ExamInstructionsControl : UserControl
         CenterContent();
     }
 
-    public ExamInstructionsControl(ExamDesk.Models.User student, ExamDesk.Models.ExamSession session, ExamDesk.Models.ExamPaper paper) : this()
+    public ExamInstructionsControl(ExamDesk.Models.User student, ExamDesk.Models.ExamSession session, ExamDesk.Models.ExamPaper paper, ExamDesk.Models.StudentDraft? draft = null) : this()
     {
-        // Giữ bố cục hai thẻ; thay toàn bộ dữ liệu demo trước khi hiển thị.
-        var values=new Dictionary<string,string>
+        if (draft is not null)
         {
-            ["Cuối kỳ .NET – Ca 01"] = StudentPreviewAttempt.DisplayTitle(session.SessionName),
-            ["Vũ Đăng Khoa · 24130151"]=$"{student.FullName} · {student.StudentCode}",
-            ["Lớp DH23DT"]=$"Lớp {student.ClassName} · Phòng {session.RoomName}",
-            ["30 câu · 45 phút · Thang điểm 10"]=$"{paper.TotalQuestions} câu · {paper.DurationMinutes} phút · Thang điểm 10",
-            ["01  Bài thi có 30 câu trắc nghiệm, thời gian 45 phút."]=$"01  Bài thi có {paper.TotalQuestions} câu trắc nghiệm, thời gian {paper.DurationMinutes} phút.",
-            ["05  Lựa chọn chỉ giữ trong cửa sổ hiện tại, chưa lưu xuống máy."]="05  Mỗi thay đổi đáp án được lưu. Đóng cửa sổ không dừng đồng hồ.",
-            ["06  Hết giờ, vùng làm bài sẽ khóa và bài được tự động nộp."]="06  Hết giờ, bài tự khóa để gửi nộp. Nếu chưa gửi được, bài vẫn được giữ lại.",
-            ["Điểm = số câu đúng / 30 × 10.\nLàm tròn hai chữ số thập phân; câu sai và bỏ trống không có điểm."]=$"Điểm = số câu đúng / {paper.TotalQuestions} × 10.\nCâu sai và bỏ trống không có điểm. Chỉ hiện điểm sau khi chấm và lưu thành công.",
-            ["Chưa bắt đầu đếm giờ\nĐồng hồ chạy sau khi tạo lượt thi thành công."]="Lượt mới bắt đầu tính giờ khi bấm Bắt đầu.\nNếu khôi phục, bài tiếp tục theo hạn nộp cũ."
-        };
-        void ReplaceLabels(Control parent)
-        {
-            foreach(Control control in parent.Controls)
+            _startButton.Text = "&Tiếp tục làm bài";
+            _resumeInfo.Visible = true;
+            var attemptClock = ResumeClock = new StudentAttemptClock(draft.StartedUtc, draft.DeadlineUtc);
+            var clock = new System.Windows.Forms.Timer { Interval = 1000 };
+            void UpdateProgress()
             {
-                if(control is Label label && values.TryGetValue(label.Text,out var text)) label.Text=text;
-                ReplaceLabels(control);
+                _resumeInfo.Text = $"Đã trả lời: {draft.Answers.Count(a => a.HasValue)}/{draft.Answers.Length} câu"
+                    + $"\nCòn lại: {attemptClock.FormatRemaining()}";
             }
+            UpdateProgress();
+            clock.Tick += (_, _) => UpdateProgress();
+            Disposed += (_, _) => clock.Dispose();
+            clock.Start();
         }
-        ReplaceLabels(this);
-        _startButton.Text="Bắt đầu / Khôi phục lượt thi →";
+
+        _sessionTitle.Text = session.SessionName;
+        _studentInfo.Text = $"{student.FullName} · {student.StudentCode}";
+        _sessionInfo.Text = $"Lớp {student.ClassName} · Phòng {session.RoomName} · Mã ca {session.SessionCode}";
+        _paperInfo.Text = $"{paper.Title} · {paper.TotalQuestions} câu · {paper.DurationMinutes} phút";
+        _durationRule.Text = $"01  Bài thi có {paper.TotalQuestions} câu trắc nghiệm, thời gian {paper.DurationMinutes} phút.";
     }
+
     private void CenterContent()
     {
         int maxWidth = (int)(1120 * DeviceDpi / 96f);

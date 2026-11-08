@@ -22,10 +22,15 @@ public sealed class ExamSessionService
         if (session.PaperId <= 0) throw new ArgumentException("Vui lòng chọn đề thi.");
         try { return _repository.InsertSession(session); }
         catch (SqliteException ex) when (ex.SqliteExtendedErrorCode == 2067)
-        { throw new InvalidOperationException("Mã ca đã tồn tại. Hãy dùng mã khác.", ex); }
+        { throw new ExamSessionInputException("Mã ca đã tồn tại. Hãy dùng mã khác.", ex); }
         catch (SqliteException ex) when (ex.SqliteExtendedErrorCode == 787)
-        { throw new InvalidOperationException("Đề thi không còn tồn tại. Hãy tải lại danh sách đề.", ex); }
+        { throw new ExamSessionInputException("Đề thi không còn tồn tại. Hãy tải lại danh sách đề.", ex); }
     }
+
+    public int CountInProgress(int sessionId) => _repository.CountInProgress(sessionId);
+
+    internal int CloseSession(int sessionId, bool allowInProgress)
+        => _repository.CloseSession(sessionId, allowInProgress);
 
     public void SetSessionOpen(int sessionId, bool isOpen)
     {
@@ -33,3 +38,6 @@ public sealed class ExamSessionService
         _repository.SetSessionOpen(sessionId, isOpen);
     }
 }
+
+internal sealed class ExamSessionInputException(string message, Exception? inner = null)
+    : InvalidOperationException(message, inner);

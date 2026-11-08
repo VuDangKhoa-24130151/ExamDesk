@@ -4,14 +4,14 @@ namespace ExamDesk.UI.Student;
 
 partial class SubmissionStatusControl
 {
-    private Label _status = null!, _summary = null!;
+    private Label _status = null!, _summary = null!, _lockStatus = null!;
     private FlowLayoutPanel _actions = null!;
     private Panel _cardHost = null!;
 
     private void InitializeComponent()
     {
         AutoScaleMode = AutoScaleMode.Font;
-        Font = new Font("Segoe UI", 10);
+        Font = UiStyle.BodyFont;
         BackColor = UiStyle.Background;
         ForeColor = UiStyle.Text;
         var heading = new TableLayoutPanel
@@ -27,7 +27,8 @@ partial class SubmissionStatusControl
         };
         card.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         card.Controls.Add(StudentLayout.Label("Thông tin lượt làm bài", 12, FontStyle.Bold));
-        card.Controls.Add(StudentLayout.Label("Bài đã được chốt. Bạn không thể sửa đáp án."));
+        _lockStatus = StudentLayout.Label("");
+        card.Controls.Add(_lockStatus);
         _status = StudentLayout.Label("Đã kết thúc lượt UI. Dữ liệu bài thi chỉ tồn tại trong phiên hiện tại.");
         _status.Dock = DockStyle.Top;
         _status.Padding = new Padding(16);

@@ -29,6 +29,13 @@ public sealed class StudentDraft
     public bool[] Flags { get; set; } = [];
     public List<AnswerChange> History { get; set; } = [];
     public bool PendingSubmission { get; set; }
+    public DateTimeOffset? LockedAtUtc { get; set; }
     public bool AutoSubmitted { get; set; }
     public int Revision { get; set; }
 }
+
+internal sealed class StudentDraftExpiredException()
+    : InvalidOperationException("Đã hết giờ làm bài.");
+
+internal sealed class StudentDraftConflictException()
+    : InvalidOperationException("Lượt thi đã thay đổi ở cửa sổ khác.");
