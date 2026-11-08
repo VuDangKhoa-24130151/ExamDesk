@@ -166,12 +166,12 @@ partial class SubjectChapterControl
         _headerLayout.Controls.Add(_lblTitle, 0, 0);
         _headerLayout.Controls.Add(_lblDemoBadge, 1, 0);
 
-        // _splitLayout (40% Left / 60% Right)
+        // _splitLayout (45% Left / 55% Right)
         _splitLayout.Dock = DockStyle.Fill;
         _splitLayout.Margin = new Padding(0);
         _splitLayout.ColumnCount = 2;
-        _splitLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42F));
-        _splitLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58F));
+        _splitLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45F));
+        _splitLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 55F));
         _splitLayout.RowCount = 1;
         _splitLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
@@ -275,22 +275,22 @@ partial class SubjectChapterControl
         _colSubjectCode.HeaderText = "Mã môn";
         _colSubjectCode.Name = "_colSubjectCode";
         _colSubjectCode.FillWeight = 22F;
-        _colSubjectCode.MinimumWidth = 70;
+        _colSubjectCode.MinimumWidth = 58;
 
         _colSubjectName.HeaderText = "Tên môn";
         _colSubjectName.Name = "_colSubjectName";
         _colSubjectName.FillWeight = 42F;
-        _colSubjectName.MinimumWidth = 110;
+        _colSubjectName.MinimumWidth = 85;
 
         _colSubjectChapterCount.HeaderText = "Số chương";
         _colSubjectChapterCount.Name = "_colSubjectChapterCount";
         _colSubjectChapterCount.FillWeight = 18F;
-        _colSubjectChapterCount.MinimumWidth = 72;
+        _colSubjectChapterCount.MinimumWidth = 60;
 
         _colSubjectQuestionCount.HeaderText = "Số câu hỏi";
         _colSubjectQuestionCount.Name = "_colSubjectQuestionCount";
         _colSubjectQuestionCount.FillWeight = 18F;
-        _colSubjectQuestionCount.MinimumWidth = 72;
+        _colSubjectQuestionCount.MinimumWidth = 60;
 
         _dgvSubjects.Columns.AddRange(
             _colSubjectCode,
@@ -324,7 +324,7 @@ partial class SubjectChapterControl
 
         _btnAddSubject.Width = 116;
         _btnAddSubject.Height = 38;
-        _btnAddSubject.Margin = new Padding(0, 0, 8, 0);
+        _btnAddSubject.Margin = new Padding(0, 0, 8, 4);
         _btnAddSubject.TabIndex = 3;
         _btnAddSubject.Text = "Thêm môn";
         UiStyle.StylePrimaryButton(_btnAddSubject);
@@ -332,7 +332,7 @@ partial class SubjectChapterControl
 
         _btnEditSubject.Width = 86;
         _btnEditSubject.Height = 38;
-        _btnEditSubject.Margin = new Padding(0, 0, 8, 0);
+        _btnEditSubject.Margin = new Padding(0, 0, 8, 4);
         _btnEditSubject.TabIndex = 4;
         _btnEditSubject.Text = "Sửa";
         UiStyle.StyleSecondaryButton(_btnEditSubject);
@@ -340,7 +340,7 @@ partial class SubjectChapterControl
 
         _btnDeleteSubject.Width = 86;
         _btnDeleteSubject.Height = 38;
-        _btnDeleteSubject.Margin = new Padding(0);
+        _btnDeleteSubject.Margin = new Padding(0, 0, 0, 4);
         _btnDeleteSubject.TabIndex = 5;
         _btnDeleteSubject.Text = "Xóa";
         UiStyle.StyleSecondaryButton(_btnDeleteSubject);
@@ -421,17 +421,17 @@ partial class SubjectChapterControl
         _colChapterNumber.HeaderText = "Chương số";
         _colChapterNumber.Name = "_colChapterNumber";
         _colChapterNumber.FillWeight = 20F;
-        _colChapterNumber.MinimumWidth = 85;
+        _colChapterNumber.MinimumWidth = 70;
 
         _colChapterName.HeaderText = "Tên chương";
         _colChapterName.Name = "_colChapterName";
         _colChapterName.FillWeight = 58F;
-        _colChapterName.MinimumWidth = 180;
+        _colChapterName.MinimumWidth = 140;
 
         _colChapterQuestionCount.HeaderText = "Số câu hỏi";
         _colChapterQuestionCount.Name = "_colChapterQuestionCount";
         _colChapterQuestionCount.FillWeight = 22F;
-        _colChapterQuestionCount.MinimumWidth = 90;
+        _colChapterQuestionCount.MinimumWidth = 72;
 
         _dgvChapters.Columns.AddRange(
             _colChapterNumber,
@@ -464,7 +464,7 @@ partial class SubjectChapterControl
 
         _btnAddChapter.Width = 132;
         _btnAddChapter.Height = 38;
-        _btnAddChapter.Margin = new Padding(0, 0, 8, 0);
+        _btnAddChapter.Margin = new Padding(0, 0, 8, 4);
         _btnAddChapter.TabIndex = 7;
         _btnAddChapter.Text = "Thêm chương";
         UiStyle.StylePrimaryButton(_btnAddChapter);
@@ -472,7 +472,7 @@ partial class SubjectChapterControl
 
         _btnEditChapter.Width = 86;
         _btnEditChapter.Height = 38;
-        _btnEditChapter.Margin = new Padding(0, 0, 8, 0);
+        _btnEditChapter.Margin = new Padding(0, 0, 8, 4);
         _btnEditChapter.TabIndex = 8;
         _btnEditChapter.Text = "Sửa";
         UiStyle.StyleSecondaryButton(_btnEditChapter);
@@ -480,7 +480,7 @@ partial class SubjectChapterControl
 
         _btnDeleteChapter.Width = 86;
         _btnDeleteChapter.Height = 38;
-        _btnDeleteChapter.Margin = new Padding(0);
+        _btnDeleteChapter.Margin = new Padding(0, 0, 0, 4);
         _btnDeleteChapter.TabIndex = 9;
         _btnDeleteChapter.Text = "Xóa";
         UiStyle.StyleSecondaryButton(_btnDeleteChapter);

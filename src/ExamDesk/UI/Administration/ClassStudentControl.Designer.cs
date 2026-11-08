@@ -174,12 +174,12 @@ partial class ClassStudentControl
         _headerLayout.Controls.Add(_lblTitle, 0, 0);
         _headerLayout.Controls.Add(_lblDemoBadge, 1, 0);
 
-        // _splitLayout (35% Left / 65% Right)
+        // _splitLayout (42% Left / 58% Right)
         _splitLayout.Dock = DockStyle.Fill;
         _splitLayout.Margin = new Padding(0);
         _splitLayout.ColumnCount = 2;
-        _splitLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35F));
-        _splitLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65F));
+        _splitLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42F));
+        _splitLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58F));
         _splitLayout.RowCount = 1;
         _splitLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
@@ -243,22 +243,22 @@ partial class ClassStudentControl
         _colClassCode.HeaderText = "Mã lớp";
         _colClassCode.Name = "_colClassCode";
         _colClassCode.FillWeight = 23F;
-        _colClassCode.MinimumWidth = 68;
+        _colClassCode.MinimumWidth = 58;
 
         _colClassName.HeaderText = "Tên lớp";
         _colClassName.Name = "_colClassName";
         _colClassName.FillWeight = 39F;
-        _colClassName.MinimumWidth = 95;
+        _colClassName.MinimumWidth = 85;
 
         _colSchoolYear.HeaderText = "Niên khóa";
         _colSchoolYear.Name = "_colSchoolYear";
         _colSchoolYear.FillWeight = 23F;
-        _colSchoolYear.MinimumWidth = 76;
+        _colSchoolYear.MinimumWidth = 68;
 
         _colStudentCount.HeaderText = "Sĩ số";
         _colStudentCount.Name = "_colStudentCount";
         _colStudentCount.FillWeight = 15F;
-        _colStudentCount.MinimumWidth = 54;
+        _colStudentCount.MinimumWidth = 46;
 
         _dgvClasses.Columns.AddRange(
             _colClassCode,
@@ -292,7 +292,7 @@ partial class ClassStudentControl
 
         _btnAddClass.Width = 110;
         _btnAddClass.Height = 38;
-        _btnAddClass.Margin = new Padding(0, 0, 8, 0);
+        _btnAddClass.Margin = new Padding(0, 0, 8, 4);
         _btnAddClass.TabIndex = 1;
         _btnAddClass.Text = "Thêm lớp";
         UiStyle.StylePrimaryButton(_btnAddClass);
@@ -300,7 +300,7 @@ partial class ClassStudentControl
 
         _btnEditClass.Width = 80;
         _btnEditClass.Height = 38;
-        _btnEditClass.Margin = new Padding(0, 0, 8, 0);
+        _btnEditClass.Margin = new Padding(0, 0, 8, 4);
         _btnEditClass.TabIndex = 2;
         _btnEditClass.Text = "Sửa";
         UiStyle.StyleSecondaryButton(_btnEditClass);
@@ -308,7 +308,7 @@ partial class ClassStudentControl
 
         _btnDeleteClass.Width = 80;
         _btnDeleteClass.Height = 38;
-        _btnDeleteClass.Margin = new Padding(0);
+        _btnDeleteClass.Margin = new Padding(0, 0, 0, 4);
         _btnDeleteClass.TabIndex = 3;
         _btnDeleteClass.Text = "Xóa";
         UiStyle.StyleSecondaryButton(_btnDeleteClass);
@@ -428,17 +428,17 @@ partial class ClassStudentControl
         _colStudentCode.HeaderText = "MSSV";
         _colStudentCode.Name = "_colStudentCode";
         _colStudentCode.FillWeight = 24F;
-        _colStudentCode.MinimumWidth = 95;
+        _colStudentCode.MinimumWidth = 80;
 
         _colFullName.HeaderText = "Họ và tên";
         _colFullName.Name = "_colFullName";
         _colFullName.FillWeight = 56F;
-        _colFullName.MinimumWidth = 180;
+        _colFullName.MinimumWidth = 140;
 
         _colStudentClass.HeaderText = "Lớp";
         _colStudentClass.Name = "_colStudentClass";
         _colStudentClass.FillWeight = 20F;
-        _colStudentClass.MinimumWidth = 80;
+        _colStudentClass.MinimumWidth = 65;
 
         _dgvStudents.Columns.AddRange(
             _colStudentCode,
@@ -471,7 +471,7 @@ partial class ClassStudentControl
 
         _btnAddStudent.Width = 138;
         _btnAddStudent.Height = 38;
-        _btnAddStudent.Margin = new Padding(0, 0, 8, 0);
+        _btnAddStudent.Margin = new Padding(0, 0, 8, 4);
         _btnAddStudent.TabIndex = 7;
         _btnAddStudent.Text = "Thêm sinh viên";
         UiStyle.StylePrimaryButton(_btnAddStudent);
@@ -479,7 +479,7 @@ partial class ClassStudentControl
 
         _btnEditStudent.Width = 86;
         _btnEditStudent.Height = 38;
-        _btnEditStudent.Margin = new Padding(0, 0, 8, 0);
+        _btnEditStudent.Margin = new Padding(0, 0, 8, 4);
         _btnEditStudent.TabIndex = 8;
         _btnEditStudent.Text = "Sửa";
         UiStyle.StyleSecondaryButton(_btnEditStudent);
@@ -487,7 +487,7 @@ partial class ClassStudentControl
 
         _btnDeleteStudent.Width = 86;
         _btnDeleteStudent.Height = 38;
-        _btnDeleteStudent.Margin = new Padding(0, 0, 8, 0);
+        _btnDeleteStudent.Margin = new Padding(0, 0, 8, 4);
         _btnDeleteStudent.TabIndex = 9;
         _btnDeleteStudent.Text = "Xóa";
         UiStyle.StyleSecondaryButton(_btnDeleteStudent);
@@ -497,7 +497,7 @@ partial class ClassStudentControl
         // Wrap disabled _btnImportFile in _importButtonHost so tooltip shows reliably on hover
         _importButtonHost.AutoSize = true;
         _importButtonHost.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        _importButtonHost.Margin = new Padding(0);
+        _importButtonHost.Margin = new Padding(0, 0, 0, 4);
         _importButtonHost.Padding = new Padding(0);
 
         _btnImportFile.Width = 128;
@@ -509,7 +509,7 @@ partial class ClassStudentControl
         _btnImportFile.Enabled = false;
         _btnImportFile.ForeColor = UiStyle.TextMuted;
 
-        const string importTooltipText = "Nhập tệp ở màn hình Dữ liệu và sao lưu – Bạn 2 phụ trách";
+        const string importTooltipText = "Nhập tệp ở màn hình Xuất/nhập và sao lưu – Bạn 2 phụ trách";
         _toolTip.ShowAlways = true;
         _toolTip.SetToolTip(_btnImportFile, importTooltipText);
         _toolTip.SetToolTip(_importButtonHost, importTooltipText);

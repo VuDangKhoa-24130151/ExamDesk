@@ -306,9 +306,9 @@ partial class DashboardControl
         _difficultyBarsTable.AutoSize = true;
         _difficultyBarsTable.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _difficultyBarsTable.ColumnCount = 3;
-        _difficultyBarsTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 96F));
+        _difficultyBarsTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         _difficultyBarsTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        _difficultyBarsTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 118F));
+        _difficultyBarsTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         _difficultyBarsTable.RowCount = 3;
         _difficultyBarsTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         _difficultyBarsTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -442,7 +442,7 @@ partial class DashboardControl
         _btnQuickExams.Height = 40;
         _btnQuickExams.Margin = new Padding(0, 0, 0, 8);
         _btnQuickExams.TabIndex = 3;
-        _btnQuickExams.Text = "Đề thi (Bạn 2)";
+        _btnQuickExams.Text = "Đề thi";
         UiStyle.StyleSecondaryButton(_btnQuickExams);
         _btnQuickExams.Click += (_, _) => RequestNavigation("exams");
 
@@ -569,6 +569,7 @@ partial class DashboardControl
     {
         nameLabel.AutoSize = true;
         nameLabel.Dock = DockStyle.Fill;
+        nameLabel.MinimumSize = new Size(80, 0);
         nameLabel.Font = UiStyle.BodyFont;
         nameLabel.ForeColor = UiStyle.Text;
         nameLabel.TextAlign = ContentAlignment.MiddleLeft;
@@ -583,6 +584,7 @@ partial class DashboardControl
 
         statLabel.AutoSize = true;
         statLabel.Dock = DockStyle.Fill;
+        statLabel.MinimumSize = new Size(96, 0);
         statLabel.Font = UiStyle.SmallFont;
         statLabel.ForeColor = UiStyle.TextMuted;
         statLabel.TextAlign = ContentAlignment.MiddleRight;

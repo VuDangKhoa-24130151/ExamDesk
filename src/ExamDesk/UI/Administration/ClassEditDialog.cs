@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using ExamDesk.UI.Shared;
 
 namespace ExamDesk.UI.Administration;
 
@@ -21,6 +22,12 @@ public partial class ClassEditDialog : Form
     {
         InitializeComponent();
         CaptureInitialSnapshot();
+    }
+
+    protected override void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+        UiStyle.ClampToWorkingArea(this);
     }
 
     internal void LoadClass(ClassPreview classItem)
@@ -262,9 +269,6 @@ public partial class ClassEditDialog : Form
     {
         _rootLayout.PerformLayout();
         var preferredHeight = _rootLayout.GetPreferredSize(new Size(ClientSize.Width, 0)).Height + 24;
-        if (preferredHeight > ClientSize.Height)
-        {
-            ClientSize = new Size(ClientSize.Width, preferredHeight);
-        }
+        UiStyle.FitClientHeightWithinWorkingArea(this, preferredHeight);
     }
 }

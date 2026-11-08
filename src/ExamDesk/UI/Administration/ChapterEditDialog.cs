@@ -1,4 +1,5 @@
 using ExamDesk.Models;
+using ExamDesk.UI.Shared;
 
 namespace ExamDesk.UI.Administration;
 
@@ -18,6 +19,12 @@ public partial class ChapterEditDialog : Form
     {
         InitializeComponent();
         CaptureInitialSnapshot();
+    }
+
+    protected override void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+        UiStyle.ClampToWorkingArea(this);
     }
 
     internal void InitializeForAdd(Subject subject)
@@ -247,9 +254,6 @@ public partial class ChapterEditDialog : Form
     {
         _rootLayout.PerformLayout();
         var preferredHeight = _rootLayout.GetPreferredSize(new Size(ClientSize.Width, 0)).Height + 24;
-        if (preferredHeight > ClientSize.Height)
-        {
-            ClientSize = new Size(ClientSize.Width, preferredHeight);
-        }
+        UiStyle.FitClientHeightWithinWorkingArea(this, preferredHeight);
     }
 }

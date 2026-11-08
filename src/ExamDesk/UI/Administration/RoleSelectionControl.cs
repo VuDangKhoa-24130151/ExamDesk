@@ -17,27 +17,47 @@ public partial class RoleSelectionControl : UserControl
 
     private void OnLecturerLoginClick(object? sender, EventArgs e)
     {
-        using var loginForm = new LoginForm();
-        var owner = FindForm();
-        var result = owner is not null ? loginForm.ShowDialog(owner) : loginForm.ShowDialog();
-        if (result == DialogResult.OK)
+        try
         {
-            LoggedInUsername = loginForm.LoggedInUsername;
-            LecturerLoggedIn?.Invoke(this, EventArgs.Empty);
+            using var loginForm = new LoginForm();
+            var owner = FindForm();
+            var result = owner is not null ? loginForm.ShowDialog(owner) : loginForm.ShowDialog();
+            if (result == DialogResult.OK)
+            {
+                LoggedInUsername = loginForm.LoggedInUsername;
+                LecturerLoggedIn?.Invoke(this, EventArgs.Empty);
+            }
+        }
+        catch (Exception ex)
+        {
+            if (FindForm() is MainForm mainForm)
+            {
+                mainForm.ShowScreen(MainForm.CreateErrorScreen("Đăng nhập giảng viên", ex.Message));
+            }
         }
     }
 
     private void OnStudentAreaClick(object? sender, EventArgs e)
     {
-        using var studentForm = new StudentExamForm();
-        var owner = FindForm();
-        if (owner is not null)
+        try
         {
-            studentForm.ShowDialog(owner);
+            using var studentForm = new StudentExamForm();
+            var owner = FindForm();
+            if (owner is not null)
+            {
+                studentForm.ShowDialog(owner);
+            }
+            else
+            {
+                studentForm.ShowDialog();
+            }
         }
-        else
+        catch (Exception ex)
         {
-            studentForm.ShowDialog();
+            if (FindForm() is MainForm mainForm)
+            {
+                mainForm.ShowScreen(MainForm.CreateErrorScreen("Khu vực sinh viên", ex.Message));
+            }
         }
     }
 

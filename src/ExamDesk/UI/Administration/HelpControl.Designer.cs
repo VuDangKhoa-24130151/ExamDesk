@@ -137,12 +137,12 @@ partial class HelpControl
         _headerLayout.Controls.Add(_lblTitle, 0, 0);
         _headerLayout.Controls.Add(_lblOfflineBadge, 1, 0);
 
-        // _splitLayout (Left 310px | Right 100%)
+        // _splitLayout (Left 36% | Right 64%)
         _splitLayout.Dock = DockStyle.Fill;
         _splitLayout.Margin = new Padding(0);
         _splitLayout.ColumnCount = 2;
-        _splitLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 310F));
-        _splitLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        _splitLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 36F));
+        _splitLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 64F));
         _splitLayout.RowCount = 1;
         _splitLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 

@@ -29,7 +29,7 @@ internal static class HelpContent
             [
                 "Bước 1: Mở ứng dụng UniExam hoặc bấm mục \"Chọn vai trò\" ở đầu thanh menu bên trái.",
                 "Bước 2: Nếu là giảng viên, bấm nút \"Đăng nhập giảng viên\" ở thẻ bên trái để mở hộp thoại xác thực.",
-                "Bước 3: Nếu là thí sinh dự thi, bấm nút \"Vào khu sinh viên\" ở thẻ bên phải để mở cửa sổ làm bài thi."
+                "Bước 3: Nếu là sinh viên dự thi, bấm nút \"Vào khu sinh viên\" ở thẻ bên phải để mở cửa sổ làm bài thi."
             ],
             Note = "Trong chế độ dựng UI, bạn vẫn có thể bấm trực tiếp các mục trên thanh menu bên trái để kiểm tra từng màn hình mà chưa cần đăng nhập thật."
         },
@@ -93,7 +93,7 @@ internal static class HelpContent
                 "Bước 3: Chọn một lớp ở cột trái để hiển thị danh sách sinh viên của lớp đó ở cột phải. Dùng ô tìm kiếm (Ctrl+F) để lọc nhanh theo MSSV hoặc họ và tên.",
                 "Bước 4: Bấm \"Thêm sinh viên\" hoặc nhấp đúp vào một sinh viên để sửa thông tin (MSSV * gồm 8–10 chữ số không trùng toàn hệ thống, Họ và tên *, Lớp *). Khi đổi Lớp trong hộp thoại Sửa, sĩ số hai lớp sẽ tự động cập nhật."
             ],
-            Note = "Không thể xóa lớp học đang còn sinh viên. Chức năng \"Nhập từ tệp…\" được thực hiện tại màn hình \"Dữ liệu và sao lưu\" (GV-15 – Bạn 2 phụ trách)."
+            Note = "Không thể xóa lớp học đang còn sinh viên. Chức năng \"Nhập từ tệp…\" được thực hiện tại màn hình \"Xuất/nhập và sao lưu\" (GV-15 – Bạn 2 phụ trách)."
         },
         new HelpTopic
         {
@@ -153,7 +153,7 @@ internal static class HelpContent
                 "Bước 2: Chọn môn học, thời gian làm bài và cấu hình số lượng câu hỏi theo từng mức độ khó (Dễ, Trung bình, Khó).",
                 "Bước 3: Kiểm tra số lượng câu hỏi khả dụng trong ngân hàng, xem trước đề và phát hành đề thi cho ca thi."
             ],
-            Note = "Chi tiết do phân hệ phụ trách cập nhật (Bạn 2 – Quản lý đề thi, ca thi và báo cáo)."
+            Note = "Chi tiết thao tác sẽ được cập nhật khi hoàn thiện màn hình Đề thi (GV-07 → GV-09)."
         },
         new HelpTopic
         {
@@ -167,21 +167,21 @@ internal static class HelpContent
                 "Bước 2: Tạo ca thi mới gắn với đề thi đã phát hành, thiết lập mã ca, tên ca, phòng thi và khung giờ mở ca.",
                 "Bước 3: Mở hoặc đóng ca thi để cho phép sinh viên trong danh sách bắt đầu vào làm bài."
             ],
-            Note = "Chi tiết do phân hệ phụ trách cập nhật (Bạn 2 – Quản lý đề thi, ca thi và báo cáo)."
+            Note = "Chi tiết do phân hệ phụ trách cập nhật (Bạn 3 – Quản lý ca thi GV-10 → GV-11)."
         },
         new HelpTopic
         {
             Id = "exam-result",
             Group = "Thi",
-            Title = "Xem kết quả",
+            Title = "Xem kết quả và phúc khảo",
             Keywords = "xem ket qua, thong ke, phuc khao, pho diem, sao luu, gv-12, gv-13, gv-14, gv-15",
             Steps =
             [
-                "Bước 1: Bấm mục \"Kết quả và thống kê\" trong nhóm \"Thi\" trên thanh menu bên trái.",
+                "Bước 1: Bấm mục \"Kết quả và phúc khảo\" trong nhóm \"Thi\" trên thanh menu bên trái.",
                 "Bước 2: Lọc kết quả theo ca thi hoặc lớp học để xem bảng điểm, số câu đúng và trạng thái nộp bài của từng sinh viên.",
                 "Bước 3: Chọn một bài thi để đối chiếu chi tiết từng câu trả lời (phúc khảo chỉ đọc) hoặc xem biểu đồ phổ điểm của ca thi."
             ],
-            Note = "Chi tiết do phân hệ phụ trách cập nhật (Bạn 2 – Quản lý đề thi, ca thi và báo cáo)."
+            Note = "Chi tiết do phân hệ phụ trách cập nhật (Bạn 2 – Kết quả, phúc khảo và phổ điểm GV-12 → GV-14)."
         },
 
         // ==================== 4. SINH VIÊN ====================

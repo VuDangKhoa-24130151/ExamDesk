@@ -53,7 +53,7 @@ public sealed class MainForm : Form
         var sidebarPanel = new Panel
         {
             Dock = DockStyle.Left,
-            Width = 232,
+            Width = 236,
             BackColor = UiStyle.Sidebar,
             ForeColor = Color.White
         };
@@ -61,7 +61,7 @@ public sealed class MainForm : Form
         _menu = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
-            Padding = new Padding(12, 10, 12, 10),
+            Padding = new Padding(10, 10, 10, 10),
             BackColor = UiStyle.Sidebar,
             ForeColor = Color.White,
             FlowDirection = FlowDirection.TopDown,
@@ -99,8 +99,8 @@ public sealed class MainForm : Form
         AddMenuGroupHeader(_menu, "Thi");
         _examPaperButton = AddMenu(_menu, "Đề thi", () => new ExamPaperControl());
         AddMenu(_menu, "Ca thi", () => new SessionManagementControl());
-        AddMenu(_menu, "Kết quả và thống kê", () => new GradingReviewControl());
-        AddMenu(_menu, "Dữ liệu và sao lưu", () => new DataManagementControl());
+        AddMenu(_menu, "Kết quả và phúc khảo", () => new GradingReviewControl());
+        AddMenu(_menu, "Xuất/nhập và sao lưu", () => new DataManagementControl());
 
         // 4. Trợ giúp
         AddMenuSeparator(_menu);
@@ -108,8 +108,8 @@ public sealed class MainForm : Form
 
         // 5. Nhóm "Công cụ dựng UI"
         AddMenuGroupHeader(_menu, "Công cụ dựng UI");
-        AddActionMenu(_menu, "Mở UI đăng nhập GV", OpenLoginDialogTool);
-        AddActionMenu(_menu, "Mở UI sinh viên", OpenStudentDialogTool);
+        AddActionMenu(_menu, "Mở UI đăng nhập GV", "Đăng nhập giảng viên", OpenLoginDialogTool);
+        AddActionMenu(_menu, "Mở UI sinh viên", "Khu vực sinh viên", OpenStudentDialogTool);
 
         // Vùng trạng thái đăng nhập ở cuối sidebar
         var authFooter = new Panel
@@ -183,7 +183,8 @@ public sealed class MainForm : Form
         _lblBottomNote = new Label
         {
             Dock = DockStyle.Bottom,
-            Height = 40,
+            Height = 32,
+            AutoEllipsis = true,
             Padding = new Padding(16, 0, 16, 0),
             Font = UiStyle.SmallFont,
             ForeColor = UiStyle.TextMuted,
@@ -197,7 +198,14 @@ public sealed class MainForm : Form
 
         UpdateLoginStatusUi();
         AdjustMenuChildWidths();
-        ShowScreen(CreateRoleSelectionScreen(), _roleSelectionButton);
+        TryOpenScreen("Chọn vai trò", CreateRoleSelectionScreen, _roleSelectionButton);
+    }
+
+    protected override void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+        UiStyle.ClampToWorkingArea(this);
+        AdjustMenuChildWidths();
     }
 
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
@@ -290,11 +298,27 @@ public sealed class MainForm : Form
                 break;
 
             case "question-new":
-                var questionBank = new QuestionBankControl();
-                if (ShowScreen(questionBank, _questionBankButton))
-                {
-                    BeginInvoke(questionBank.StartAddQuestion);
-                }
+                TryOpenScreen(
+                    "Ngân hàng câu hỏi",
+                    () => new QuestionBankControl(),
+                    _questionBankButton,
+                    screen =>
+                    {
+                        if (screen is QuestionBankControl questionBank)
+                        {
+                            BeginInvoke(() =>
+                            {
+                                try
+                                {
+                                    questionBank.StartAddQuestion();
+                                }
+                                catch (Exception ex)
+                                {
+                                    ReplaceContentScreen(CreateErrorScreen("Thêm câu hỏi", ex.Message));
+                                }
+                            });
+                        }
+                    });
                 break;
         }
     }
@@ -302,8 +326,7 @@ public sealed class MainForm : Form
     private void HandleLecturerLoggedIn(string? username)
     {
         var resolvedUsername = string.IsNullOrWhiteSpace(username) ? "gv01" : username.Trim();
-        var dashboard = CreateDashboardScreen(resolvedUsername);
-        if (ShowScreen(dashboard, _dashboardButton))
+        if (TryOpenScreen("Tổng quan", () => CreateDashboardScreen(resolvedUsername), _dashboardButton))
         {
             _loggedInUsername = resolvedUsername;
             UpdateLoginStatusUi();
@@ -347,8 +370,7 @@ public sealed class MainForm : Form
 
         _loggedInUsername = string.Empty;
         UpdateLoginStatusUi();
-        ReplaceContentScreen(CreateRoleSelectionScreen());
-        SetActiveMenuButton(_roleSelectionButton);
+        TryOpenScreen("Chọn vai trò", CreateRoleSelectionScreen, _roleSelectionButton, skipLeaveCheck: true);
     }
 
     private void UpdateLoginStatusUi()
@@ -409,14 +431,7 @@ public sealed class MainForm : Form
         var button = CreateSidebarButton(text, shortcutHint);
         button.Click += (_, _) =>
         {
-            if (!CanLeaveCurrentScreen())
-            {
-                return;
-            }
-
-            var screen = createScreen();
-            ReplaceContentScreen(screen);
-            SetActiveMenuButton(button);
+            TryOpenScreen(text, createScreen, button);
         };
 
         _menuButtons.Add(button);
@@ -424,10 +439,20 @@ public sealed class MainForm : Form
         return button;
     }
 
-    private Button AddActionMenu(FlowLayoutPanel menu, string text, Action action)
+    private Button AddActionMenu(FlowLayoutPanel menu, string text, string screenNameForError, Action action)
     {
         var button = CreateSidebarButton(text, shortcutHint: null);
-        button.Click += (_, _) => action();
+        button.Click += (_, _) =>
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                ReplaceContentScreen(CreateErrorScreen(screenNameForError, ex.Message));
+            }
+        };
         menu.Controls.Add(button);
         return button;
     }
@@ -440,13 +465,14 @@ public sealed class MainForm : Form
             Text = "   " + text,
             Width = 200,
             Height = 38,
+            AutoEllipsis = true,
             Margin = new Padding(0, 0, 0, 4),
             FlatStyle = FlatStyle.Flat,
             BackColor = UiStyle.Sidebar,
             ForeColor = Color.White,
             Font = UiStyle.BodyFont,
             TextAlign = ContentAlignment.MiddleLeft,
-            Padding = new Padding(8, 0, 8, 0),
+            Padding = new Padding(6, 0, 4, 0),
             Cursor = Cursors.Hand,
             TabStop = true,
             TabIndex = _nextTabIndex++
@@ -458,6 +484,10 @@ public sealed class MainForm : Form
         if (!string.IsNullOrWhiteSpace(shortcutHint))
         {
             _toolTip.SetToolTip(button, $"{text} ({shortcutHint})");
+        }
+        else
+        {
+            _toolTip.SetToolTip(button, text);
         }
 
         return button;
@@ -502,6 +532,45 @@ public sealed class MainForm : Form
         return true;
     }
 
+    private bool TryOpenScreen(
+        string screenName,
+        Func<UserControl> createScreen,
+        Button? menuButton = null,
+        Action<UserControl>? afterShown = null,
+        bool skipLeaveCheck = false)
+    {
+        if (!skipLeaveCheck && !CanLeaveCurrentScreen())
+        {
+            return false;
+        }
+
+        try
+        {
+            var screen = createScreen();
+            ReplaceContentScreen(screen);
+            if (menuButton is not null)
+            {
+                SetActiveMenuButton(menuButton);
+            }
+            else if (_activeMenuButton is not null)
+            {
+                SetActiveMenuButton(_activeMenuButton);
+            }
+
+            afterShown?.Invoke(screen);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            ReplaceContentScreen(CreateErrorScreen(screenName, ex.Message));
+            if (menuButton is not null)
+            {
+                SetActiveMenuButton(menuButton);
+            }
+            return false;
+        }
+    }
+
     public bool ShowScreen(UserControl screen, Button? menuButton = null)
     {
         ArgumentNullException.ThrowIfNull(screen);
@@ -513,17 +582,27 @@ public sealed class MainForm : Form
             return false;
         }
 
-        ReplaceContentScreen(screen);
-        if (menuButton is not null)
+        var screenName = menuButton?.Tag as string ?? screen.Name;
+        try
         {
-            SetActiveMenuButton(menuButton);
-        }
-        else if (_activeMenuButton is not null)
-        {
-            SetActiveMenuButton(_activeMenuButton);
-        }
+            ReplaceContentScreen(screen);
+            if (menuButton is not null)
+            {
+                SetActiveMenuButton(menuButton);
+            }
+            else if (_activeMenuButton is not null)
+            {
+                SetActiveMenuButton(_activeMenuButton);
+            }
 
-        return true;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            screen.Dispose();
+            ReplaceContentScreen(CreateErrorScreen(screenName, ex.Message));
+            return false;
+        }
     }
 
     private void ReplaceContentScreen(UserControl screen)
@@ -539,8 +618,11 @@ public sealed class MainForm : Form
         _content.Controls.Add(screen);
     }
 
-    private static UserControl CreatePlaceholderScreen(string title, string placeholderText)
+    internal static UserControl CreateErrorScreen(string screenName, string errorMessage)
     {
+        var displayScreenName = string.IsNullOrWhiteSpace(screenName) ? "màn hình" : screenName.Trim();
+        var detail = string.IsNullOrWhiteSpace(errorMessage) ? "Lỗi không xác định" : errorMessage.Trim();
+
         var control = new UserControl
         {
             AutoScaleDimensions = new SizeF(7F, 15F),
@@ -568,52 +650,51 @@ public sealed class MainForm : Form
             AutoSize = true,
             Font = UiStyle.TitleFont,
             ForeColor = UiStyle.Text,
-            Text = title,
+            Text = displayScreenName,
             Margin = new Padding(0, 0, 0, 16)
         };
 
-        var cardBorder = new Panel
+        var errorBorder = new Panel
         {
             Dock = DockStyle.Top,
             AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
             Padding = new Padding(1),
-            BackColor = UiStyle.Border,
+            BackColor = UiStyle.ErrorText,
             Margin = Padding.Empty
         };
 
-        var cardSurface = new FlowLayoutPanel
+        var errorPanel = new Panel
         {
             Dock = DockStyle.Top,
             AutoSize = true,
-            FlowDirection = FlowDirection.TopDown,
-            WrapContents = false,
-            Padding = new Padding(24),
-            BackColor = UiStyle.Surface
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            Padding = new Padding(20, 16, 20, 16),
+            BackColor = UiStyle.ErrorBack
         };
 
-        var lblStatus = new Label
+        var lblError = new Label
         {
             AutoSize = true,
-            Font = new Font("Segoe UI", 11F, FontStyle.Bold),
-            ForeColor = UiStyle.Primary,
-            Text = placeholderText,
-            Margin = new Padding(0, 0, 0, 8)
-        };
-
-        var lblDesc = new Label
-        {
-            AutoSize = true,
+            Dock = DockStyle.Top,
             Font = UiStyle.BodyFont,
-            ForeColor = UiStyle.TextMuted,
-            Text = "Màn hình đang trong lộ trình dựng giao diện Tuần 2 (dữ liệu minh họa, chưa kết nối SQLite)."
+            ForeColor = UiStyle.ErrorText,
+            BackColor = UiStyle.ErrorBack,
+            Margin = Padding.Empty,
+            Text = $"Không mở được {displayScreenName}: {detail}. Báo cho bạn phụ trách."
         };
 
-        cardSurface.Controls.Add(lblStatus);
-        cardSurface.Controls.Add(lblDesc);
-        cardBorder.Controls.Add(cardSurface);
+        errorPanel.SizeChanged += (_, _) =>
+        {
+            var maxWidth = Math.Max(200, errorPanel.ClientSize.Width - errorPanel.Padding.Horizontal);
+            lblError.MaximumSize = new Size(maxWidth, 0);
+        };
+
+        errorPanel.Controls.Add(lblError);
+        errorBorder.Controls.Add(errorPanel);
 
         rootLayout.Controls.Add(lblTitle, 0, 0);
-        rootLayout.Controls.Add(cardBorder, 0, 1);
+        rootLayout.Controls.Add(errorBorder, 0, 1);
         control.Controls.Add(rootLayout);
 
         return control;

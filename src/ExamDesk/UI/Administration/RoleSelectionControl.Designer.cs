@@ -66,6 +66,7 @@ partial class RoleSelectionControl
 
         // _rootLayout
         _rootLayout.Dock = DockStyle.Fill;
+        _rootLayout.AutoScroll = true;
         _rootLayout.BackColor = UiStyle.Background;
         _rootLayout.Padding = new Padding(24);
         _rootLayout.ColumnCount = 3;
@@ -156,8 +157,8 @@ partial class RoleSelectionControl
         _lblLecturerDesc.Dock = DockStyle.Fill;
         _lblLecturerDesc.Font = UiStyle.BodyFont;
         _lblLecturerDesc.ForeColor = UiStyle.TextMuted;
-        _lblLecturerDesc.Margin = new Padding(0, 0, 0, 24);
-        _lblLecturerDesc.Text = "Quản lý câu hỏi, đề thi, ca thi, kết quả và thống kê học phần.";
+        _lblLecturerDesc.Margin = new Padding(0, 0, 0, 20);
+        _lblLecturerDesc.Text = "Quản lý môn, chương, lớp, sinh viên, câu hỏi, đề thi, ca thi và kết quả.";
 
         // _btnLecturerLogin
         _btnLecturerLogin.Dock = DockStyle.Fill;
@@ -215,8 +216,8 @@ partial class RoleSelectionControl
         _lblStudentDesc.Dock = DockStyle.Fill;
         _lblStudentDesc.Font = UiStyle.BodyFont;
         _lblStudentDesc.ForeColor = UiStyle.TextMuted;
-        _lblStudentDesc.Margin = new Padding(0, 0, 0, 24);
-        _lblStudentDesc.Text = "Nhận diện thí sinh, chọn ca thi và thực hiện bài thi trắc nghiệm.";
+        _lblStudentDesc.Margin = new Padding(0, 0, 0, 20);
+        _lblStudentDesc.Text = "Nhận diện sinh viên, chọn ca thi và làm bài thi trắc nghiệm.";
 
         // _btnStudentArea
         _btnStudentArea.Dock = DockStyle.Fill;
