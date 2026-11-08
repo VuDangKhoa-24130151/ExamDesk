@@ -65,7 +65,7 @@ public sealed class MainForm : Form
             ForeColor = UiStyle.TextMuted,
             BackColor = UiStyle.Background,
             TextAlign = ContentAlignment.MiddleLeft,
-            Text = "CHẾ ĐỘ DỰNG UI • Các màn hình là khung trống, chưa đăng nhập hoặc kết nối SQLite."
+            Text = "CHẾ ĐỘ DỰNG UI • Quản lý ca đã lưu SQLite; các phân hệ khác đang dùng dữ liệu demo."
         };
 
         var roleSelectionButton = AddMenu(menu, "Chọn vai trò", OpenRoleSelection);

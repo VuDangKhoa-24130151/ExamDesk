@@ -123,7 +123,7 @@ partial class SessionSelectionControl
     };
 
     // Tạo nhãn theo cùng font và khoảng cách để không phải viết lặp lại.
-    private static Label TextLabel(string text, float size, FontStyle style = FontStyle.Regular) => new()
+    private static Label TextLabel(string text, float size = 10, FontStyle style = FontStyle.Regular) => new()
     {
         Text = text, AutoSize = true, Font = new Font("Segoe UI", size, style),
         Margin = new Padding(0, 0, 0, 8)
