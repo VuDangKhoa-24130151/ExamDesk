@@ -7,22 +7,22 @@ internal static class ReportsPreviewData
     public const string AutoSubmit = "Hết giờ";
     public const string CA01 = "CA01 - Cơ sở dữ liệu - 07:00 06/11";
     public const string CA02 = "CA02 - Lập trình .NET - 09:35 06/11";
-    public static List<string> Session() => new() { CA01, CA02 };
-    public static List<string> Classes() => new() { DH24IT01, DH24IT02 };
+    public static List<string> Session() => new() { Ca01, Ca02 };
+    public static List<string> Classes() => new() { "DH24IT01", "DH24IT02" };
 
     //Trả về danh sách mới
     public static List<AttemptResultItem> Attempts() => new() {
-        new() { Mssv = "24130001", HoTen = "Nguyễn Văn An", Lop = "DH24IT01", Ca = Ca01, SoCau = 30, SoDung = 27, SoBoTrong = 0, CachNop = ManualSubmit, NopLuc = new DateTime(2026, 11, 6, 8, 5, 0) };
-        new() { Mssv = "24130002", HoTen = "Trần Thị Bình",   Lop = "DH24IT01", Ca = Ca01, SoCau = 30, SoDung = 18, SoBoTrong = 3, CachNop = AutoSubmit,   NopLuc = new DateTime(2026, 11, 6, 8, 15, 0) };
-        new() { Mssv = "24130003", HoTen = "Lê Minh Cường",   Lop = "DH24IT02", Ca = Ca01, SoCau = 30, SoDung = 12, SoBoTrong = 6, CachNop = AutoSubmit,   NopLuc = new DateTime(2026, 11, 6, 8, 15, 0) };
-        new() { Mssv = "24130004", HoTen = "Phạm Thu Dung",   Lop = "DH24IT02", Ca = Ca01, SoCau = 30, SoDung = 22, SoBoTrong = 1, CachNop = ManualSubmit, NopLuc = new DateTime(2026, 11, 6, 8, 9, 0) };
-        new() { Mssv = "24130005", HoTen = "Hoàng Văn Em",    Lop = "DH24IT01", Ca = Ca02, SoCau = 40, SoDung = 31, SoBoTrong = 2, CachNop = ManualSubmit, NopLuc = new DateTime(2026, 11, 6, 14, 20, 0) };
-        new() { Mssv = "24130006", HoTen = "Võ Ngọc Giang",   Lop = "DH24IT02", Ca = Ca02, SoCau = 40, SoDung = 15, SoBoTrong = 10, CachNop = AutoSubmit,  NopLuc = new DateTime(2026, 11, 6, 14, 30, 0) };
-    }
+        new() { Mssv = "24130001", HoTen = "Nguyễn Văn An", Lop = "DH24IT01", Ca = Ca01, SoCau = 30, CauDung = 27, CauBoTrong = 0, CachNop = ManualSubmit, NopLuc = new DateTime(2026, 11, 6, 8, 5, 0) },
+        new() { Mssv = "24130002", HoTen = "Trần Thị Bình",   Lop = "DH24IT01", Ca = Ca01, SoCau = 30, CauDung = 18, CauBoTrong = 3, CachNop = AutoSubmit,   NopLuc = new DateTime(2026, 11, 6, 8, 15, 0) },
+        new() { Mssv = "24130003", HoTen = "Lê Minh Cường",   Lop = "DH24IT02", Ca = Ca01, SoCau = 30, CauDung = 12, CauBoTrong = 6, CachNop = AutoSubmit,   NopLuc = new DateTime(2026, 11, 6, 8, 15, 0) },
+        new() { Mssv = "24130004", HoTen = "Phạm Thu Dung",   Lop = "DH24IT02", Ca = Ca01, SoCau = 30, CauDung = 22, CauBoTrong = 1, CachNop = ManualSubmit, NopLuc = new DateTime(2026, 11, 6, 8, 9, 0) },
+        new() { Mssv = "24130005", HoTen = "Hoàng Văn Em",    Lop = "DH24IT01", Ca = Ca02, SoCau = 40, CauDung = 31, CauBoTrong = 2, CachNop = ManualSubmit, NopLuc = new DateTime(2026, 11, 6, 14, 20, 0) },
+        new() { Mssv = "24130006", HoTen = "Võ Ngọc Giang",   Lop = "DH24IT02", Ca = Ca02, SoCau = 40, CauDung = 15, CauBoTrong = 10, CachNop = AutoSubmit,  NopLuc = new DateTime(2026, 11, 6, 14, 30, 0) },
+    };
 
     // dữ liệu đúng sai,bỏ trống bài
      public static List<AnswerDetailItem> AnswerDetails(AttemptResultItem attempt){
-        String[] op = { "A", "B", "C", "D" };
+        String[] options = { "A", "B", "C", "D" };
 
         // cố định theo MSSV (mở cùng 1 bài sẽ thấy giống bài đó)
         var random =new Random(attempt.Mssv.Sum(c => c));
@@ -70,7 +70,7 @@ internal static class ReportsPreviewData
         public string HoTen { get; set; } = string.Empty;
         public string Lop { get; set; } = string.Empty;
         public string Ca { get; set; } = string.Empty;
-        public int SoCau { get; set; };
+        public int SoCau { get; set; }
         public int CauDung { get; set; };
         public int CauBoTrong { get; set; };
         public int CauSai => SoCau - CauDung - CauBoTrong;
@@ -78,7 +78,7 @@ internal static class ReportsPreviewData
         public DateTime NopLuc { get; set; };
 
         //Điểm = số đúng / tổng x 10 , làm tròn 2 chữ số
-        public double Diem => SoCau == 0 ? 0 : Math.Round((CauDung * 10.0 / SoCau, 2));
+        public double Diem => SoCau == 0 ? 0 : Math.Round(CauDung * 10.0 / SoCau, 2);
     
 }
 // Dòng chi tiết làm bài
