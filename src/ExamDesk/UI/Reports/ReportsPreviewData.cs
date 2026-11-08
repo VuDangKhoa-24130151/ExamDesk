@@ -79,8 +79,16 @@ internal static class ReportsPreviewData
 
         //Điểm = số đúng / tổng x 10 , làm tròn 2 chữ số
         public double Diem => SoCau == 0 ? 0 : Math.Round((CauDung * 10.0 / SoCau, 2));
-
-
     
+}
+// Dòng chi tiết làm bài
+     internal sealed class AnswerDetailItem
+     {
+        public int Cau { get; set; }
+    public string LuaChon { get; set; } = string.Empty;   
+    public string DapAnDung { get; set; } = string.Empty;
+    public string LichSu { get; set; } = string.Empty;
+    public string KetQua => LuaChon == string.Empty ? "Bỏ trống"
+                          : LuaChon == DapAnDung ? "Đúng" : "Sai";
 }
 
