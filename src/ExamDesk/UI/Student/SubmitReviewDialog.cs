@@ -8,14 +8,15 @@ public partial class SubmitReviewDialog : Form
         InitializeComponent();
         _answered.Text = attempt.Answered.ToString();
         _unanswered.Text = (attempt.Answers.Length - attempt.Answered).ToString();
+        _flagged.Text = attempt.Flags.Count(flag => flag).ToString();
 
         for (int index = 0; index < attempt.Answers.Length; index++)
         {
-            AddQuestionButton(index, attempt.Answers[index].HasValue);
+            if (!attempt.Answers[index].HasValue) AddQuestionButton(index);
         }
 
         if (_numbers.Controls.Count == 0)
-            _numbers.Controls.Add(StudentLayout.Label("Chưa có câu hỏi."));
+            _numbers.Controls.Add(StudentLayout.Label("Bạn đã trả lời tất cả các câu."));
 
         void UpdateClock() =>
             _warning.Text = $"Còn {attempt.Remaining} · Sau khi nộp, bạn không thể sửa đáp án.";
@@ -29,7 +30,7 @@ public partial class SubmitReviewDialog : Form
         };
     }
 
-    private void AddQuestionButton(int index, bool answered)
+    private void AddQuestionButton(int index)
     {
         var number = StudentLayout.Button((index + 1).ToString(), (_, _) =>
         {
@@ -42,9 +43,8 @@ public partial class SubmitReviewDialog : Form
         number.Size = new Size(48, 38);
         number.Margin = new Padding(0, 0, 8, 8);
         number.AccessibleName = $"Quay lại câu {index + 1}";
-        number.AccessibleDescription = answered ? "Đã trả lời" : "Chưa trả lời";
-        number.BackColor = answered ? Color.FromArgb(234, 246, 239) : Color.White;
-        number.ForeColor = answered ? Color.FromArgb(20, 108, 67) : ExamDesk.UI.Shared.UiStyle.Text;
+        number.AccessibleDescription = "Chưa trả lời";
+        number.ForeColor = Shared.UiStyle.Primary;
         _numbers.Controls.Add(number);
     }
 }

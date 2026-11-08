@@ -5,6 +5,7 @@ namespace ExamDesk.UI.Student;
 partial class SubmissionStatusControl
 {
     private Label _status = null!, _summary = null!;
+    private FlowLayoutPanel _actions = null!;
     private Panel _cardHost = null!;
 
     private void InitializeComponent()
@@ -18,7 +19,6 @@ partial class SubmissionStatusControl
             Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, Padding = new Padding(24, 16, 24, 0)
         };
         heading.Controls.Add(StudentLayout.Label("Kết thúc lượt làm bài", 18, FontStyle.Bold));
-        heading.Controls.Add(StudentLayout.Label("Bạn có thể đóng cửa sổ để trở về màn hình chính."));
         _cardHost = new Panel { Dock = DockStyle.Fill, AutoScroll = true };
         var card = new TableLayoutPanel
         {
@@ -36,6 +36,7 @@ partial class SubmissionStatusControl
         card.Controls.Add(_summary);
         var actions = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = true };
         actions.Controls.Add(StudentLayout.Button("&Đóng cửa sổ", (_, _) => CloseRequested?.Invoke(this, EventArgs.Empty)));
+        _actions=actions;
         card.Controls.Add(actions);
         card.SizeChanged += (_, _) =>
         {
@@ -48,6 +49,12 @@ partial class SubmissionStatusControl
         _cardHost.Controls.Add(card);
         Controls.Add(_cardHost);
         Controls.Add(heading);
+        heading.SizeChanged+=(_,_)=>
+        {
+            int width=Math.Max(1,heading.ClientSize.Width-heading.Padding.Horizontal-12);
+            foreach(Control control in heading.Controls)
+                if(control is Label label) label.MaximumSize=new Size(width,0);
+        };
     }
 }
 

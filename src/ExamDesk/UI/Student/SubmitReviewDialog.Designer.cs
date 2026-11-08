@@ -5,7 +5,7 @@ namespace ExamDesk.UI.Student;
 partial class SubmitReviewDialog
 {
     private readonly System.Windows.Forms.Timer _clock = new() { Interval = 250 };
-    private Label _answered = null!, _unanswered = null!, _warning = null!;
+    private Label _answered = null!, _unanswered = null!, _flagged = null!, _warning = null!;
     private FlowLayoutPanel _numbers = null!;
     private Button _continueButton = null!;
 
@@ -22,7 +22,7 @@ partial class SubmitReviewDialog
         Font = new Font("Segoe UI", 10);
         AutoScaleMode = AutoScaleMode.Font;
         StartPosition = FormStartPosition.CenterParent;
-        ClientSize = new Size(680, 500);
+        ClientSize = new Size(680, 530);
         MinimumSize = new Size(540, 360);
         BackColor = UiStyle.Surface;
         MaximizeBox = false;
@@ -40,21 +40,27 @@ partial class SubmitReviewDialog
 
         var counts = new TableLayoutPanel
         {
-            Dock = DockStyle.Top, AutoSize = true, ColumnCount = 2, Margin = new Padding(0, 8, 0, 12)
+            Dock = DockStyle.Top, AutoSize = true, ColumnCount = 3, Margin = new Padding(0, 8, 0, 12)
         };
-        for (int i = 0; i < 2; i++)
-            counts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        for (int i = 0; i < 3; i++)
+            counts.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / 3));
         counts.Controls.Add(Counter("Đã trả lời", UiStyle.Background, UiStyle.Primary, out _answered), 0, 0);
-        counts.Controls.Add(Counter("Chưa trả lời", Color.FromArgb(255, 245, 219), Color.FromArgb(132, 83, 0), out _unanswered), 1, 0);
+        counts.Controls.Add(Counter("Chưa trả lời", UiStyle.WarningBack, UiStyle.WarningText, out _unanswered), 1, 0);
+        counts.Controls.Add(Counter("Đánh dấu", UiStyle.Background, UiStyle.Primary, out _flagged), 2, 0);
         content.Controls.Add(counts);
 
-        content.Controls.Add(StudentLayout.Label("Chọn số câu để quay lại — ô xanh đã trả lời, ô trắng chưa trả lời:"));
+        content.Controls.Add(StudentLayout.Label("Câu chưa trả lời — chọn số câu để quay lại", 10, FontStyle.Bold));
         _numbers = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 138, AutoScroll = true, Margin = Padding.Empty };
         content.Controls.Add(_numbers);
         _warning = StudentLayout.Label("");
         _warning.ForeColor = Color.FromArgb(180, 35, 24);
-        content.Controls.Add(_warning);
         body.Controls.Add(content);
+        content.SizeChanged+=(_,_)=>
+        {
+            int width=Math.Max(1,content.ClientSize.Width-content.Padding.Horizontal-12);
+            foreach(Control control in content.Controls)
+                if(control is Label label) label.MaximumSize=new Size(width,0);
+        };
 
         // Giữ nút thao tác ở đáy; phần nội dung có thể cuộn khi thu nhỏ.
         var actions = new TableLayoutPanel
@@ -70,8 +76,12 @@ partial class SubmitReviewDialog
         var confirm = StudentLayout.Button("&Xác nhận nộp bài", (_, _) => { }, true);
         confirm.DialogResult = DialogResult.OK;
         confirm.Dock = DockStyle.Fill;
-        actions.Controls.Add(_continueButton, 0, 0);
-        actions.Controls.Add(confirm, 1, 0);
+        actions.Controls.Add(_warning, 0, 0);
+        actions.SetColumnSpan(_warning, 2);
+        actions.Controls.Add(_continueButton, 0, 1);
+        actions.Controls.Add(confirm, 1, 1);
+        actions.SizeChanged += (_, _) =>
+            _warning.MaximumSize = new Size(Math.Max(1, actions.ClientSize.Width - actions.Padding.Horizontal), 0);
         Controls.Add(body);
         Controls.Add(actions);
         CancelButton = _continueButton;

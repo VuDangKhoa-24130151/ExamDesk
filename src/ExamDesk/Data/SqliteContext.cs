@@ -2,7 +2,7 @@ using Microsoft.Data.Sqlite;
 
 namespace ExamDesk.Data;
 
-// File chung: Bạn 1 điều phối. Chỉ cung cấp điểm kết nối, chưa tạo bảng/nạp dữ liệu.
+// File chung: Bạn 1 điều phối kết nối và khởi tạo schema, không nạp dữ liệu mẫu.
 public static class SqliteContext
 {
     public static string DatabaseFilePath => Path.Combine(
@@ -22,8 +22,22 @@ public static class SqliteContext
 
     public static void InitializeDatabase()
     {
-        // TODO (Bạn 1): tạo thư mục, đọc schema.sql và khởi tạo bảng trong transaction.
-        // Chỉ gọi sau khi nhóm triển khai; không xóa database cũ hoặc tự nạp tài khoản mẫu.
-        throw new NotImplementedException("Chưa triển khai khởi tạo SQLite.");
+        // Nhúng schema vào assembly để chạy được cả khi đổi thư mục hoặc đóng gói app.
+        using var stream = typeof(SqliteContext).Assembly
+            .GetManifestResourceStream("ExamDesk.Data.schema.sql")
+            ?? throw new InvalidOperationException("Không tìm thấy schema SQLite trong ứng dụng.");
+        using var reader = new StreamReader(stream);
+        var schema = reader.ReadToEnd();
+
+        Directory.CreateDirectory(Path.GetDirectoryName(DatabaseFilePath)!);
+        using var connection = CreateConnection();
+        connection.Open();
+        using var transaction = connection.BeginTransaction();
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = schema;
+        command.ExecuteNonQuery();
+        transaction.Commit();
+        // IF NOT EXISTS giữ dữ liệu cũ; thay đổi cấu trúc về sau cần migration riêng.
     }
 }
