@@ -1,3 +1,5 @@
+using ExamDesk.UI.Shared;
+
 namespace ExamDesk.UI.Administration;
 
 // Bạn 1: Form độc lập. Thêm các UserControl/Dialog của phân hệ trong cùng thư mục.
@@ -13,6 +15,12 @@ public partial class LoginForm : Form
     public LoginForm()
     {
         InitializeComponent();
+    }
+
+    protected override void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+        UiStyle.ClampToWorkingArea(this);
     }
 
     private void OnUsernameTextChanged(object? sender, EventArgs e)
@@ -132,9 +140,6 @@ public partial class LoginForm : Form
     {
         _rootLayout.PerformLayout();
         var preferredHeight = _rootLayout.GetPreferredSize(new Size(ClientSize.Width, 0)).Height;
-        if (preferredHeight > ClientSize.Height)
-        {
-            ClientSize = new Size(ClientSize.Width, preferredHeight);
-        }
+        UiStyle.FitClientHeightWithinWorkingArea(this, preferredHeight);
     }
 }

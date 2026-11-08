@@ -24,6 +24,12 @@ public partial class QuestionPreviewDialog : Form
         InitializeComponent();
     }
 
+    protected override void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+        UiStyle.ClampToWorkingArea(this);
+    }
+
     public void ShowQuestion(Question q, string subjectName)
     {
         ArgumentNullException.ThrowIfNull(q);

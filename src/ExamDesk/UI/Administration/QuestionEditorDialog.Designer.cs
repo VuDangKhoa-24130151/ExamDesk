@@ -236,7 +236,7 @@ partial class QuestionEditorDialog
         _numChapter.Dock = DockStyle.Fill;
         _numChapter.Font = UiStyle.BodyFont;
         _numChapter.Minimum = 1;
-        _numChapter.Maximum = 20;
+        _numChapter.Maximum = 50;
         _numChapter.Value = 1;
         _numChapter.Margin = new Padding(0, 0, 12, 4);
         _numChapter.TabIndex = 1;
@@ -387,7 +387,7 @@ partial class QuestionEditorDialog
         _optionsLayout.AutoSize = true;
         _optionsLayout.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _optionsLayout.ColumnCount = 3;
-        _optionsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 96F));
+        _optionsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         _optionsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         _optionsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         _optionsLayout.RowCount = 8;
@@ -430,7 +430,7 @@ partial class QuestionEditorDialog
         _lblCorrectOptionError.Dock = DockStyle.Fill;
         _lblCorrectOptionError.Font = UiStyle.SmallFont;
         _lblCorrectOptionError.ForeColor = UiStyle.ErrorText;
-        _lblCorrectOptionError.Margin = new Padding(96, 4, 0, 0);
+        _lblCorrectOptionError.Margin = new Padding(0, 4, 0, 0);
         _lblCorrectOptionError.Visible = false;
 
         _formLayout.Controls.Add(_metaLayout, 0, 0);

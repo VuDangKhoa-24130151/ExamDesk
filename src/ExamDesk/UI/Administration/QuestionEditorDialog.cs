@@ -1,4 +1,5 @@
 using ExamDesk.Models;
+using ExamDesk.UI.Shared;
 
 namespace ExamDesk.UI.Administration;
 
@@ -18,6 +19,12 @@ public partial class QuestionEditorDialog : Form
         InitializeComponent();
         PopulateSubjects();
         CaptureInitialSnapshot();
+    }
+
+    protected override void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+        UiStyle.ClampToWorkingArea(this);
     }
 
     public void LoadQuestion(Question q)
@@ -300,9 +307,9 @@ public partial class QuestionEditorDialog : Form
         }
 
         var chapter = (int)_numChapter.Value;
-        if (chapter < 1 || chapter > 20)
+        if (chapter < 1 || chapter > 50)
         {
-            _lblChapterError.Text = "Chương phải từ 1 đến 20.";
+            _lblChapterError.Text = "Chương phải từ 1 đến 50.";
             _lblChapterError.Visible = true;
             firstInvalidControl ??= _numChapter;
         }
