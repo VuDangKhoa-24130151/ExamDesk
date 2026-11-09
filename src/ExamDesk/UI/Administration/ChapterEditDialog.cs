@@ -1,11 +1,14 @@
 using ExamDesk.Models;
+using ExamDesk.Services;
 using ExamDesk.UI.Shared;
 
 namespace ExamDesk.UI.Administration;
 
-// GV-02 • Bạn 1 phụ trách: Hộp thoại thêm / sửa chương của môn học (mốc UI, dữ liệu minh họa).
+// GV-02 • Bạn 1 phụ trách: Hộp thoại thêm / sửa chương của môn học (kết nối SQLite qua QuestionBankService).
 public partial class ChapterEditDialog : Form
 {
+    private readonly QuestionBankService _service;
+
     private int _subjectId;
     private int? _editingOriginalNumber;
     private int _initialNumber = 1;
@@ -13,10 +16,15 @@ public partial class ChapterEditDialog : Form
     private bool _suppressDirtyTracking;
     private bool _allowCloseWithoutPrompt;
 
-    internal ChapterPreview? Result { get; private set; }
+    public ChapterInfo? Result { get; private set; }
 
-    public ChapterEditDialog()
+    public ChapterEditDialog() : this(new QuestionBankService())
     {
+    }
+
+    public ChapterEditDialog(QuestionBankService service)
+    {
+        _service = service ?? throw new ArgumentNullException(nameof(service));
         InitializeComponent();
         CaptureInitialSnapshot();
     }
@@ -27,7 +35,7 @@ public partial class ChapterEditDialog : Form
         UiStyle.ClampToWorkingArea(this);
     }
 
-    internal void InitializeForAdd(Subject subject)
+    public void InitializeForAdd(Subject subject)
     {
         ArgumentNullException.ThrowIfNull(subject);
 
@@ -39,8 +47,7 @@ public partial class ChapterEditDialog : Form
         _lblTitle.Text = "Thêm chương";
         _lblSubjectInfo.Text = $"Môn học: {subject.Code} – {subject.Name}";
 
-        var existingNumbers = AdminPreviewData.Chapters
-            .Where(c => c.SubjectId == subject.Id)
+        var existingNumbers = _service.GetChaptersBySubject(subject.Id)
             .Select(c => c.Number)
             .ToHashSet();
 
@@ -58,7 +65,7 @@ public partial class ChapterEditDialog : Form
         CaptureInitialSnapshot();
     }
 
-    internal void LoadChapter(Subject subject, ChapterPreview chapter)
+    public void LoadChapter(Subject subject, ChapterInfo chapter)
     {
         ArgumentNullException.ThrowIfNull(subject);
         ArgumentNullException.ThrowIfNull(chapter);
@@ -207,14 +214,15 @@ public partial class ChapterEditDialog : Form
             _lblNumberError.Visible = true;
             firstInvalidControl ??= _numChapterNumber;
         }
-        else if (AdminPreviewData.Chapters.Any(c =>
-                     c.SubjectId == _subjectId &&
-                     c.Number == number &&
-                     c.Number != _editingOriginalNumber))
+        else
         {
-            _lblNumberError.Text = $"Chương số {number} đã tồn tại trong môn học này. Vui lòng chọn số khác.";
-            _lblNumberError.Visible = true;
-            firstInvalidControl ??= _numChapterNumber;
+            var existingChapters = _service.GetChaptersBySubject(_subjectId);
+            if (existingChapters.Any(c => c.Number == number && c.Number != _editingOriginalNumber))
+            {
+                _lblNumberError.Text = $"Chương số {number} đã tồn tại trong môn học này. Vui lòng chọn số khác.";
+                _lblNumberError.Visible = true;
+                firstInvalidControl ??= _numChapterNumber;
+            }
         }
 
         if (string.IsNullOrWhiteSpace(name))
@@ -238,16 +246,32 @@ public partial class ChapterEditDialog : Form
             return;
         }
 
-        Result = new ChapterPreview
+        try
         {
-            SubjectId = _subjectId,
-            Number = number,
-            Name = name
-        };
+            var chapter = new ChapterInfo
+            {
+                SubjectId = _subjectId,
+                Number = number,
+                Name = name
+            };
 
-        _allowCloseWithoutPrompt = true;
-        DialogResult = DialogResult.OK;
-        Close();
+            _service.SaveChapter(chapter, _editingOriginalNumber);
+            Result = chapter;
+
+            _allowCloseWithoutPrompt = true;
+            DialogResult = DialogResult.OK;
+            Close();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                ex.Message,
+                "Lỗi lưu chương",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+            firstInvalidControl?.Focus();
+        }
     }
 
     private void EnsureHeightFitsContent()
