@@ -1,11 +1,13 @@
 using ExamDesk.Models;
+using ExamDesk.Services;
 using ExamDesk.UI.Shared;
 
 namespace ExamDesk.UI.Administration;
 
-// GV-02 • Bạn 1 phụ trách: Quản lý môn và chương (mốc UI, dữ liệu minh họa).
+// GV-02 • Bạn 1 phụ trách: Quản lý môn và chương (kết nối SQLite qua QuestionBankService).
 public partial class SubjectChapterControl : UserControl, IUnsavedChangesGuard
 {
+    private readonly QuestionBankService _service;
     private bool _suppressSelectionEvents;
 
     // Thêm/sửa môn và chương thực hiện qua hộp thoại modal SubjectEditDialog / ChapterEditDialog.
@@ -13,9 +15,18 @@ public partial class SubjectChapterControl : UserControl, IUnsavedChangesGuard
 
     public bool ConfirmLeave() => true;
 
-    public SubjectChapterControl()
+    public SubjectChapterControl() : this(new QuestionBankService())
     {
+    }
+
+    public SubjectChapterControl(QuestionBankService service)
+    {
+        _service = service ?? throw new ArgumentNullException(nameof(service));
         InitializeComponent();
+
+        // Đã kết nối SQLite thật: ẩn nhãn dữ liệu minh họa
+        _lblDemoBadge.Visible = false;
+
         RefreshSubjectsGrid();
     }
 
@@ -69,7 +80,23 @@ public partial class SubjectChapterControl : UserControl, IUnsavedChangesGuard
         var targetSubjectId = preferredSubjectId ?? GetSelectedSubject()?.Id;
         var keyword = _txtSearchSubject.Text.Trim();
 
-        IEnumerable<Subject> query = AdminPreviewData.Subjects;
+        List<Subject> allSubjects;
+        try
+        {
+            allSubjects = _service.GetSubjects();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                $"Lỗi khi tải danh sách môn học: {ex.Message}",
+                "Lỗi cơ sở dữ liệu",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+            allSubjects = [];
+        }
+
+        IEnumerable<Subject> query = allSubjects;
         if (!string.IsNullOrEmpty(keyword))
         {
             query = query.Where(s =>
@@ -78,7 +105,7 @@ public partial class SubjectChapterControl : UserControl, IUnsavedChangesGuard
         }
 
         var filtered = query.ToList();
-        var totalSubjects = AdminPreviewData.Subjects.Count;
+        var totalSubjects = allSubjects.Count;
         _lblSubjectCount.Text = $"Hiển thị {filtered.Count} / {totalSubjects} môn";
 
         _suppressSelectionEvents = true;
@@ -87,19 +114,16 @@ public partial class SubjectChapterControl : UserControl, IUnsavedChangesGuard
 
         foreach (var subject in filtered)
         {
-            var chapterCount = AdminPreviewData.CountChaptersBySubject(subject.Id);
-            var questionCount = AdminPreviewData.CountQuestionsBySubject(subject.Id);
-
             var rowIndex = _dgvSubjects.Rows.Add(
                 subject.Code,
                 subject.Name,
-                chapterCount,
-                questionCount);
+                subject.ChapterCount,
+                subject.QuestionCount);
 
             var row = _dgvSubjects.Rows[rowIndex];
             row.Tag = subject;
             row.Cells[_colSubjectName.Index].ToolTipText =
-                $"{subject.Code} – {subject.Name}\nSố chương: {chapterCount} • Số câu hỏi: {questionCount}";
+                $"{subject.Code} – {subject.Name}\nSố chương: {subject.ChapterCount} • Số câu hỏi: {subject.QuestionCount}";
         }
 
         _dgvSubjects.ResumeLayout();
@@ -156,12 +180,23 @@ public partial class SubjectChapterControl : UserControl, IUnsavedChangesGuard
 
         _lblChapterSectionTitle.Text = $"Chương của môn: {selectedSubject.Code} – {selectedSubject.Name}";
 
-        var chapters = AdminPreviewData.Chapters
-            .Where(c => c.SubjectId == selectedSubject.Id)
-            .OrderBy(c => c.Number)
-            .ToList();
+        List<ChapterInfo> chapters;
+        try
+        {
+            chapters = _service.GetChaptersBySubject(selectedSubject.Id);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                $"Lỗi khi tải danh sách chương: {ex.Message}",
+                "Lỗi cơ sở dữ liệu",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+            chapters = [];
+        }
 
-        var totalSubjectQuestions = AdminPreviewData.CountQuestionsBySubject(selectedSubject.Id);
+        var totalSubjectQuestions = chapters.Sum(c => c.QuestionCount);
         _lblChapterCount.Text = $"{chapters.Count} chương · {totalSubjectQuestions} câu hỏi";
 
         _suppressSelectionEvents = true;
@@ -170,16 +205,15 @@ public partial class SubjectChapterControl : UserControl, IUnsavedChangesGuard
 
         foreach (var chapter in chapters)
         {
-            var questionCount = AdminPreviewData.CountQuestionsByChapter(selectedSubject.Id, chapter.Number);
             var rowIndex = _dgvChapters.Rows.Add(
                 $"Chương {chapter.Number}",
                 chapter.Name,
-                questionCount);
+                chapter.QuestionCount);
 
             var row = _dgvChapters.Rows[rowIndex];
             row.Tag = chapter;
             row.Cells[_colChapterName.Index].ToolTipText =
-                $"Chương {chapter.Number}: {chapter.Name}\nSố câu hỏi hiện có: {questionCount}";
+                $"Chương {chapter.Number}: {chapter.Name}\nSố câu hỏi hiện có: {chapter.QuestionCount}";
         }
 
         _dgvChapters.ResumeLayout();
@@ -197,7 +231,7 @@ public partial class SubjectChapterControl : UserControl, IUnsavedChangesGuard
             {
                 for (var i = 0; i < _dgvChapters.Rows.Count; i++)
                 {
-                    if (_dgvChapters.Rows[i].Tag is ChapterPreview ch && ch.Number == targetChapterNumber.Value)
+                    if (_dgvChapters.Rows[i].Tag is ChapterInfo ch && ch.Number == targetChapterNumber.Value)
                     {
                         targetRowIndex = i;
                         break;
@@ -224,14 +258,14 @@ public partial class SubjectChapterControl : UserControl, IUnsavedChangesGuard
         return _dgvSubjects.SelectedRows[0].Tag as Subject;
     }
 
-    private ChapterPreview? GetSelectedChapter()
+    private ChapterInfo? GetSelectedChapter()
     {
         if (!_dgvChapters.Visible || _dgvChapters.SelectedRows.Count == 0)
         {
             return null;
         }
 
-        return _dgvChapters.SelectedRows[0].Tag as ChapterPreview;
+        return _dgvChapters.SelectedRows[0].Tag as ChapterInfo;
     }
 
     private void OnSubjectGridSelectionChanged(object? sender, EventArgs e)
@@ -309,7 +343,7 @@ public partial class SubjectChapterControl : UserControl, IUnsavedChangesGuard
 
     private void OnAddSubjectClick(object? sender, EventArgs e)
     {
-        using var dialog = new SubjectEditDialog();
+        using var dialog = new SubjectEditDialog(_service);
         var owner = FindForm();
         var result = owner is not null ? dialog.ShowDialog(owner) : dialog.ShowDialog();
         if (result != DialogResult.OK || dialog.Result is null)
@@ -317,19 +351,12 @@ public partial class SubjectChapterControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
-        var nextId = AdminPreviewData.Subjects.Count > 0
-            ? AdminPreviewData.Subjects.Max(s => s.Id) + 1
-            : 1;
-
-        dialog.Result.Id = nextId;
-        AdminPreviewData.Subjects.Add(dialog.Result);
-
         EnsureSubjectVisibleInSearch(dialog.Result);
-        RefreshSubjectsGrid(preferredSubjectId: nextId);
+        RefreshSubjectsGrid(preferredSubjectId: dialog.Result.Id);
 
         MessageBox.Show(
             this,
-            "Đã lưu môn học (minh họa – chưa lưu CSDL)",
+            "Lưu môn học thành công.",
             "Lưu môn học",
             MessageBoxButtons.OK,
             MessageBoxIcon.Information);
@@ -343,7 +370,7 @@ public partial class SubjectChapterControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
-        using var dialog = new SubjectEditDialog();
+        using var dialog = new SubjectEditDialog(_service);
         dialog.LoadSubject(selected);
         var owner = FindForm();
         var result = owner is not null ? dialog.ShowDialog(owner) : dialog.ShowDialog();
@@ -352,17 +379,13 @@ public partial class SubjectChapterControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
-        // Cập nhật trực tiếp Code và Name, giữ nguyên Subject.Id để không làm hỏng SubjectId của câu hỏi và chương.
-        selected.Code = dialog.Result.Code;
-        selected.Name = dialog.Result.Name;
-
         var currentChapterNumber = GetSelectedChapter()?.Number;
-        EnsureSubjectVisibleInSearch(selected);
-        RefreshSubjectsGrid(preferredSubjectId: selected.Id, preferredChapterNumber: currentChapterNumber);
+        EnsureSubjectVisibleInSearch(dialog.Result);
+        RefreshSubjectsGrid(preferredSubjectId: dialog.Result.Id, preferredChapterNumber: currentChapterNumber);
 
         MessageBox.Show(
             this,
-            "Đã lưu môn học (minh họa – chưa lưu CSDL)",
+            "Lưu môn học thành công.",
             "Lưu môn học",
             MessageBoxButtons.OK,
             MessageBoxIcon.Information);
@@ -392,8 +415,8 @@ public partial class SubjectChapterControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
-        var chapterCount = AdminPreviewData.CountChaptersBySubject(selected.Id);
-        var questionCount = AdminPreviewData.CountQuestionsBySubject(selected.Id);
+        var chapterCount = selected.ChapterCount;
+        var questionCount = selected.QuestionCount;
 
         if (questionCount > 0 || chapterCount > 0)
         {
@@ -439,15 +462,27 @@ public partial class SubjectChapterControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
-        AdminPreviewData.Subjects.Remove(selected);
-        RefreshSubjectsGrid();
+        try
+        {
+            _service.DeleteSubject(selected.Id);
+            RefreshSubjectsGrid();
 
-        MessageBox.Show(
-            this,
-            "Đã xóa môn học (minh họa – chưa lưu CSDL)",
-            "Xóa môn học",
-            MessageBoxButtons.OK,
-            MessageBoxIcon.Information);
+            MessageBox.Show(
+                this,
+                "Đã xóa môn học thành công.",
+                "Xóa môn học",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                ex.Message,
+                "Không thể xóa môn học",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+        }
     }
 
     private void OnAddChapterClick(object? sender, EventArgs e)
@@ -458,7 +493,7 @@ public partial class SubjectChapterControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
-        using var dialog = new ChapterEditDialog();
+        using var dialog = new ChapterEditDialog(_service);
         dialog.InitializeForAdd(selectedSubject);
         var owner = FindForm();
         var result = owner is not null ? dialog.ShowDialog(owner) : dialog.ShowDialog();
@@ -467,14 +502,13 @@ public partial class SubjectChapterControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
-        AdminPreviewData.Chapters.Add(dialog.Result);
         RefreshSubjectsGrid(
             preferredSubjectId: selectedSubject.Id,
             preferredChapterNumber: dialog.Result.Number);
 
         MessageBox.Show(
             this,
-            "Đã lưu chương (minh họa – chưa lưu CSDL)",
+            "Lưu chương thành công.",
             "Lưu chương",
             MessageBoxButtons.OK,
             MessageBoxIcon.Information);
@@ -489,9 +523,7 @@ public partial class SubjectChapterControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
-        var originalNumber = selectedChapter.Number;
-
-        using var dialog = new ChapterEditDialog();
+        using var dialog = new ChapterEditDialog(_service);
         dialog.LoadChapter(selectedSubject, selectedChapter);
         var owner = FindForm();
         var result = owner is not null ? dialog.ShowDialog(owner) : dialog.ShowDialog();
@@ -500,27 +532,13 @@ public partial class SubjectChapterControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
-        var newNumber = dialog.Result.Number;
-        selectedChapter.Number = newNumber;
-        selectedChapter.Name = dialog.Result.Name;
-
-        // Nếu đổi số thứ tự chương, đồng bộ lại Question.Chapter của các câu hỏi thuộc chương đó.
-        if (newNumber != originalNumber)
-        {
-            foreach (var question in AdminPreviewData.Questions.Where(q =>
-                         q.SubjectId == selectedSubject.Id && q.Chapter == originalNumber))
-            {
-                question.Chapter = newNumber;
-            }
-        }
-
         RefreshSubjectsGrid(
             preferredSubjectId: selectedSubject.Id,
-            preferredChapterNumber: newNumber);
+            preferredChapterNumber: dialog.Result.Number);
 
         MessageBox.Show(
             this,
-            "Đã lưu chương (minh họa – chưa lưu CSDL)",
+            "Lưu chương thành công.",
             "Lưu chương",
             MessageBoxButtons.OK,
             MessageBoxIcon.Information);
@@ -540,7 +558,7 @@ public partial class SubjectChapterControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
-        var questionCount = AdminPreviewData.CountQuestionsByChapter(selectedSubject.Id, selectedChapter.Number);
+        var questionCount = selectedChapter.QuestionCount;
         if (questionCount > 0)
         {
             MessageBox.Show(
@@ -566,14 +584,26 @@ public partial class SubjectChapterControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
-        AdminPreviewData.Chapters.Remove(selectedChapter);
-        RefreshSubjectsGrid(preferredSubjectId: selectedSubject.Id);
+        try
+        {
+            _service.DeleteChapter(selectedSubject.Id, selectedChapter.Number);
+            RefreshSubjectsGrid(preferredSubjectId: selectedSubject.Id);
 
-        MessageBox.Show(
-            this,
-            "Đã xóa chương (minh họa – chưa lưu CSDL)",
-            "Xóa chương",
-            MessageBoxButtons.OK,
-            MessageBoxIcon.Information);
+            MessageBox.Show(
+                this,
+                "Đã xóa chương thành công.",
+                "Xóa chương",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                ex.Message,
+                "Không thể xóa chương",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+        }
     }
 }

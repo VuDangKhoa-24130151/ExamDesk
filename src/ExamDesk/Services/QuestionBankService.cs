@@ -1,19 +1,180 @@
+using System.Text.RegularExpressions;
 using ExamDesk.Models;
+using ExamDesk.Repositories;
 
 namespace ExamDesk.Services;
 
-// Bạn 1 phụ trách. Stub cho giai đoạn nghiệp vụ; UI hiện tại chưa gọi các hàm này.
+// Bạn 1 phụ trách: Dịch vụ nghiệp vụ quản lý môn học, chương và ngân hàng câu hỏi.
 public sealed class QuestionBankService
 {
-    // TODO (Bạn 1): Truy vấn qua QuestionRepository.
+    private static readonly Regex ValidCodeRegex = new("^[A-Z0-9]{2,10}$", RegexOptions.Compiled);
+    private readonly QuestionRepository _questionRepository;
+
+    public QuestionBankService() : this(new QuestionRepository())
+    {
+    }
+
+    public QuestionBankService(QuestionRepository questionRepository)
+    {
+        _questionRepository = questionRepository ?? throw new ArgumentNullException(nameof(questionRepository));
+    }
+
+    #region Subject Business Logic
+
+    public List<Subject> GetSubjects() => _questionRepository.GetSubjects();
+
+    public Subject? GetSubjectById(int id) => _questionRepository.GetSubjectById(id);
+
+    public bool IsSubjectCodeExists(string code, int? excludeId = null)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            return false;
+        }
+
+        return _questionRepository.IsSubjectCodeExists(code.Trim(), excludeId);
+    }
+
+    public void ValidateSubject(Subject subject)
+    {
+        ArgumentNullException.ThrowIfNull(subject);
+
+        var code = (subject.Code ?? string.Empty).Trim().ToUpperInvariant();
+        var name = (subject.Name ?? string.Empty).Trim();
+
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            throw new ArgumentException("Vui lòng nhập mã môn học.");
+        }
+
+        if (!ValidCodeRegex.IsMatch(code))
+        {
+            throw new ArgumentException("Mã môn chỉ gồm chữ in hoa không dấu (A–Z) hoặc số (0–9), độ dài 2–10 ký tự.");
+        }
+
+        if (_questionRepository.IsSubjectCodeExists(code, subject.Id))
+        {
+            throw new InvalidOperationException($"Mã môn \"{code}\" đã tồn tại. Vui lòng nhập mã khác.");
+        }
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("Vui lòng nhập tên môn học.");
+        }
+
+        if (name.Length > 100)
+        {
+            throw new ArgumentException($"Tên môn không được vượt quá 100 ký tự (hiện tại {name.Length} ký tự).");
+        }
+    }
+
+    public void SaveSubject(Subject subject)
+    {
+        ArgumentNullException.ThrowIfNull(subject);
+
+        subject.Code = (subject.Code ?? string.Empty).Trim().ToUpperInvariant();
+        subject.Name = (subject.Name ?? string.Empty).Trim();
+
+        ValidateSubject(subject);
+
+        if (subject.Id <= 0)
+        {
+            var newId = _questionRepository.AddSubject(subject);
+            subject.Id = newId;
+        }
+        else
+        {
+            _questionRepository.UpdateSubject(subject);
+        }
+    }
+
+    public void DeleteSubject(int subjectId)
+    {
+        var subject = _questionRepository.GetSubjectById(subjectId)
+            ?? throw new InvalidOperationException("Không tìm thấy môn học để xóa.");
+
+        var questionCount = _questionRepository.CountQuestionsBySubject(subjectId);
+        if (questionCount > 0)
+        {
+            throw new InvalidOperationException($"Môn đang có {questionCount} câu hỏi, vui lòng xóa câu hỏi trước.");
+        }
+
+        var examPaperCount = _questionRepository.CountExamPapersBySubject(subjectId);
+        if (examPaperCount > 0)
+        {
+            throw new InvalidOperationException($"Môn học đang được sử dụng trong {examPaperCount} đề thi, vui lòng xóa đề thi trước.");
+        }
+
+        var chapters = _questionRepository.GetChaptersBySubject(subjectId);
+        if (chapters.Count > 0)
+        {
+            throw new InvalidOperationException($"Không thể xóa môn \"{subject.Code} – {subject.Name}\" vì đang có {chapters.Count} chương. Vui lòng xóa các chương trước khi xóa môn.");
+        }
+
+        _questionRepository.DeleteSubject(subjectId);
+    }
+
+    #endregion
+
+    #region Chapter Business Logic
+
+    public List<ChapterInfo> GetChaptersBySubject(int subjectId)
+        => _questionRepository.GetChaptersBySubject(subjectId);
+
+    public void SaveChapter(ChapterInfo chapter, int? originalNumber = null)
+    {
+        ArgumentNullException.ThrowIfNull(chapter);
+
+        var name = (chapter.Name ?? string.Empty).Trim();
+
+        if (chapter.Number < 1 || chapter.Number > 50)
+        {
+            throw new ArgumentException("Chương số phải nằm trong khoảng từ 1 đến 50.");
+        }
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("Vui lòng nhập tên chương.");
+        }
+
+        if (name.Length > 100)
+        {
+            throw new ArgumentException($"Tên chương không được vượt quá 100 ký tự (hiện tại {name.Length} ký tự).");
+        }
+
+        var existingChapters = _questionRepository.GetChaptersBySubject(chapter.SubjectId);
+        if (existingChapters.Any(c => c.Number == chapter.Number && c.Number != originalNumber))
+        {
+            throw new InvalidOperationException($"Chương số {chapter.Number} đã tồn tại trong môn học này. Vui lòng chọn số khác.");
+        }
+
+        chapter.Name = name;
+        _questionRepository.SaveChapter(chapter, originalNumber);
+    }
+
+    public void DeleteChapter(int subjectId, int chapterNumber)
+    {
+        var questionCount = _questionRepository.CountQuestionsByChapter(subjectId, chapterNumber);
+        if (questionCount > 0)
+        {
+            throw new InvalidOperationException($"Không thể xóa Chương {chapterNumber} vì đang có {questionCount} câu hỏi. Vui lòng xóa hoặc chuyển câu hỏi trước.");
+        }
+
+        _questionRepository.DeleteChapter(subjectId, chapterNumber);
+    }
+
+    #endregion
+
+    #region Question Stubs (giữ nguyên cho mốc ngân hàng câu hỏi tiếp theo)
+
     public List<Question> GetQuestions(int? subjectId = null, int? chapter = null)
         => throw new NotImplementedException("Bạn 1: chưa triển khai.");
 
-    // TODO (Bạn 1): Kiểm tra dữ liệu/quyền; khóa sửa câu đã gắn đề.
     public void SaveQuestion(Question question)
         => throw new NotImplementedException("Bạn 1: chưa triển khai.");
 
-    // TODO (Bạn 1): Từ chối xóa câu đã gắn đề.
     public void DeleteQuestion(int questionId)
         => throw new NotImplementedException("Bạn 1: chưa triển khai.");
+
+    #endregion
 }
