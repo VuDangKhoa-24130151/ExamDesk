@@ -14,7 +14,10 @@ public sealed class StudentExamService
             ?? throw new StudentExamInputException("Không tìm thấy MSSV trong danh mục sinh viên. Vui lòng kiểm tra lại hoặc liên hệ giảng viên.");
     }
     internal StudentResult? GetResult(StudentDraft draft)
-        => _repository.FindResult(draft.SessionId, draft.StudentCode);
+        => GetResult(draft.SessionId, draft.StudentCode);
+
+    internal StudentResult? GetResult(int sessionId, string studentCode)
+        => _repository.FindResult(sessionId, studentCode.Trim());
 
     public List<ExamSession> GetOpenSessions() => _repository.FindOpenSessions();
     internal Dictionary<int, bool> GetSessionProgress(string studentCode)

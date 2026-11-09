@@ -1,4 +1,5 @@
 using ExamDesk.Models;
+using ExamDesk.Repositories;
 using ExamDesk.Services;
 using ExamDesk.UI.Shared;
 
@@ -8,6 +9,7 @@ public partial class SessionSelectionControl : UserControl
 {
     public event EventHandler? CloseRequested;
     public event Action<ExamSession, ExamPaper>? SessionSelected;
+    internal event Action<StudentResult>? ResultSelected;
 
     public SessionSelectionControl()
     {
@@ -45,7 +47,7 @@ public partial class SessionSelectionControl : UserControl
         }
 
         AddRow(TextLabel("Chọn ca thi", 18, FontStyle.Bold));
-        AddRow(TextLabel("Chọn ca đang mở để bắt đầu hoặc chọn ca có tiến độ để tiếp tục."));
+        AddRow(TextLabel("Chọn ca đang mở để bắt đầu, ca có tiến độ để tiếp tục hoặc ca đã nộp để xem kết quả."));
         var identity = Surface();
         identity.Controls.Add(TextLabel($"{student.FullName} · {student.StudentCode}", 12, FontStyle.Bold));
         identity.Controls.Add(TextLabel($"Lớp {student.ClassName}"));
@@ -120,27 +122,44 @@ public partial class SessionSelectionControl : UserControl
                     card.Controls.Add(TextLabel(paper is null ? "Đề thi chưa sẵn sàng" :
                         $"{paper.Title} · {paper.TotalQuestions} câu · {paper.DurationMinutes} phút"));
 
-                    // Lượt đã nộp không mở lại; ca đóng vẫn cho khôi phục bản nháp hiện có.
+                    // Ca đã nộp tra cứu điểm kể cả khi ca đóng hoặc thiếu thông tin đề.
                     var state = submitted ? "Đã nộp" : session.IsOpen ? "● Đang mở"
                         : hasProgress ? "Ca đã đóng · Có tiến độ" : "Ca đã đóng · Khóa";
                     card.Controls.Add(session.IsOpen && !submitted
                         ? Badge(state, UiStyle.SuccessBack, UiStyle.SuccessText)
                         : Badge(state, UiStyle.WarningBack, UiStyle.WarningText));
                     card.Controls.Add(TextLabel($"Mã ca: {session.SessionCode} · Phòng {session.RoomName}"));
-                    var enter = StudentLayout.Button(hasProgress && !submitted ? "Tiếp tục lượt thi →" : "Xem hướng dẫn →",
+                    var enter = StudentLayout.Button(submitted ? "Xem kết quả"
+                        : hasProgress ? "Tiếp tục lượt thi →" : "Xem hướng dẫn →",
                         (_, _) =>
                         {
                             try
                             {
+                                if (submitted)
+                                {
+                                    var result = examService.GetResult(session.Id, student.StudentCode);
+                                    if (result is null)
+                                    {
+                                        MessageBox.Show(this,
+                                            "Bạn đã nộp bài ở ca này nhưng chưa có điểm. Vui lòng liên hệ giảng viên.",
+                                            "Chưa có kết quả", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                        return;
+                                    }
+                                    ResultSelected?.Invoke(result);
+                                    return;
+                                }
+
                                 var selected = examService.GetSelectedPaper(session.Id, student.StudentCode);
                                 SessionSelected?.Invoke(session, selected);
                             }
                             catch (Exception ex)
                             {
-                                ShowError(ex, "Không mở được thông tin ca thi. Hãy tải lại danh sách hoặc liên hệ giảng viên.");
+                                ShowError(ex, submitted
+                                    ? "Không tải được kết quả đã lưu. Hãy thử lại hoặc liên hệ giảng viên."
+                                    : "Không mở được thông tin ca thi. Hãy tải lại danh sách hoặc liên hệ giảng viên.");
                             }
                         }, true);
-                    enter.Enabled = paper is not null && !submitted && (session.IsOpen || hasProgress);
+                    enter.Enabled = submitted || (paper is not null && (session.IsOpen || hasProgress));
                     card.Controls.Add(enter);
                     card.SizeChanged += (_, _) => WrapLabels(card);
 

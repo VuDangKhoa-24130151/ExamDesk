@@ -3,6 +3,7 @@ using ExamDesk.UI.Shared;
 namespace ExamDesk.UI.Student;
 partial class StudentExamControl
 {
+    private const int QuestionGridColumns = 5;
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 1000 };
     private Label _question = null!, _questionNumber = null!, _clock = null!, _progress = null!,
         _saveStatus = null!;
@@ -12,7 +13,7 @@ partial class StudentExamControl
     private Action? _fitContent;
     private CheckBox _flag = null!;
     private PictureBox _image = null!;
-    private Button _previous = null!, _next = null!, _clearChoice = null!;
+    private Button _previous = null!, _next = null!, _clearChoice = null!, _submit = null!, _viewImage = null!;
 
     private void InitializeComponent()
     {
@@ -45,8 +46,16 @@ partial class StudentExamControl
         header.Controls.Add(identity);
         _clock = new Label { Dock = DockStyle.Top, Height = 42, Font = StudentLayout.GetLabelFont(12, FontStyle.Bold),
             TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiStyle.Primary, BackColor = UiStyle.Background };
+        var clockPanel = new TableLayoutPanel { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, TabStop = false };
+        clockPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        clockPanel.Controls.Add(_clock, 0, 0);
+        _saveStatus = StudentLayout.Label("", 9);
+        _saveStatus.Dock = DockStyle.Top;
+        _saveStatus.Margin = new Padding(0, 4, 0, 4);
+        _saveStatus.Padding = new Padding(8, 4, 8, 4);
+        clockPanel.Controls.Add(_saveStatus, 0, 1);
         layout.Controls.Add(header, 0, 0);
-        layout.Controls.Add(_clock, 1, 0);
+        layout.Controls.Add(clockPanel, 1, 0);
 
         var scroll = _questionViewport = new Panel
         {
@@ -60,15 +69,8 @@ partial class StudentExamControl
         var questionCard = ExamCard();
         _questionNumber = StudentLayout.Label("", 12, FontStyle.Bold);
         _questionNumber.ForeColor = UiStyle.Primary;
-        _saveStatus = StudentLayout.Label("", 9);
-        _questionNumber.Margin = _saveStatus.Margin = new Padding(0, 0, 0, 4);
-        _saveStatus.Padding = new Padding(8, 4, 8, 4);
-        var questionHeader = new TableLayoutPanel { AutoSize = true, ColumnCount = 2, Margin = Padding.Empty };
-        questionHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        questionHeader.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        questionHeader.Controls.Add(_questionNumber, 0, 0);
-        questionHeader.Controls.Add(_saveStatus, 1, 0);
-        questionCard.Controls.Add(questionHeader);
+        _questionNumber.Margin = new Padding(0, 0, 0, 4);
+        questionCard.Controls.Add(_questionNumber);
         var hint = StudentLayout.Label(_attempt.Submitted ? "Lựa chọn đã lưu khi nộp bài" : "Chọn một đáp án phù hợp nhất", 9);
         hint.ForeColor = UiStyle.TextMuted;
         hint.Margin = new Padding(0, 0, 0, 4);
@@ -76,15 +78,20 @@ partial class StudentExamControl
         _question = StudentLayout.Label("", 12, FontStyle.Bold);
         _question.Margin = new Padding(0, 4, 0, 12);
         questionCard.Controls.Add(_question);
-        _image = new PictureBox { SizeMode=PictureBoxSizeMode.Zoom, Visible=false, Margin=new Padding(0,0,0,12) };
+        _image = new PictureBox { SizeMode=PictureBoxSizeMode.Zoom, Visible=false, Margin=new Padding(0,0,0,12),
+            Cursor = Cursors.Hand, AccessibleName = "Ảnh minh họa câu hỏi" };
+        _image.Click += (_, _) => ShowQuestionImage();
         questionCard.Controls.Add(_image);
+        _viewImage = StudentLayout.Button("Xem ảnh &lớn", (_, _) => ShowQuestionImage());
+        _viewImage.Visible = false;
+        questionCard.Controls.Add(_viewImage);
         string[] answers=["A. int","B. bool","C. string","D. double"];
         for(int i=0;i<4;i++)
         {
             int choice=i;
-            var option = new RadioButton { Text=answers[i], AutoSize=false, Margin=new Padding(0,3,0,3),
+            var option = new AnswerRadioButton { Text=answers[i], AutoSize=false, Margin=new Padding(0,3,0,3),
                 Padding = new Padding(10, 0, 8, 0), UseMnemonic = false, UseVisualStyleBackColor = false,
-                AutoCheck = !_attempt.Submitted, TabStop = !_attempt.Submitted,
+                AutoCheck = false, TabStop = false,
                 TabIndex = i, AccessibleName=$"Đáp án {(char)('A'+i)}" };
             option.Paint += (_, e) =>
             {
@@ -93,7 +100,9 @@ partial class StudentExamControl
             };
             option.Enter += (_, _) => option.Invalidate();
             option.Leave += (_, _) => option.Invalidate();
-            option.CheckedChanged += (_, _) => Choose(choice);
+            option.Click += (_, _) => Choose(choice);
+            option.PreviewKeyDown += KeepArrowKeys;
+            option.KeyDown += (_, e) => HandleOptionKey(choice, e);
             _options[i] = option;
             questionCard.Controls.Add(option);
         }
@@ -110,7 +119,7 @@ partial class StudentExamControl
         _flag.Enabled = !_attempt.Submitted;
         _flag.CheckedChanged += (_, _) => ChangeFlag();
         actions.Controls.Add(_flag);
-        _clearChoice = StudentLayout.Button("&Bỏ lựa chọn", (_, _) => ChangeChoice(null));
+        _clearChoice = StudentLayout.Button("&Bỏ lựa chọn", (_, _) => ChangeChoice(null, _clearChoice));
         actions.Controls.Add(_clearChoice);
         body.Controls.Add(actions);
         var notes = ExamCard();
@@ -151,12 +160,12 @@ partial class StudentExamControl
         var legend = StudentLayout.Label("□ Chưa trả lời   ✓ Đã trả lời\n▣ Đang xem (viền đậm)   ⚑ Đánh dấu", 9);
         legend.ForeColor = UiStyle.TextMuted;
         right.Controls.Add(legend, 0, 4);
-        var submit = _attempt.Submitted
+        _submit = _attempt.Submitted
             ? StudentLayout.Button("← Về trạng thái nộp", (_, _) => ExitReviewRequested?.Invoke(this, EventArgs.Empty), true)
             : StudentLayout.Button("&Nộp bài", (_, _) => SubmitRequested?.Invoke(this, EventArgs.Empty), true);
-        submit.Dock = DockStyle.Fill;
-        submit.Margin = new Padding(0, 4, 0, 0);
-        right.Controls.Add(submit,0,5);layout.Controls.Add(right,1,1);
+        _submit.Dock = DockStyle.Fill;
+        _submit.Margin = new Padding(0, 4, 0, 0);
+        right.Controls.Add(_submit,0,5);layout.Controls.Add(right,1,1);
         Controls.Add(layout);
 
         bool fitting=false;
@@ -176,10 +185,7 @@ partial class StudentExamControl
                 {
                     questionCard.MinimumSize = new Size(width, 0);
                     notes.MinimumSize = new Size(width, 0);
-                    questionHeader.MinimumSize = new Size(innerWidth, 0);
-                    questionHeader.MaximumSize = new Size(innerWidth, 0);
-                    _saveStatus.MaximumSize = new Size(Math.Max(1, innerWidth * 2 / 3), 0);
-                    _questionNumber.MaximumSize = new Size(Math.Max(1, innerWidth - _saveStatus.PreferredWidth - 12), 0);
+                    _questionNumber.MaximumSize = new Size(innerWidth, 0);
                     advice.MaximumSize = new Size(innerWidth, 0);
                     foreach (var option in _options)
                     {
@@ -203,6 +209,7 @@ partial class StudentExamControl
         {
             if (layout.ClientSize.Width <= 0) return;
             var sideWidth = Math.Min(StudentLayout.Scale(this, 300), (int)(layout.ClientSize.Width * 0.42f));
+            _saveStatus.MaximumSize = new Size(Math.Max(1, sideWidth - clockPanel.Margin.Horizontal), 0);
             if (layout.ColumnStyles[1].Width != sideWidth)
                 layout.ColumnStyles[1].Width = sideWidth;
             FitContent();
@@ -239,8 +246,9 @@ partial class StudentExamControl
     private void BuildQuestionGrid()
     {
         while (_gridViewport.Controls.Count > 0) _gridViewport.Controls[0].Dispose();
-        var grid=new TableLayoutPanel { Dock=DockStyle.Top,AutoSize=true,ColumnCount=5,RowCount=(_attempt.Answers.Length+4)/5 };
-        for(int i=0;i<5;i++) grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,20));
+        var grid=new TableLayoutPanel { Dock=DockStyle.Top,AutoSize=true,ColumnCount=QuestionGridColumns,
+            RowCount=(_attempt.Answers.Length+QuestionGridColumns-1)/QuestionGridColumns };
+        for(int i=0;i<QuestionGridColumns;i++) grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100f/QuestionGridColumns));
         for(int row=0;row<grid.RowCount;row++) grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         _numbers=new Button[_attempt.Answers.Length];
         for(int i=0;i<_numbers.Length;i++)
@@ -258,7 +266,10 @@ partial class StudentExamControl
                     TextRenderer.DrawText(e.Graphics, "⚑", UiStyle.SmallFont, bounds, UiStyle.WarningText,
                         TextFormatFlags.Right | TextFormatFlags.Top | TextFormatFlags.NoPadding);
             };
-            _numbers[i].Click+=(_,_)=>GoToQuestion(index);grid.Controls.Add(_numbers[i],i%5,i/5);
+            number.Click += (_, _) => GoToQuestion(index);
+            number.PreviewKeyDown += KeepArrowKeys;
+            number.KeyDown += (_, e) => HandleQuestionKey(index, e);
+            grid.Controls.Add(number, i % QuestionGridColumns, i / QuestionGridColumns);
         }
         _gridViewport.Controls.Add(grid);
     }

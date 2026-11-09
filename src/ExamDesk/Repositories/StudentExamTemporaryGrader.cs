@@ -10,7 +10,8 @@ internal interface ISubmissionGrader
     void GradeAndSave(StudentDraft saved);
 }
 
-// Chấm tạm: đọc đáp án đúng trực tiếp từ Questions. Bạn 2 sẽ thay bằng SubmissionService.
+// TẠM: đọc đáp án đúng trực tiếp từ Questions.
+// Khi tích hợp, Bạn 2 nối SubmissionService qua ISubmissionGrader và đổi bộ chấm mặc định trong StudentDraftService.
 internal sealed class StudentExamTemporaryGrader : ISubmissionGrader
 {
     public void GradeAndSave(StudentDraft lockedDraft)
@@ -64,7 +65,9 @@ internal sealed class StudentExamTemporaryGrader : ISubmissionGrader
             return (QuestionId: question.Id, Order: index + 1, Selected: selected, Correct: correct);
         }).ToArray();
         var correctCount = answers.Count(answer => answer.Selected == answer.Correct);
-        var submittedAt = saved.LockedAtUtc ?? DateTimeOffset.UtcNow;
+        var submittedAt = saved.LockedAtUtc ?? (saved.AutoSubmitted ? saved.DeadlineUtc : DateTimeOffset.UtcNow);
+        if (saved.AutoSubmitted && submittedAt > saved.DeadlineUtc)
+            submittedAt = saved.DeadlineUtc;
 
         cmd.CommandText = """
             INSERT INTO ExamAttempts (SessionId, PaperId, StudentCode, StudentName, ClassName,

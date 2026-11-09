@@ -6,7 +6,7 @@ partial class SubmitReviewDialog
 {
     private readonly System.Windows.Forms.Timer _clock = new() { Interval = 250 };
     private Label _answered = null!, _unanswered = null!, _flagged = null!, _warning = null!;
-    private FlowLayoutPanel _numbers = null!, _flaggedNumbers = null!;
+    private FlowLayoutPanel _numbers = null!;
     private Button _continueButton = null!;
 
     protected override void Dispose(bool disposing)
@@ -50,12 +50,13 @@ partial class SubmitReviewDialog
         counts.Controls.Add(Counter("Đánh dấu", UiStyle.Background, UiStyle.Primary, out _flagged), 2, 0);
         content.Controls.Add(counts);
 
-        content.Controls.Add(StudentLayout.Label("Câu chưa trả lời — chọn số câu để quay lại", 10, FontStyle.Bold));
-        _numbers = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 138, AutoScroll = true, Margin = Padding.Empty };
+        content.Controls.Add(StudentLayout.Label("Câu cần xem lại — chọn câu để quay lại", 10, FontStyle.Bold));
+        _numbers = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Top, AutoSize = true, FlowDirection = FlowDirection.TopDown,
+            WrapContents = false, Margin = Padding.Empty
+        };
         content.Controls.Add(_numbers);
-        content.Controls.Add(StudentLayout.Label("Câu đã đánh dấu — chọn số câu để quay lại", 10, FontStyle.Bold));
-        _flaggedNumbers = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 100, AutoScroll = true, Margin = Padding.Empty };
-        content.Controls.Add(_flaggedNumbers);
         _warning = StudentLayout.Label("");
         _warning.ForeColor = UiStyle.ErrorText;
         body.Controls.Add(content);

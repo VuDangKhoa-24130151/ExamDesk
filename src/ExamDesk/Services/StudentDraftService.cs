@@ -13,6 +13,11 @@ public sealed class StudentDraftService
     internal StudentDraftService(ISubmissionGrader grader) => _grader = grader;
     public StudentDraft StartOrResume(int sessionId, User student) => _repository.StartOrResume(sessionId, student);
     internal StudentDraft? FindDraft(int sessionId, string studentCode) => _repository.FindDraft(sessionId, studentCode);
+
+    // Giữ thứ tự ghi nhận. Choice từ 0 đến 3 là A–D, null là bỏ lựa chọn.
+    public IReadOnlyList<AnswerChange> GetAnswerHistory(int sessionId, string studentCode)
+        => FindDraft(sessionId, studentCode.Trim())?.History is { } history ? history.AsReadOnly() : [];
+
     public StudentDraft Change(StudentDraft draft, int index, int? answer, bool? flag = null)
         => Change(draft, index, answer, flag, () => DateTimeOffset.UtcNow);
 

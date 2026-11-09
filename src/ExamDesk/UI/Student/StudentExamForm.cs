@@ -6,6 +6,7 @@ public partial class StudentExamForm : Form
     private StudentAttemptState? _attempt;
     private ExamDesk.Models.User? _student;
     private bool _submitting;
+    private bool _submitAfterSave;
     private readonly System.Windows.Forms.Timer _deadlineTimer = new() { Interval = 1000 };
     public StudentExamForm()
     {
@@ -31,6 +32,7 @@ public partial class StudentExamForm : Form
         var screen=new SessionSelectionControl(student);
         screen.CloseRequested+=(_,_)=>ShowIdentity();
         screen.SessionSelected+=(session,paper)=>ShowRealInstructions(student,session,paper);
+        screen.ResultSelected += ShowResult;
         _studentLabel.Text=$"{student.FullName} · {student.StudentCode}";
         _examLabel.Text="UNIEXAM — CHỌN CA THI";
         ShowScreen(screen,"Chọn ca thi");
@@ -55,7 +57,7 @@ public partial class StudentExamForm : Form
             }
             catch (Exception ex)
             {
-                MessageBox.Show(this, StudentError.Describe(ex,
+                MessageBox.Show(this, StudentError.DescribeStart(ex,
                     "Không mở được lượt thi. Hãy quay lại, tải lại ca thi hoặc liên hệ giảng viên."),
                     "Không mở được lượt thi");
             }
@@ -69,6 +71,7 @@ public partial class StudentExamForm : Form
         var screen = new StudentExamControl(_attempt);
         screen.SubmitRequested += (_, _) => ReviewSubmission(screen);
         screen.SaveExpired += (_, _) => TrySubmitExpiredAttempt(expiredDuringSave: true);
+        screen.SaveCompleted += (_, _) => TrySubmitExpiredAttempt();
         screen.DraftLocked += (_, _) => SubmitAttempt();
         ShowScreen(screen, "Làm bài");
         _deadlineTimer.Start();
@@ -76,9 +79,17 @@ public partial class StudentExamForm : Form
 
     private bool TrySubmitExpiredAttempt(bool expiredDuringSave = false)
     {
-        if (_studentContent.Controls.OfType<StudentExamControl>().Any(screen => screen.IsSaving)) return false;
-        if (_submitting || _attempt is not { Submitted: false } attempt || (!expiredDuringSave && !attempt.IsExpired))
+        if (_submitting || _attempt is not { Submitted: false } attempt) return false;
+        var exam = _studentContent.Controls.OfType<StudentExamControl>().FirstOrDefault();
+        if (!_submitAfterSave && !expiredDuringSave && !(exam?.IsDeadlineReached ?? attempt.IsExpired))
             return false;
+
+        if (exam is { IsSaving: true })
+        {
+            if (!_submitAfterSave) exam.ShowDeadlinePending();
+            _submitAfterSave = true;
+            return true;
+        }
 
         foreach (Form dialog in OwnedForms) dialog.Close();
         SubmitAttempt();
@@ -88,6 +99,7 @@ public partial class StudentExamForm : Form
     private void ReviewSubmission(StudentExamControl exam)
     {
         if (_attempt is null || _attempt.Submitted) return;
+        if (TrySubmitExpiredAttempt() || exam.IsSaving) return;
         using var dialog = new SubmitReviewDialog(_attempt);
         var result = dialog.ShowDialog(this);
         if (_attempt.Submitted || exam.IsDisposed) return;
@@ -99,8 +111,9 @@ public partial class StudentExamForm : Form
     {
         if (_submitting || _attempt is not { } attempt) return;
         _submitting = true;
+        _submitAfterSave = false;
         _deadlineTimer.Stop();
-        var status = ShowSubmissionStatus(busy: true);
+        var (status, retry) = ShowSubmissionStatus(busy: true);
         UseWaitCursor = true;
         try
         {
@@ -113,13 +126,13 @@ public partial class StudentExamForm : Form
             if (result is not null)
                 ShowResult(result);
             else
-                status.SetAttempt(attempt, "Chưa tìm thấy kết quả. Hãy thử gửi lại hoặc liên hệ giảng viên.");
+                status.SetAttempt(attempt, "Chưa tìm thấy kết quả. Hãy tải lại kết quả hoặc liên hệ giảng viên.");
         }
         catch (Exception ex)
         {
             var error = StudentError.Describe(ex,
                 attempt.Submitted
-                    ? "Không tải được kết quả đã lưu. Hãy thử gửi lại hoặc liên hệ giảng viên."
+                    ? "Không tải được kết quả đã lưu. Hãy tải lại kết quả hoặc liên hệ giảng viên."
                     : "Không lưu được bài nộp. Hãy thử gửi lại hoặc liên hệ giảng viên.");
             if (!IsDisposed) status.SetAttempt(attempt, error);
         }
@@ -127,7 +140,11 @@ public partial class StudentExamForm : Form
         {
             _submitting = false;
             if (!IsDisposed) UseWaitCursor = false;
-            if (!status.IsDisposed) status.SetBusy(false);
+            if (!status.IsDisposed)
+            {
+                if (attempt.Submitted && retry is not null) retry.Text = "Tải lại kết quả";
+                status.SetBusy(false);
+            }
         }
     }
 
@@ -143,13 +160,18 @@ public partial class StudentExamForm : Form
         ShowScreen(screen, "Kết quả bài thi");
     }
 
-    private SubmissionStatusControl ShowSubmissionStatus(bool busy = false)
+    private (SubmissionStatusControl Screen, Button? Retry) ShowSubmissionStatus(bool busy = false)
     {
         var attempt = _attempt!;
         var screen = new SubmissionStatusControl();
         screen.SetAttempt(attempt, null);
+        Button? retry = null;
         if (attempt.Draft is not null)
-            screen.AddAction(StudentLayout.Button("Thử gửi lại", (_, _) => SubmitAttempt(), true));
+        {
+            retry = StudentLayout.Button(attempt.Submitted ? "Tải lại kết quả" : "Thử gửi lại",
+                (_, _) => SubmitAttempt(), true);
+            screen.AddAction(retry);
+        }
 #if DEBUG
         if (attempt.Submitted)
             screen.AddAction(StudentLayout.Button("Xem lại bài đã nộp", (_, _) =>
@@ -170,7 +192,7 @@ public partial class StudentExamForm : Form
         screen.CloseRequested += (_, _) => Close();
         screen.SetBusy(busy);
         ShowScreen(screen, "Trạng thái nộp bài");
-        return screen;
+        return (screen, retry);
     }
 
     private void ConfirmClose(object? sender, FormClosingEventArgs e)
@@ -196,6 +218,7 @@ public partial class StudentExamForm : Form
         screen.Dock = DockStyle.Fill;
         _studentContent.Controls.Add(screen);
         Text = "UniExam — " + title;
-        screen.SelectNextControl(null, true, true, true, false);
+        if (screen is StudentExamControl exam) exam.FocusInitialControl();
+        else screen.SelectNextControl(null, true, true, true, false);
     }
 }

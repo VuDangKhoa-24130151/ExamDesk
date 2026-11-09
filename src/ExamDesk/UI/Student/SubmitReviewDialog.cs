@@ -12,15 +12,18 @@ public partial class SubmitReviewDialog : Form
 
         for (int index = 0; index < attempt.Answers.Length; index++)
         {
-            if (!attempt.Answers[index].HasValue) AddQuestionButton(_numbers, index, "Chưa trả lời");
-            if (attempt.Flags[index]) AddQuestionButton(_flaggedNumbers, index, "Đã đánh dấu");
+            bool unanswered = !attempt.Answers[index].HasValue;
+            bool flagged = attempt.Flags[index];
+            if (!unanswered && !flagged) continue;
+
+            string status = unanswered
+                ? (flagged ? "Chưa trả lời · Đánh dấu" : "Chưa trả lời")
+                : "Đánh dấu";
+            AddQuestionButton(index, status);
         }
 
         if (_numbers.Controls.Count == 0)
-            _numbers.Controls.Add(StudentLayout.Label("Bạn đã trả lời tất cả các câu."));
-
-        if (_flaggedNumbers.Controls.Count == 0)
-            _flaggedNumbers.Controls.Add(StudentLayout.Label("Bạn chưa đánh dấu câu nào."));
+            _numbers.Controls.Add(StudentLayout.Label("Không có câu chưa trả lời hoặc đã đánh dấu."));
 
         void UpdateClock() =>
             _warning.Text = $"Còn {attempt.Remaining} · Sau khi nộp, bạn không thể sửa đáp án.";
@@ -35,22 +38,17 @@ public partial class SubmitReviewDialog : Form
         };
     }
 
-    private static void FitQuestionButton(Button button)
-        => button.MinimumSize = new Size(StudentLayout.Scale(button, 48), StudentLayout.Scale(button, 38));
-
-    private void AddQuestionButton(FlowLayoutPanel list, int index, string description)
+    private void AddQuestionButton(int index, string description)
     {
-        var number = StudentLayout.Button((index + 1).ToString(), (_, _) =>
+        var number = StudentLayout.Button($"Câu {index + 1} · {description}", (_, _) =>
         {
             QuestionToReview = index;
             DialogResult = DialogResult.Cancel;
         });
-        number.HandleCreated += (_, _) => FitQuestionButton(number);
-        number.DpiChangedAfterParent += (_, _) => FitQuestionButton(number);
         number.Margin = new Padding(0, 0, 8, 8);
         number.AccessibleName = $"Quay lại câu {index + 1}";
         number.AccessibleDescription = description;
         number.ForeColor = Shared.UiStyle.Primary;
-        list.Controls.Add(number);
+        _numbers.Controls.Add(number);
     }
 }
