@@ -165,16 +165,111 @@ public sealed class QuestionBankService
 
     #endregion
 
-    #region Question Stubs (giữ nguyên cho mốc ngân hàng câu hỏi tiếp theo)
+    #region Question Business Logic
 
-    public List<Question> GetQuestions(int? subjectId = null, int? chapter = null)
-        => throw new NotImplementedException("Bạn 1: chưa triển khai.");
+    public List<Question> GetQuestions(int? subjectId = null, int? chapter = null, string? difficulty = null, string? keyword = null)
+        => _questionRepository.FindQuestions(subjectId, chapter, difficulty, keyword);
+
+    public Question? GetQuestionById(int id)
+        => _questionRepository.GetQuestionById(id);
+
+    public int CountAllQuestions()
+        => _questionRepository.CountAllQuestions();
+
+    public List<int> GetDistinctChapters(int? subjectId = null)
+        => _questionRepository.GetDistinctChapters(subjectId);
+
+    public void ValidateQuestion(Question q)
+    {
+        ArgumentNullException.ThrowIfNull(q);
+
+        if (q.SubjectId <= 0 || _questionRepository.GetSubjectById(q.SubjectId) is null)
+        {
+            throw new ArgumentException("Môn học không hợp lệ hoặc không tồn tại.");
+        }
+
+        if (q.Chapter <= 0)
+        {
+            throw new ArgumentException("Chương phải là số nguyên dương lớn hơn 0.");
+        }
+
+        if (q.Chapter > 50)
+        {
+            throw new ArgumentException("Chương số không được vượt quá 50.");
+        }
+
+        var diff = q.Difficulty?.Trim() ?? string.Empty;
+        if (!string.Equals(diff, "Easy", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(diff, "Medium", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(diff, "Hard", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException("Độ khó phải là một trong 3 mức: Dễ (Easy), Trung bình (Medium), Khó (Hard).");
+        }
+        q.Difficulty = char.ToUpperInvariant(diff[0]) + diff[1..].ToLowerInvariant();
+
+        var content = q.Content?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            throw new ArgumentException("Nội dung câu hỏi không được để trống.");
+        }
+        q.Content = content;
+
+        var optA = q.OptionA?.Trim() ?? string.Empty;
+        var optB = q.OptionB?.Trim() ?? string.Empty;
+        var optC = q.OptionC?.Trim() ?? string.Empty;
+        var optD = q.OptionD?.Trim() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(optA)) throw new ArgumentException("Đáp án A không được để trống.");
+        if (string.IsNullOrWhiteSpace(optB)) throw new ArgumentException("Đáp án B không được để trống.");
+        if (string.IsNullOrWhiteSpace(optC)) throw new ArgumentException("Đáp án C không được để trống.");
+        if (string.IsNullOrWhiteSpace(optD)) throw new ArgumentException("Đáp án D không được để trống.");
+
+        if (string.Equals(optA, optB, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Đáp án B không được trùng với đáp án A.");
+        if (string.Equals(optA, optC, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Đáp án C không được trùng với đáp án A.");
+        if (string.Equals(optA, optD, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Đáp án D không được trùng với đáp án A.");
+        if (string.Equals(optB, optC, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Đáp án C không được trùng với đáp án B.");
+        if (string.Equals(optB, optD, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Đáp án D không được trùng với đáp án B.");
+        if (string.Equals(optC, optD, StringComparison.OrdinalIgnoreCase))
+            throw new ArgumentException("Đáp án D không được trùng với đáp án C.");
+
+        q.OptionA = optA;
+        q.OptionB = optB;
+        q.OptionC = optC;
+        q.OptionD = optD;
+
+        var correct = q.CorrectOption?.Trim().ToUpperInvariant() ?? string.Empty;
+        if (correct is not ("A" or "B" or "C" or "D"))
+        {
+            throw new ArgumentException("Đáp án đúng phải là một trong các phương án: A, B, C hoặc D.");
+        }
+        q.CorrectOption = correct;
+    }
 
     public void SaveQuestion(Question question)
-        => throw new NotImplementedException("Bạn 1: chưa triển khai.");
+    {
+        ArgumentNullException.ThrowIfNull(question);
+        ValidateQuestion(question);
+
+        if (question.Id <= 0)
+        {
+            var newId = _questionRepository.InsertQuestion(question);
+            question.Id = newId;
+        }
+        else
+        {
+            _questionRepository.UpdateQuestion(question);
+        }
+    }
 
     public void DeleteQuestion(int questionId)
-        => throw new NotImplementedException("Bạn 1: chưa triển khai.");
+    {
+        _questionRepository.DeleteQuestion(questionId);
+    }
 
     #endregion
 }

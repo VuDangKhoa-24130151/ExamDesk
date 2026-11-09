@@ -433,16 +433,236 @@ public sealed class QuestionRepository
 
     #endregion
 
-    #region Question Stubs (giữ nguyên cho mốc ngân hàng câu hỏi tiếp theo)
+    #region Question Operations
 
-    public List<Question> FindQuestions(int? subjectId = null, int? chapter = null)
-        => throw new NotImplementedException("Bạn 1: chưa triển khai.");
+    public List<Question> FindQuestions(int? subjectId = null, int? chapter = null, string? difficulty = null, string? keyword = null)
+    {
+        var list = new List<Question>();
+        using var connection = SqliteContext.CreateConnection();
+        connection.Open();
+
+        using var command = connection.CreateCommand();
+        var sql = @"
+            SELECT Id, SubjectId, Chapter, Difficulty, Content, OptionA, OptionB, OptionC, OptionD, CorrectOption, ImagePath
+            FROM Questions
+            WHERE 1=1";
+
+        if (subjectId.HasValue)
+        {
+            sql += " AND SubjectId = $subjectId";
+            command.Parameters.AddWithValue("$subjectId", subjectId.Value);
+        }
+
+        if (chapter.HasValue)
+        {
+            sql += " AND Chapter = $chapter";
+            command.Parameters.AddWithValue("$chapter", chapter.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(difficulty))
+        {
+            sql += " AND UPPER(Difficulty) = UPPER($difficulty)";
+            command.Parameters.AddWithValue("$difficulty", difficulty.Trim());
+        }
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            sql += " AND Content LIKE $keyword";
+            command.Parameters.AddWithValue("$keyword", $"%{keyword.Trim()}%");
+        }
+
+        sql += " ORDER BY Id DESC;";
+        command.CommandText = sql;
+
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            list.Add(new Question
+            {
+                Id = reader.GetInt32(0),
+                SubjectId = reader.GetInt32(1),
+                Chapter = reader.GetInt32(2),
+                Difficulty = reader.GetString(3),
+                Content = reader.GetString(4),
+                OptionA = reader.GetString(5),
+                OptionB = reader.GetString(6),
+                OptionC = reader.GetString(7),
+                OptionD = reader.GetString(8),
+                CorrectOption = reader.GetString(9),
+                ImagePath = reader.IsDBNull(10) ? string.Empty : reader.GetString(10)
+            });
+        }
+
+        return list;
+    }
+
+    public Question? GetQuestionById(int id)
+    {
+        using var connection = SqliteContext.CreateConnection();
+        connection.Open();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT Id, SubjectId, Chapter, Difficulty, Content, OptionA, OptionB, OptionC, OptionD, CorrectOption, ImagePath
+            FROM Questions
+            WHERE Id = $id;";
+        command.Parameters.AddWithValue("$id", id);
+
+        using var reader = command.ExecuteReader();
+        if (!reader.Read())
+        {
+            return null;
+        }
+
+        return new Question
+        {
+            Id = reader.GetInt32(0),
+            SubjectId = reader.GetInt32(1),
+            Chapter = reader.GetInt32(2),
+            Difficulty = reader.GetString(3),
+            Content = reader.GetString(4),
+            OptionA = reader.GetString(5),
+            OptionB = reader.GetString(6),
+            OptionC = reader.GetString(7),
+            OptionD = reader.GetString(8),
+            CorrectOption = reader.GetString(9),
+            ImagePath = reader.IsDBNull(10) ? string.Empty : reader.GetString(10)
+        };
+    }
+
+    public int InsertQuestion(Question q)
+    {
+        ArgumentNullException.ThrowIfNull(q);
+
+        using var connection = SqliteContext.CreateConnection();
+        connection.Open();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = @"
+            INSERT INTO Questions (SubjectId, Chapter, Difficulty, Content, OptionA, OptionB, OptionC, OptionD, CorrectOption, ImagePath)
+            VALUES ($subjectId, $chapter, $difficulty, $content, $optA, $optB, $optC, $optD, $correct, $imagePath);
+            SELECT last_insert_rowid();";
+        command.Parameters.AddWithValue("$subjectId", q.SubjectId);
+        command.Parameters.AddWithValue("$chapter", q.Chapter);
+        command.Parameters.AddWithValue("$difficulty", q.Difficulty.Trim());
+        command.Parameters.AddWithValue("$content", q.Content.Trim());
+        command.Parameters.AddWithValue("$optA", q.OptionA.Trim());
+        command.Parameters.AddWithValue("$optB", q.OptionB.Trim());
+        command.Parameters.AddWithValue("$optC", q.OptionC.Trim());
+        command.Parameters.AddWithValue("$optD", q.OptionD.Trim());
+        command.Parameters.AddWithValue("$correct", q.CorrectOption.Trim().ToUpperInvariant());
+        command.Parameters.AddWithValue("$imagePath", q.ImagePath ?? string.Empty);
+
+        var newId = Convert.ToInt32(command.ExecuteScalar());
+        q.Id = newId;
+        return newId;
+    }
+
+    public void UpdateQuestion(Question q)
+    {
+        ArgumentNullException.ThrowIfNull(q);
+
+        using var connection = SqliteContext.CreateConnection();
+        connection.Open();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = @"
+            UPDATE Questions
+            SET SubjectId = $subjectId,
+                Chapter = $chapter,
+                Difficulty = $difficulty,
+                Content = $content,
+                OptionA = $optA,
+                OptionB = $optB,
+                OptionC = $optC,
+                OptionD = $optD,
+                CorrectOption = $correct,
+                ImagePath = $imagePath
+            WHERE Id = $id;";
+        command.Parameters.AddWithValue("$subjectId", q.SubjectId);
+        command.Parameters.AddWithValue("$chapter", q.Chapter);
+        command.Parameters.AddWithValue("$difficulty", q.Difficulty.Trim());
+        command.Parameters.AddWithValue("$content", q.Content.Trim());
+        command.Parameters.AddWithValue("$optA", q.OptionA.Trim());
+        command.Parameters.AddWithValue("$optB", q.OptionB.Trim());
+        command.Parameters.AddWithValue("$optC", q.OptionC.Trim());
+        command.Parameters.AddWithValue("$optD", q.OptionD.Trim());
+        command.Parameters.AddWithValue("$correct", q.CorrectOption.Trim().ToUpperInvariant());
+        command.Parameters.AddWithValue("$imagePath", q.ImagePath ?? string.Empty);
+        command.Parameters.AddWithValue("$id", q.Id);
+
+        command.ExecuteNonQuery();
+    }
 
     public void SaveQuestion(Question question)
-        => throw new NotImplementedException("Bạn 1: chưa triển khai.");
+    {
+        ArgumentNullException.ThrowIfNull(question);
+        if (question.Id <= 0)
+        {
+            InsertQuestion(question);
+        }
+        else
+        {
+            UpdateQuestion(question);
+        }
+    }
 
     public void DeleteQuestion(int questionId)
-        => throw new NotImplementedException("Bạn 1: chưa triển khai.");
+    {
+        using var connection = SqliteContext.CreateConnection();
+        connection.Open();
+
+        // Ràng buộc nghiệp vụ: kiểm tra câu hỏi đã được gán vào đề thi chưa
+        using var checkCmd = connection.CreateCommand();
+        checkCmd.CommandText = "SELECT COUNT(*) FROM ExamPaperQuestions WHERE QuestionId = $id;";
+        checkCmd.Parameters.AddWithValue("$id", questionId);
+        var paperCount = Convert.ToInt32(checkCmd.ExecuteScalar());
+        if (paperCount > 0)
+        {
+            throw new InvalidOperationException("Câu hỏi đã nằm trong đề thi, không thể xóa.");
+        }
+
+        using var deleteCmd = connection.CreateCommand();
+        deleteCmd.CommandText = "DELETE FROM Questions WHERE Id = $id;";
+        deleteCmd.Parameters.AddWithValue("$id", questionId);
+        deleteCmd.ExecuteNonQuery();
+    }
+
+    public int CountAllQuestions()
+    {
+        using var connection = SqliteContext.CreateConnection();
+        connection.Open();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM Questions;";
+        return Convert.ToInt32(command.ExecuteScalar());
+    }
+
+    public List<int> GetDistinctChapters(int? subjectId = null)
+    {
+        var list = new List<int>();
+        using var connection = SqliteContext.CreateConnection();
+        connection.Open();
+
+        using var command = connection.CreateCommand();
+        if (subjectId.HasValue)
+        {
+            command.CommandText = "SELECT DISTINCT Chapter FROM Questions WHERE SubjectId = $subjectId ORDER BY Chapter;";
+            command.Parameters.AddWithValue("$subjectId", subjectId.Value);
+        }
+        else
+        {
+            command.CommandText = "SELECT DISTINCT Chapter FROM Questions ORDER BY Chapter;";
+        }
+
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            list.Add(reader.GetInt32(0));
+        }
+
+        return list;
+    }
 
     #endregion
 }
