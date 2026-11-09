@@ -20,8 +20,8 @@ partial class SubmitReviewDialog
         SuspendLayout();
         Text = "Kiểm tra trước khi nộp";
         Font = UiStyle.BodyFont;
-        AutoScaleDimensions = new SizeF(96F, 96F);
-        AutoScaleMode = AutoScaleMode.Dpi;
+        AutoScaleDimensions = new SizeF(7F, 15F);
+        AutoScaleMode = AutoScaleMode.Font;
         StartPosition = FormStartPosition.CenterParent;
         ClientSize = new Size(680, 530);
         MinimumSize = new Size(540, 360);

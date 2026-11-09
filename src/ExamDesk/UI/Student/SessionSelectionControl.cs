@@ -108,9 +108,14 @@ public partial class SessionSelectionControl : UserControl
 
                 var sessionService = new ExamSessionService();
                 var examService = new StudentExamService();
-                var sessions = sessionService.GetSessions();
                 var papers = sessionService.GetExamPapers();
                 var progress = examService.GetSessionProgress(student.StudentCode);
+                // Ưu tiên theo trạng thái sinh viên thấy trên thẻ, kể cả ca đã nộp còn mở.
+                var sessions = sessionService.GetSessions().OrderBy(session =>
+                {
+                    bool hasProgress = progress.TryGetValue(session.Id, out bool submitted);
+                    return submitted ? 2 : session.IsOpen ? 0 : hasProgress ? 1 : 3;
+                }).ToList();
                 for (int i = 0; i < sessions.Count; i++)
                 {
                     var session = sessions[i];

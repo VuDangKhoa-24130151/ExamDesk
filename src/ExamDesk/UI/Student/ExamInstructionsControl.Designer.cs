@@ -58,7 +58,7 @@ partial class ExamInstructionsControl
         string[] rules =
         {
             "02  Mỗi câu có bốn đáp án A–D. Chọn một đáp án, có thể đổi hoặc bỏ lựa chọn.",
-            "03  Chuyển câu bằng nút hoặc lưới số câu bên phải.",
+            "03  Chọn đáp án bằng A/B/C/D hoặc 1–4. Chuyển câu bằng N/P hoặc PageDown/PageUp.",
             "04  Có thể đánh dấu để quay lại xem sau.",
             "05  Tiến độ được lưu khi thay đổi. Đóng cửa sổ không dừng đồng hồ.",
             "06  Hết giờ, bài tự khóa để gửi nộp. Nếu gửi lỗi, bạn có thể thử gửi lại.",

@@ -1,3 +1,5 @@
+using ExamDesk.UI.Shared;
+
 namespace ExamDesk.UI.Student;
 
 // Bạn 3: Form độc lập. Thêm các UserControl/Dialog của phân hệ trong cùng thư mục.
@@ -19,9 +21,12 @@ public partial class StudentExamForm : Form
 
     private void ShowIdentity()
     {
+        _student = null;
         var screen = new StudentIdentityControl();
         _examLabel.Text = "UNIEXAM — SINH VIÊN";
         _studentLabel.Text = "Nhận diện bằng MSSV";
+        _studentLabel.BackColor = UiStyle.Background;
+        _studentLabel.ForeColor = UiStyle.TextMuted;
         screen.CloseRequested += (_, _) => Close();
         screen.StudentIdentified += student => ShowRealSessions(student);
         ShowScreen(screen, "Nhận diện sinh viên");
@@ -34,6 +39,8 @@ public partial class StudentExamForm : Form
         screen.SessionSelected+=(session,paper)=>ShowRealInstructions(student,session,paper);
         screen.ResultSelected += ShowResult;
         _studentLabel.Text=$"{student.FullName} · {student.StudentCode}";
+        _studentLabel.BackColor = UiStyle.SuccessBack;
+        _studentLabel.ForeColor = UiStyle.SuccessText;
         _examLabel.Text="UNIEXAM — CHỌN CA THI";
         ShowScreen(screen,"Chọn ca thi");
     }
@@ -151,6 +158,14 @@ public partial class StudentExamForm : Form
     private void ShowResult(ExamDesk.Repositories.StudentResult result)
     {
         var screen = new StudentResultControl(result);
+        screen.EndSessionRequested += (_, _) =>
+        {
+            _deadlineTimer.Stop();
+            _submitAfterSave = false;
+            _attempt = null;
+            _student = null;
+            ShowIdentity();
+        };
         screen.CloseRequested += (_, _) => Close();
         screen.BackRequested += (_, _) =>
         {

@@ -162,7 +162,12 @@ partial class StudentExamControl
         right.Controls.Add(legend, 0, 4);
         _submit = _attempt.Submitted
             ? StudentLayout.Button("← Về trạng thái nộp", (_, _) => ExitReviewRequested?.Invoke(this, EventArgs.Empty), true)
-            : StudentLayout.Button("&Nộp bài", (_, _) => SubmitRequested?.Invoke(this, EventArgs.Empty), true);
+            : StudentLayout.Button("Nộp bài", (_, _) => SubmitRequested?.Invoke(this, EventArgs.Empty), true);
+        if (!_attempt.Submitted)
+            _submit.KeyDown += (_, e) =>
+            {
+                if (e.KeyCode is Keys.Space or Keys.Enter) e.SuppressKeyPress = true;
+            };
         _submit.Dock = DockStyle.Fill;
         _submit.Margin = new Padding(0, 4, 0, 0);
         right.Controls.Add(_submit,0,5);layout.Controls.Add(right,1,1);

@@ -6,6 +6,38 @@ namespace ExamDesk.Repositories;
 // Bạn 3: SQL phục vụ quản lý ca; không thay đổi dữ liệu đề của Bạn 1.
 public sealed class ExamSessionRepository
 {
+    private const string EditableSession = """
+        IsOpen = 0
+        AND NOT EXISTS (SELECT 1 FROM StudentDrafts d WHERE d.SessionId = ExamSessions.Id)
+        AND NOT EXISTS (SELECT 1 FROM ExamAttempts a WHERE a.SessionId = ExamSessions.Id)
+        """;
+
+    internal HashSet<int> FindEditableSessionIds()
+    {
+        using var connection = SqliteContext.CreateConnection();
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = $"SELECT Id FROM ExamSessions WHERE {EditableSession}";
+        using var reader = command.ExecuteReader();
+        var ids = new HashSet<int>();
+        while (reader.Read()) ids.Add(reader.GetInt32(0));
+        return ids;
+    }
+
+    internal bool UpdateSession(int id, string name, string room, int paperId)
+    {
+        using var connection = SqliteContext.CreateConnection();
+        connection.Open();
+        using var command = connection.CreateCommand();
+        // Kiểm tra và ghi cùng câu SQL để tránh dùng trạng thái cũ từ giao diện.
+        command.CommandText = $"UPDATE ExamSessions SET SessionName = $name, RoomName = $room, PaperId = $paper WHERE Id = $id AND {EditableSession}";
+        command.Parameters.AddWithValue("$id", id);
+        command.Parameters.AddWithValue("$name", name);
+        command.Parameters.AddWithValue("$room", room);
+        command.Parameters.AddWithValue("$paper", paperId);
+        return command.ExecuteNonQuery() == 1;
+    }
+
     public List<ExamPaper> FindPapers()
     {
         using var connection = SqliteContext.CreateConnection();

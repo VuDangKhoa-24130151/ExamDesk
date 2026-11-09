@@ -12,7 +12,6 @@ public sealed class StudentIdentityControl : UserControl
     private readonly Label _identity = StudentLayout.Label("");
     private readonly Label _status = StudentLayout.Label("");
     private readonly Button _view;
-    private readonly Button _refresh;
     private readonly TableLayoutPanel _page = new() { Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, Padding = new Padding(24), BackColor = UiStyle.Surface };
     private User? _student;
     public event Action<User>? StudentIdentified;
@@ -43,11 +42,10 @@ public sealed class StudentIdentityControl : UserControl
         AddRow(_status);
         var actions = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Top, WrapContents = true, Margin = Padding.Empty };
         _view = StudentLayout.Button("Tiếp tục chọn ca →", (_, _) => SelectSession(), true);
-        _refresh = StudentLayout.Button("Tra cứu lại", (_, _) => Identify());
-        actions.Controls.Add(_view); actions.Controls.Add(_refresh);
+        actions.Controls.Add(_view);
         AddRow(actions);
         var footer = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Top, WrapContents = true, Margin = new Padding(0, 24, 0, 0) };
-        footer.Controls.Add(StudentLayout.Button("← Quay lại", (_, _) => CloseRequested?.Invoke(this, EventArgs.Empty)));
+        footer.Controls.Add(StudentLayout.Button("Đóng khu sinh viên", (_, _) => CloseRequested?.Invoke(this, EventArgs.Empty)));
         AddRow(footer);
         Controls.Add(_page);
         ResetLookup();
@@ -87,7 +85,6 @@ public sealed class StudentIdentityControl : UserControl
     {
         _student = null;
         _identity.Text = ""; _identity.Visible = false;
-        _refresh.Enabled = false;
         _view.Enabled = false;
         _status.ForeColor = UiStyle.TextMuted;
         _status.Text = "Nhập MSSV và bấm Tra cứu sinh viên hoặc nhấn Enter.";
@@ -102,11 +99,15 @@ public sealed class StudentIdentityControl : UserControl
             _student = student;
             _identity.Text = $"{student.FullName} · {student.StudentCode} · Lớp {student.ClassName}";
             _identity.Visible = true;
-            _refresh.Enabled = true;
             _view.Enabled = true;
             _status.Text = "Đã tìm thấy sinh viên. Bấm Tiếp tục chọn ca để xem danh sách ca thi.";
+            _view.Focus();
         }
-        catch (Exception ex) { ShowError(StudentError.Describe(ex, "Không truy cập được thông tin thi. Hãy thử tra cứu lại hoặc liên hệ giảng viên.")); }
+        catch (Exception ex)
+        {
+            ShowError(StudentError.Describe(ex, "Không truy cập được thông tin thi. Hãy thử tra cứu lại hoặc liên hệ giảng viên."));
+            _code.Focus();
+        }
     }
 
     private void SelectSession()

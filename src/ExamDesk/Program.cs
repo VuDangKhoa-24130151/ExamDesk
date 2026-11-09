@@ -20,6 +20,7 @@ internal static class Program
                 "Lỗi cơ sở dữ liệu", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
+#if DEBUG
         // Chỉ chuẩn bị đề/ca thử khi người phát triển yêu cầu qua tham số chạy.
         if (args.Contains("--prepare-student-test"))
         {
@@ -37,6 +38,7 @@ internal static class Program
             }
             return;
         }
+#endif
         Application.Run(new MainForm());
     }
 }

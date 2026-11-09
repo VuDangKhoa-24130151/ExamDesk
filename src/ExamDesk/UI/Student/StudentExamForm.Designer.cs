@@ -18,8 +18,8 @@ partial class StudentExamForm
     private void InitializeComponent()
     {
         SuspendLayout();
-        AutoScaleDimensions = new SizeF(96F, 96F);
-        AutoScaleMode = AutoScaleMode.Dpi;
+        AutoScaleDimensions = new SizeF(7F, 15F);
+        AutoScaleMode = AutoScaleMode.Font;
         Font = UiStyle.SmallFont;
         ClientSize = new Size(1280, 680);
         MinimumSize = new Size(1000, 600);
@@ -32,29 +32,25 @@ partial class StudentExamForm
             Dock = DockStyle.Top, Height = 64, ColumnCount = 2, RowCount = 1,
             BackColor = UiStyle.Surface, Padding = new Padding(24, 12, 24, 12)
         };
-        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        header.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 67));
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33));
         header.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
         var examTitle = new Label
         {
             Text = "UNIEXAM — SINH VIÊN",
             Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft,
-            ForeColor = ExamDesk.UI.Shared.UiStyle.Text, AutoEllipsis = true,
+            Font = StudentLayout.GetLabelFont(12, FontStyle.Bold),
+            ForeColor = UiStyle.Text, AutoEllipsis = true,
             Margin = new Padding(0, 0, 16, 0)
         };
         var studentName = new Label
         {
-            Text = "Nhận diện bằng MSSV", AutoSize = false, AutoEllipsis = true, Width = 280, Height = 40,
-            Anchor = AnchorStyles.Right, Padding = new Padding(12, 6, 12, 6),
-            MinimumSize = new Size(190, 0), Margin = Padding.Empty,
-            BackColor = UiStyle.SuccessBack,
-            ForeColor = UiStyle.SuccessText,
+            Text = "Nhận diện bằng MSSV", AutoSize = false, AutoEllipsis = true,
+            Dock = DockStyle.Fill, Padding = new Padding(12, 6, 12, 6), Margin = Padding.Empty,
+            BackColor = UiStyle.Background,
+            ForeColor = UiStyle.TextMuted,
             TextAlign = ContentAlignment.MiddleLeft
-        };
-        header.SizeChanged+=(_,_)=>
-        {
-            studentName.Width=Math.Min((int)(360*DeviceDpi/96f),Math.Max(180,header.ClientSize.Width/3));
         };
         _examLabel=examTitle; _studentLabel=studentName;
         header.Controls.Add(examTitle, 0, 0);

@@ -55,9 +55,14 @@ public sealed class StudentExamRepository
         using var command = connection.CreateCommand();
         command.CommandText = """
             SELECT a.Score, a.TotalQuestions, a.CorrectCount, a.SubmittedAt, a.IsAutoSubmitted,
-                a.TotalQuestions - COUNT(CASE WHEN aa.SelectedOption <> '' THEN 1 END)
+                a.TotalQuestions - COUNT(CASE WHEN aa.SelectedOption <> '' THEN 1 END),
+                a.StudentName, a.StudentCode,
+                COALESCE(s.SessionName, 'Ca #' || a.SessionId),
+                COALESCE(p.Title, 'Đề #' || a.PaperId)
             FROM ExamAttempts a
             LEFT JOIN AttemptAnswers aa ON aa.AttemptId = a.Id
+            LEFT JOIN ExamSessions s ON s.Id = a.SessionId
+            LEFT JOIN ExamPapers p ON p.Id = a.PaperId
             WHERE a.SessionId = $session AND a.StudentCode = $student
             GROUP BY a.Id
             """;
@@ -68,9 +73,11 @@ public sealed class StudentExamRepository
 
         return new StudentResult(reader.GetDouble(0), reader.GetInt32(1), reader.GetInt32(2),
             reader.GetInt32(5), DateTimeOffset.Parse(reader.GetString(3),
-                System.Globalization.CultureInfo.InvariantCulture), reader.GetBoolean(4));
+                System.Globalization.CultureInfo.InvariantCulture), reader.GetBoolean(4),
+            reader.GetString(6), reader.GetString(7), reader.GetString(8), reader.GetString(9));
     }
 }
 
 internal sealed record StudentResult(double Score, int Total, int Correct, int Blank,
-    DateTimeOffset SubmittedAt, bool IsAutoSubmitted);
+    DateTimeOffset SubmittedAt, bool IsAutoSubmitted,
+    string StudentName, string StudentCode, string SessionName, string PaperTitle);

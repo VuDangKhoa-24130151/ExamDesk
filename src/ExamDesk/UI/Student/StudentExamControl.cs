@@ -222,6 +222,42 @@ public partial class StudentExamControl : UserControl
         _numbers[target].Select();
     }
     internal bool IsSaving { get; private set; }
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+    {
+        // Phím tắt chỉ thao tác bài đang mở, không kích hoạt nút nộp đang có focus.
+        if (keyData is Keys.Escape or Keys.Enter || keyData == (Keys.Alt | Keys.N))
+            return true;
+        int choice = keyData switch
+        {
+            Keys.A or Keys.D1 or Keys.NumPad1 => 0,
+            Keys.B or Keys.D2 or Keys.NumPad2 => 1,
+            Keys.C or Keys.D3 or Keys.NumPad3 => 2,
+            Keys.D or Keys.D4 or Keys.NumPad4 => 3,
+            _ => -1
+        };
+        int direction = keyData switch
+        {
+            Keys.N or Keys.PageDown => 1,
+            Keys.P or Keys.PageUp => -1,
+            _ => 0
+        };
+        if (choice < 0 && direction == 0)
+        {
+            if (keyData == Keys.Space && _submit.Focused) return true;
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+        if (IsSaving) return true;
+        if (choice >= 0)
+        {
+            if (!_attempt.Submitted)
+            {
+                _options[choice].Select();
+                Choose(choice);
+            }
+        }
+        else GoToQuestion(_attempt.Current + direction);
+        return true;
+    }
     internal bool IsDeadlineReached => _saveClock?.IsExpired ?? _attempt.IsExpired;
 
     private void ChangeChoice(int? choice, Control source) => SaveChange(() => _attempt.Choose(choice), source);
