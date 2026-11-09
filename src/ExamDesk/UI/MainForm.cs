@@ -1,4 +1,4 @@
-using ExamDesk.UI.Administration;
+﻿using ExamDesk.UI.Administration;
 using ExamDesk.UI.ExamManagement;
 using ExamDesk.UI.Reports;
 using ExamDesk.UI.DataManagement;
@@ -189,12 +189,7 @@ public sealed class MainForm : Form
             Font = UiStyle.SmallFont,
             ForeColor = UiStyle.TextMuted,
             BackColor = UiStyle.Background,
-<<<<<<< HEAD
             TextAlign = ContentAlignment.MiddleLeft
-=======
-            TextAlign = ContentAlignment.MiddleLeft,
-            Text = "CHẾ ĐỘ DỰNG UI • Quản lý ca đã lưu SQLite; các phân hệ khác đang dùng dữ liệu demo."
->>>>>>> d4ca63f48c4afdb6294511f56159ceb56920be5d
         };
 
         Controls.Add(_content);
