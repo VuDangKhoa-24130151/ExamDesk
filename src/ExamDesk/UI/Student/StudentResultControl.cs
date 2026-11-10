@@ -1,4 +1,4 @@
-using ExamDesk.Repositories;
+using ExamDesk.Models;
 using ExamDesk.UI.Shared;
 
 namespace ExamDesk.UI.Student;
@@ -24,8 +24,8 @@ public sealed class StudentResultControl : UserControl
         page.Controls.Add(StudentLayout.Label($"Số câu đúng: {result.Correct}/{result.Total}"));
         page.Controls.Add(StudentLayout.Label($"Số câu sai: {result.Total - result.Correct - result.Blank}"));
         page.Controls.Add(StudentLayout.Label($"Số câu bỏ trống: {result.Blank}"));
-        page.Controls.Add(StudentLayout.Label($"Thời điểm nộp: {result.SubmittedAt.ToLocalTime():dd/MM/yyyy HH:mm:ss}"));
-        page.Controls.Add(StudentLayout.Label($"Lý do: {(result.IsAutoSubmitted ? "Hết giờ" : "Nộp tay")}"));
+        page.Controls.Add(StudentLayout.Label($"Thời điểm nộp bài: {result.SubmittedAt.ToLocalTime():dd/MM/yyyy HH:mm:ss}"));
+        page.Controls.Add(StudentLayout.Label($"Lý do: {(result.IsAutoSubmitted ? "Hết giờ" : "Nộp bài chủ động")}"));
         var actions = new FlowLayoutPanel { AutoSize = true, WrapContents = true };
         actions.Controls.Add(StudentLayout.Button("&Quay lại chọn ca", (_, _) => BackRequested?.Invoke(this, EventArgs.Empty)));
         actions.Controls.Add(StudentLayout.Button("Kết thúc phiên sinh viên", (_, _) => EndSessionRequested?.Invoke(this, EventArgs.Empty)));

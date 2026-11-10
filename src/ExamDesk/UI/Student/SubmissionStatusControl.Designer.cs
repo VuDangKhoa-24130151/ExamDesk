@@ -18,7 +18,7 @@ partial class SubmissionStatusControl
         {
             Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, Padding = new Padding(24, 16, 24, 0)
         };
-        heading.Controls.Add(StudentLayout.Label("Kết thúc lượt làm bài", 18, FontStyle.Bold));
+        heading.Controls.Add(StudentLayout.Label("Trạng thái nộp bài", 18, FontStyle.Bold));
         _cardHost = new Panel { Dock = DockStyle.Fill, AutoScroll = true };
         var card = new TableLayoutPanel
         {
@@ -29,7 +29,7 @@ partial class SubmissionStatusControl
         card.Controls.Add(StudentLayout.Label("Thông tin lượt làm bài", 12, FontStyle.Bold));
         _lockStatus = StudentLayout.Label("");
         card.Controls.Add(_lockStatus);
-        _status = StudentLayout.Label("Đã kết thúc lượt UI. Dữ liệu bài thi chỉ tồn tại trong phiên hiện tại.");
+        _status = StudentLayout.Label("Chưa có thông tin nộp bài.");
         _status.Dock = DockStyle.Top;
         _status.Padding = new Padding(16);
         card.Controls.Add(_status);

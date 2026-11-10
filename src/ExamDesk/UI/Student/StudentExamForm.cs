@@ -140,7 +140,7 @@ public partial class StudentExamForm : Form
             var error = StudentError.Describe(ex,
                 attempt.Submitted
                     ? "Không tải được kết quả đã lưu. Hãy tải lại kết quả hoặc liên hệ giảng viên."
-                    : "Không lưu được bài nộp. Hãy thử gửi lại hoặc liên hệ giảng viên.");
+                    : "Không nộp bài được. Hãy thử nộp bài lại hoặc liên hệ giảng viên.");
             if (!IsDisposed) status.SetAttempt(attempt, error);
         }
         finally
@@ -155,7 +155,7 @@ public partial class StudentExamForm : Form
         }
     }
 
-    private void ShowResult(ExamDesk.Repositories.StudentResult result)
+    private void ShowResult(ExamDesk.Models.StudentResult result)
     {
         var screen = new StudentResultControl(result);
         screen.EndSessionRequested += (_, _) =>
@@ -183,7 +183,7 @@ public partial class StudentExamForm : Form
         Button? retry = null;
         if (attempt.Draft is not null)
         {
-            retry = StudentLayout.Button(attempt.Submitted ? "Tải lại kết quả" : "Thử gửi lại",
+            retry = StudentLayout.Button(attempt.Submitted ? "Tải lại kết quả" : "Thử nộp bài lại",
                 (_, _) => SubmitAttempt(), true);
             screen.AddAction(retry);
         }

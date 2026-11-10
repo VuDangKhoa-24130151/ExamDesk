@@ -61,8 +61,8 @@ partial class ExamInstructionsControl
             "03  Chọn đáp án bằng A/B/C/D hoặc 1–4. Chuyển câu bằng N/P hoặc PageDown/PageUp.",
             "04  Có thể đánh dấu để quay lại xem sau.",
             "05  Tiến độ được lưu khi thay đổi. Đóng cửa sổ không dừng đồng hồ.",
-            "06  Hết giờ, bài tự khóa để gửi nộp. Nếu gửi lỗi, bạn có thể thử gửi lại.",
-            "07  Sau khi nộp, bạn không thể thay đổi đáp án."
+            "06  Hết giờ, hệ thống tự động nộp bài. Nếu có lỗi, bạn có thể thử nộp bài lại.",
+            "07  Sau khi nộp bài, bạn không thể thay đổi đáp án."
         };
         foreach (string rule in rules)
             instructions.Controls.Add(TextLabel(rule));

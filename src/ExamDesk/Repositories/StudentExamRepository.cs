@@ -22,8 +22,6 @@ public sealed class StudentExamRepository
         return student;
     }
 
-    public List<ExamSession> FindOpenSessions() => new ExamSessionRepository().FindSessions().Where(s => s.IsOpen).ToList();
-
     // Có khóa nghĩa là đã bắt đầu, giá trị true nghĩa là đã lưu bài nộp.
     internal Dictionary<int, bool> FindSessionProgress(string studentCode)
     {
@@ -77,7 +75,3 @@ public sealed class StudentExamRepository
             reader.GetString(6), reader.GetString(7), reader.GetString(8), reader.GetString(9));
     }
 }
-
-internal sealed record StudentResult(double Score, int Total, int Correct, int Blank,
-    DateTimeOffset SubmittedAt, bool IsAutoSubmitted,
-    string StudentName, string StudentCode, string SessionName, string PaperTitle);

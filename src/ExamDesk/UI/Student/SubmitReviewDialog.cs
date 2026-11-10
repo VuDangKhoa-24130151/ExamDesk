@@ -2,10 +2,24 @@ namespace ExamDesk.UI.Student;
 public partial class SubmitReviewDialog : Form
 {
     public int? QuestionToReview { get; private set; }
-    public SubmitReviewDialog() : this(new StudentAttemptState()) { }
+    public SubmitReviewDialog()
+    {
+        InitializeComponent();
+#if DEBUG
+        ShowAttempt(new StudentAttemptState());
+#else
+        _confirmButton.Enabled = false;
+#endif
+    }
+
     internal SubmitReviewDialog(StudentAttemptState attempt)
     {
         InitializeComponent();
+        ShowAttempt(attempt);
+    }
+
+    private void ShowAttempt(StudentAttemptState attempt)
+    {
         _answered.Text = attempt.Answered.ToString();
         _unanswered.Text = (attempt.Answers.Length - attempt.Answered).ToString();
         _flagged.Text = attempt.Flags.Count(flag => flag).ToString();
@@ -26,7 +40,7 @@ public partial class SubmitReviewDialog : Form
             _numbers.Controls.Add(StudentLayout.Label("Không có câu chưa trả lời hoặc đã đánh dấu."));
 
         void UpdateClock() =>
-            _warning.Text = $"Còn {attempt.Remaining} · Sau khi nộp, bạn không thể sửa đáp án.";
+            _warning.Text = $"Còn {attempt.Remaining} · Sau khi nộp bài, bạn không thể sửa đáp án.";
 
         UpdateClock();
         _clock.Tick += (_, _) => UpdateClock();

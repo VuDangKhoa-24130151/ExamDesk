@@ -7,7 +7,7 @@ partial class SubmitReviewDialog
     private readonly System.Windows.Forms.Timer _clock = new() { Interval = 250 };
     private Label _answered = null!, _unanswered = null!, _flagged = null!, _warning = null!;
     private FlowLayoutPanel _numbers = null!;
-    private Button _continueButton = null!;
+    private Button _continueButton = null!, _confirmButton = null!;
 
     protected override void Dispose(bool disposing)
     {
@@ -18,7 +18,7 @@ partial class SubmitReviewDialog
     private void InitializeComponent()
     {
         SuspendLayout();
-        Text = "Kiểm tra trước khi nộp";
+        Text = "Kiểm tra trước khi nộp bài";
         Font = UiStyle.BodyFont;
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
@@ -78,13 +78,13 @@ partial class SubmitReviewDialog
         _continueButton = StudentLayout.Button("Tiếp tục &làm bài", (_, _) => { });
         _continueButton.DialogResult = DialogResult.Cancel;
         _continueButton.Dock = DockStyle.Fill;
-        var confirm = StudentLayout.Button("&Xác nhận nộp bài", (_, _) => { }, true);
-        confirm.DialogResult = DialogResult.OK;
-        confirm.Dock = DockStyle.Fill;
+        _confirmButton = StudentLayout.Button("&Xác nhận nộp bài", primary: true);
+        _confirmButton.DialogResult = DialogResult.OK;
+        _confirmButton.Dock = DockStyle.Fill;
         actions.Controls.Add(_warning, 0, 0);
         actions.SetColumnSpan(_warning, 2);
         actions.Controls.Add(_continueButton, 0, 1);
-        actions.Controls.Add(confirm, 1, 1);
+        actions.Controls.Add(_confirmButton, 1, 1);
         actions.SizeChanged += (_, _) =>
             _warning.MaximumSize = new Size(Math.Max(1, actions.ClientSize.Width - actions.Padding.Horizontal), 0);
         Controls.Add(body);

@@ -4,25 +4,13 @@ namespace ExamDesk.UI.Student;
 
 public partial class StudentExamControl : UserControl
 {
-    private sealed class AnswerRadioButton : RadioButton
-    {
-        private bool _receivingFocus;
-
-        protected override void OnEnter(EventArgs e)
-        {
-            _receivingFocus = true;
-            try { base.OnEnter(e); }
-            finally { _receivingFocus = false; }
-        }
-
-        protected override void OnClick(EventArgs e)
-        {
-            // WinForms phát Click khi radio nhận focus, kể cả khi AutoCheck tắt.
-            if (!_receivingFocus) base.OnClick(e);
-        }
-    }
-
-    private StudentAttemptState _attempt;
+    private const int QuestionGridColumns = 5;
+    private const string FlagText = "⚑ Đánh dấu &xem lại";
+    private const string UnflagText = "⚑ Bỏ đánh dấu &xem lại";
+    private readonly System.Windows.Forms.Timer _timer = new() { Interval = 1000 };
+    private Button[] _numbers = [];
+    private bool _fittingContent;
+    private readonly StudentAttemptState _attempt = null!;
     private bool _rendering;
     private int _imageQuestion = -1;
     private bool _imageLoadFailed;
@@ -35,19 +23,167 @@ public partial class StudentExamControl : UserControl
     internal event EventHandler? SaveExpired;
     internal event EventHandler? SaveCompleted;
     internal event EventHandler? DraftLocked;
+#if DEBUG
     public StudentExamControl() : this(new StudentAttemptState()) { }
+#else
+    public StudentExamControl()
+    {
+        InitializeComponent();
+        Enabled = false;
+    }
+#endif
+
     internal StudentExamControl(StudentAttemptState attempt)
     {
         _attempt = attempt;
         _savedAt = attempt.Draft?.History.LastOrDefault()?.AtUtc.LocalDateTime;
         InitializeComponent();
+        ConfigureExam();
         RenderQuestion();
     }
+    private void ConfigureExam()
+    {
+        _title.Text = _attempt.Title;
+        _identity.Text = _attempt.Draft is { } draft
+            ? $"{draft.StudentName} · {draft.StudentCode} · {draft.ClassName} · {draft.Questions.Count} câu"
+            : $"{_attempt.Answers.Length} câu";
+        if (_attempt.Submitted)
+        {
+            _section.Text = "XEM LẠI BÀI ĐÃ NỘP";
+            _hint.Text = "Lựa chọn đã lưu khi nộp bài";
+            _advice.Text = "Chọn số câu hoặc dùng Câu trước và Câu tiếp để xem lại bài.";
+            _submit.Text = "← Về trạng thái nộp bài";
+            _submit.Click += (_, _) => ExitReviewRequested?.Invoke(this, EventArgs.Empty);
+        }
+        else
+        {
+            _submit.Click += (_, _) => SubmitRequested?.Invoke(this, EventArgs.Empty);
+            _submit.KeyDown += (_, e) =>
+            {
+                if (e.KeyCode is Keys.Space or Keys.Enter) e.SuppressKeyPress = true;
+            };
+        }
+
+        _image.Click += (_, _) => ShowQuestionImage();
+        _viewImage.Click += (_, _) => ShowQuestionImage();
+        _previous.Click += (_, _) => GoToQuestion(_attempt.Current - 1);
+        _next.Click += (_, _) => GoToQuestion(_attempt.Current + 1);
+        _flag.CheckedChanged += (_, _) => ChangeFlag();
+        _clearChoice.Click += (_, _) => ChangeChoice(null, _clearChoice);
+
+        for (int i = 0; i < _options.Length; i++)
+        {
+            int choice = i;
+            var option = _options[i];
+            option.Click += (_, _) => Choose(choice);
+            option.PreviewKeyDown += KeepArrowKeys;
+            option.KeyDown += (_, e) => HandleOptionKey(choice, e);
+        }
+
+        _progressTrack.Paint += (_, e) =>
+        {
+            using var fill = new SolidBrush(UiStyle.Primary);
+            float width = _progressTrack.ClientSize.Width * _attempt.Answered / (float)_attempt.Answers.Length;
+            e.Graphics.FillRectangle(fill, 0, 0, width, _progressTrack.ClientSize.Height);
+        };
+        BuildQuestionGrid();
+
+        _layout.SizeChanged += (_, _) => FitColumns();
+        _questionViewport.SizeChanged += (_, _) => FitContent();
+        _right.SizeChanged += (_, _) => FitContent();
+        Load += (_, _) => FitColumns();
+        DpiChangedAfterParent += (_, _) => FitColumns();
+        if (!_attempt.Submitted)
+        {
+            _timer.Tick += Tick;
+            _timer.Start();
+        }
+    }
+
+    private void FitContent()
+    {
+        if (_fittingContent) return;
+        _fittingContent = true;
+        try
+        {
+            // Chừa chỗ cho thanh cuộn để độ rộng đáp án không đổi khi nội dung dài.
+            int width = Math.Max(1, _questionViewport.ClientSize.Width - SystemInformation.VerticalScrollBarWidth);
+            _body.SuspendLayout();
+            try
+            {
+                var textLimit = new Size(width, 0);
+                _question.MaximumSize = _questionNumber.MaximumSize = _hint.MaximumSize =
+                    _advice.MaximumSize = textLimit;
+                foreach (var option in _options)
+                    option.Size = new Size(width, option.MeasureHeight(width));
+                _image.Width = Math.Min(width, StudentLayout.Scale(this, 480));
+                _image.Height = Math.Min(StudentLayout.Scale(this, 220), _image.Width * 220 / 480);
+            }
+            finally { _body.ResumeLayout(true); }
+            // Dành chỗ cho cả hai nhãn để thanh nút không đổi hàng khi đánh dấu câu.
+            var flagTextWidth = TextRenderer.MeasureText(UnflagText, _flag.Font).Width;
+            _flag.MinimumSize = new Size(flagTextWidth + _flag.Padding.Horizontal + StudentLayout.Scale(this, 8),
+                StudentLayout.Scale(this, 38));
+            foreach (var number in _numbers) number.MinimumSize = new Size(0, StudentLayout.Scale(this, 34));
+            int sideWidth = Math.Max(1, _right.ClientSize.Width);
+            _progress.MaximumSize = _legend.MaximumSize = new Size(sideWidth, 0);
+        }
+        finally { _fittingContent = false; }
+    }
+
+    private void FitColumns()
+    {
+        if (_layout.ClientSize.Width <= 0) return;
+        var sideWidth = Math.Min(StudentLayout.Scale(this, 300), (int)(_layout.ClientSize.Width * 0.42f));
+        if (_layout.ColumnStyles[1].Width != sideWidth)
+            _layout.ColumnStyles[1].Width = sideWidth;
+        FitContent();
+    }
+
+    private void BuildQuestionGrid()
+    {
+        while (_gridViewport.Controls.Count > 0) _gridViewport.Controls[0].Dispose();
+        var grid = new TableLayoutPanel
+        {
+            Dock = DockStyle.Top, AutoSize = true, ColumnCount = QuestionGridColumns,
+            RowCount = (_attempt.Answers.Length + QuestionGridColumns - 1) / QuestionGridColumns
+        };
+        for (int i = 0; i < QuestionGridColumns; i++)
+            grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / QuestionGridColumns));
+        for (int row = 0; row < grid.RowCount; row++)
+            grid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        _numbers = new Button[_attempt.Answers.Length];
+        for (int i = 0; i < _numbers.Length; i++)
+        {
+            int index = i;
+            var number = new Button
+            {
+                Dock = DockStyle.Fill, FlatStyle = FlatStyle.Flat, Padding = Padding.Empty,
+                Margin = new Padding(2), AccessibleName = $"Câu {i + 1}"
+            };
+            _numbers[i] = number;
+            number.Paint += (_, e) =>
+            {
+                var bounds = Rectangle.Inflate(number.ClientRectangle, -3, -2);
+                if (_attempt.Answers[index].HasValue)
+                    TextRenderer.DrawText(e.Graphics, "✓", UiStyle.SmallFont, bounds, UiStyle.SuccessText,
+                        TextFormatFlags.Left | TextFormatFlags.Top | TextFormatFlags.NoPadding);
+                if (_attempt.Flags[index])
+                    TextRenderer.DrawText(e.Graphics, "⚑", UiStyle.SmallFont, bounds, UiStyle.WarningText,
+                        TextFormatFlags.Right | TextFormatFlags.Top | TextFormatFlags.NoPadding);
+            };
+            number.Click += (_, _) => GoToQuestion(index);
+            number.PreviewKeyDown += KeepArrowKeys;
+            number.KeyDown += (_, e) => HandleQuestionKey(index, e);
+            grid.Controls.Add(number, i % QuestionGridColumns, i / QuestionGridColumns);
+        }
+        _gridViewport.Controls.Add(grid);
+    }
+
     private void RenderQuestion()
     {
         _rendering = true;
         _questionNumber.Text = $"Câu {_attempt.Current + 1:00} / {_attempt.Answers.Length}";
-        _question.Text = "Kiểu dữ liệu nào trong C# dùng để lưu giá trị đúng / sai?";
         if (_attempt.Draft is { } draft)
         {
             var question = draft.Questions[_attempt.Current];
@@ -75,8 +211,16 @@ public partial class StudentExamControl : UserControl
             if (_imageLoadFailed)
                 _question.Text += "\n[Không tải được ảnh minh họa. Hãy báo giảng viên.]";
             _image.Visible = _viewImage.Visible = _image.Image is not null;
-            for(int i=0;i<4;i++) _options[i].Text = $"{(char)('A'+i)}. {question.Options[i]}";
+            for (int i = 0; i < _options.Length; i++) _options[i].Text = question.Options[i];
         }
+#if DEBUG
+        else
+        {
+            _question.Text = "Kiểu dữ liệu nào trong C# dùng để lưu giá trị đúng / sai?";
+            string[] answers = ["int", "bool", "string", "double"];
+            for (int i = 0; i < _options.Length; i++) _options[i].Text = answers[i];
+        }
+#endif
         int? selected = _attempt.Answers[_attempt.Current];
         bool locked = _attempt.Draft?.PendingSubmission == true && !_attempt.Submitted;
         for (int i = 0; i < _options.Length; i++)
@@ -85,11 +229,9 @@ public partial class StudentExamControl : UserControl
             option.Checked = selected == i;
             option.Enabled = !locked;
             option.TabStop = !_attempt.Submitted && !locked && i == (selected ?? 0);
-            option.BackColor = option.Checked ? UiStyle.Background : UiStyle.Surface;
-            option.Invalidate();
         }
         _flag.Checked = _attempt.Flags[_attempt.Current];
-        _flag.Text = _flag.Checked ? "⚑ Bỏ đánh dấu &xem lại" : "⚑ Đánh dấu &xem lại";
+        _flag.Text = _flag.Checked ? UnflagText : FlagText;
         _previous.Enabled = _attempt.Current > 0;
         _next.Enabled = _attempt.Current < _attempt.Answers.Length-1;
         _flag.Enabled = !_attempt.Submitted && !locked;
@@ -116,7 +258,7 @@ public partial class StudentExamControl : UserControl
             _numbers[i].FlatAppearance.BorderSize = i == _attempt.Current ? 2 : 1;
             _numbers[i].Invalidate();
         }
-        _fitContent?.Invoke();
+        FitContent();
         _rendering = false;
     }
 
@@ -287,7 +429,7 @@ public partial class StudentExamControl : UserControl
         _saveStatus.BackColor = UiStyle.Background;
         _saveStatus.ForeColor = UiStyle.Primary;
         _saveStatus.Visible = true;
-        _fitContent?.Invoke();
+        FitContent();
         Action afterSave = RenderQuestion;
 
         try
@@ -327,7 +469,7 @@ public partial class StudentExamControl : UserControl
 
     internal void ShowDeadlinePending()
     {
-        _saveStatus.Text = "Đã hết giờ. Sẽ tự nộp khi lưu xong.";
+        _saveStatus.Text = "Đã hết giờ. Sẽ tự nộp bài khi lưu xong.";
         _saveStatus.BackColor = UiStyle.WarningBack;
         _saveStatus.ForeColor = UiStyle.WarningText;
         _saveStatus.Visible = true;
@@ -378,7 +520,7 @@ public partial class StudentExamControl : UserControl
     {
         if (_attempt.Submitted)
         {
-            _clock.Text = "Đã nộp · Chỉ xem";
+            _clock.Text = "Đã nộp bài · Chỉ xem";
             return;
         }
 

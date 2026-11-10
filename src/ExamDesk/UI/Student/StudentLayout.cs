@@ -51,7 +51,7 @@ internal static class StudentLayout
         Text = text, AutoSize = true, UseMnemonic = false, Font = GetLabelFont(size, style),
         Margin = new Padding(0, 8, 0, 12), ForeColor = UiStyle.Text
     };
-    public static Button Button(string text, EventHandler click, bool primary = false)
+    public static Button Button(string text, EventHandler? click = null, bool primary = false)
     {
         var button = new Button
         {
@@ -64,7 +64,7 @@ internal static class StudentLayout
         button.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         button.HandleCreated += (_, _) => FitButton(button);
         button.DpiChangedAfterParent += (_, _) => FitButton(button);
-        button.Click += click;
+        if (click is not null) button.Click += click;
         return button;
     }
 
