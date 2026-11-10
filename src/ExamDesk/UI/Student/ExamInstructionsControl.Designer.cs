@@ -1,4 +1,3 @@
-#nullable enable
 using ExamDesk.UI.Shared;
 
 namespace ExamDesk.UI.Student;
@@ -6,9 +5,10 @@ namespace ExamDesk.UI.Student;
 partial class ExamInstructionsControl
 {
     private CheckBox _readCheckBox = null!;
-    private Button _startButton = null!;
-    private Label _sessionTitle = null!, _studentInfo = null!, _sessionInfo = null!;
-    private Label _paperInfo = null!, _durationRule = null!, _resumeInfo = null!;
+    private Button _backButton = null!, _startButton = null!;
+    private Label _sessionTitle = null!, _studentInfo = null!, _paperInfo = null!, _resumeInfo = null!;
+    private Label _questionCount = null!, _duration = null!, _room = null!, _sessionCode = null!, _durationRule = null!;
+    private TableLayoutPanel _page = null!, _rules = null!;
 
     private void InitializeComponent()
     {
@@ -18,138 +18,123 @@ partial class ExamInstructionsControl
         Font = UiStyle.SmallFont;
         BackColor = UiStyle.Background;
         ForeColor = UiStyle.Text;
-        AutoScroll = true;
 
-        var page = new TableLayoutPanel
+        var viewport = new Panel { Dock = DockStyle.Fill, AutoScroll = true };
+        _page = Column();
+        _page.Padding = new Padding(24, 24, 24, 16);
+        _page.Controls.Add(TextLabel("Hướng dẫn trước khi thi", 18, FontStyle.Bold));
+        var stats = new TableLayoutPanel
         {
-            Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, RowCount = 4,
-            Padding = new Padding(24), TabStop = false
+            Dock = DockStyle.Top, AutoSize = true, ColumnCount = 4, RowCount = 1,
+            Margin = new Padding(0, 8, 0, 16)
         };
-        page.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        for (int i = 0; i < 4; i++)
-            page.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-
-        var heading = new FlowLayoutPanel
+        TableLayoutPanel[] statTiles =
+        [
+            StatTile("Số câu", out _questionCount),
+            StatTile("Thời gian", out _duration),
+            StatTile("Phòng", out _room),
+            StatTile("Mã ca", out _sessionCode)
+        ];
+        for (int i = 0; i < statTiles.Length; i++)
         {
-            Dock = DockStyle.Top, AutoSize = true, FlowDirection = FlowDirection.TopDown,
-            WrapContents = false, Margin = new Padding(0, 0, 0, 12), TabStop = false
-        };
-        heading.Controls.Add(TextLabel("Hướng dẫn trước khi thi", 18, FontStyle.Bold));
-        heading.Controls.Add(TextLabel("Xác nhận đúng thông tin sinh viên và nội dung ca thi."));
-        page.Controls.Add(heading, 0, 0);
+            stats.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+            stats.Controls.Add(statTiles[i], i, 0);
+        }
+        statTiles[^1].Margin = Padding.Empty;
+        _page.Controls.Add(stats);
 
-        // Hai cột tự tăng chiều cao theo nội dung, không kéo thẻ dài hết màn hình.
-        var details = new TableLayoutPanel
-        {
-            Dock = DockStyle.Top, AutoSize = true, ColumnCount = 2, RowCount = 1,
-            Margin = Padding.Empty, TabStop = false
-        };
-        details.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 60));
-        details.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 40));
-        details.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-
-        var instructions = Surface();
-        instructions.Margin = new Padding(0, 0, 12, 0);
-        _sessionTitle = TextLabel("Thông tin ca thi", 12, FontStyle.Bold);
-        instructions.Controls.Add(_sessionTitle);
-        instructions.Controls.Add(TextLabel("Đọc kỹ trước khi bắt đầu lượt thi", 9));
-        _durationRule = TextLabel("");
-        instructions.Controls.Add(_durationRule);
-        string[] rules =
-        {
-            "02  Mỗi câu có bốn đáp án A–D. Chọn một đáp án, có thể đổi hoặc bỏ lựa chọn.",
-            "03  Chọn đáp án bằng A/B/C/D hoặc 1–4. Chuyển câu bằng N/P hoặc PageDown/PageUp.",
-            "04  Có thể đánh dấu để quay lại xem sau.",
-            "05  Tiến độ được lưu khi thay đổi. Đóng cửa sổ không dừng đồng hồ.",
-            "06  Hết giờ, hệ thống tự động nộp bài. Nếu có lỗi, bạn có thể thử nộp bài lại.",
-            "07  Sau khi nộp bài, bạn không thể thay đổi đáp án."
-        };
-        foreach (string rule in rules)
-            instructions.Controls.Add(TextLabel(rule));
-        details.Controls.Add(instructions, 0, 0);
-
-        var attempt = Surface();
-        attempt.Margin = new Padding(8, 0, 0, 0);
-        attempt.Controls.Add(TextLabel("Thông tin lượt thi", 12, FontStyle.Bold));
-        _studentInfo = TextLabel("");
-        _sessionInfo = TextLabel("");
+        _sessionTitle = TextLabel("Thông tin ca thi", 11, FontStyle.Bold);
+        _studentInfo = TextLabel("", 9);
+        _studentInfo.ForeColor = UiStyle.TextMuted;
         _paperInfo = TextLabel("");
-        attempt.Controls.Add(_studentInfo);
-        attempt.Controls.Add(_sessionInfo);
-        attempt.Controls.Add(_paperInfo);
-        _resumeInfo = TextLabel("");
-        _resumeInfo.Visible = false;
-        attempt.Controls.Add(_resumeInfo);
-        details.Controls.Add(attempt, 1, 0);
-        page.Controls.Add(details, 0, 1);
+        _page.Controls.Add(_sessionTitle);
+        _page.Controls.Add(_studentInfo);
+        _page.Controls.Add(_paperInfo);
 
+        _resumeInfo = TextLabel("");
+        _resumeInfo.ForeColor = UiStyle.WarningText;
+        _resumeInfo.Visible = false;
+        _page.Controls.Add(_resumeInfo);
+
+        _rules = Column();
+        _rules.BackColor = UiStyle.Surface;
+        _rules.Padding = new Padding(16, 16, 16, 8);
+        _rules.Controls.Add(TextLabel("Quy tắc làm bài", 11, FontStyle.Bold));
+        _durationRule = TextLabel("");
+        _rules.Controls.Add(_durationRule);
+        _rules.Controls.Add(TextLabel("02. Mỗi câu có bốn đáp án A–D. Chọn một đáp án, có thể đổi hoặc bỏ lựa chọn."));
+        _rules.Controls.Add(TextLabel("03. Chọn đáp án bằng A/B/C/D hoặc 1–4. Chuyển câu bằng N/P hoặc PageDown/PageUp."));
+        _rules.Controls.Add(TextLabel("04. Có thể đánh dấu để quay lại xem sau."));
+        _rules.Controls.Add(TextLabel("05. Tiến độ được lưu khi thay đổi. Đóng cửa sổ không dừng đồng hồ."));
+        _rules.Controls.Add(TextLabel("06. Hết giờ, hệ thống tự động nộp bài. Nếu có lỗi, bạn có thể thử nộp bài lại."));
+        _rules.Controls.Add(TextLabel("07. Sau khi nộp bài, bạn không thể thay đổi đáp án."));
+        _page.Controls.Add(_rules);
+        viewport.Controls.Add(_page);
+
+        // Chỉ vùng hướng dẫn cuộn; thanh xác nhận luôn ở dưới cùng.
+        var footer = new TableLayoutPanel
+        {
+            Dock = DockStyle.Bottom, AutoSize = true, ColumnCount = 2, RowCount = 2,
+            Padding = new Padding(24, 12, 24, 12), BackColor = UiStyle.Surface
+        };
+        footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         _readCheckBox = new CheckBox
         {
             Text = "Tôi đã đọc và &hiểu hướng dẫn làm bài.", AutoSize = true,
-            Margin = new Padding(0, 12, 0, 8), TabIndex = 0
+            Font = UiStyle.BodyFont, TabIndex = 0, Margin = new Padding(0, 0, 0, 8)
         };
-        page.Controls.Add(_readCheckBox, 0, 2);
+        footer.Controls.Add(_readCheckBox, 0, 0);
+        footer.SetColumnSpan(_readCheckBox, 2);
 
-        var actions = new FlowLayoutPanel
-        {
-            Dock = DockStyle.Top, AutoSize = true, WrapContents = true,
-            Margin = Padding.Empty, TabIndex = 1, TabStop = false
-        };
+        _backButton = StudentLayout.Button("← &Quay lại chọn ca");
+        _backButton.TabIndex = 1;
+        _backButton.Margin = Padding.Empty;
+        footer.Controls.Add(_backButton, 0, 1);
+        _startButton = StudentLayout.Button("&Bắt đầu làm bài", primary: true);
+        _startButton.Enabled = false;
+        _startButton.TabIndex = 2;
+        _startButton.Anchor = AnchorStyles.Right;
+        _startButton.Margin = Padding.Empty;
+        footer.Controls.Add(_startButton, 1, 1);
 
-
-        var back = new Button
-        {
-            Text = "← &Quay lại chọn ca", AutoSize = true, BackColor = UiStyle.Surface, ForeColor = UiStyle.Text,
-            FlatStyle = FlatStyle.Flat, TabIndex = 0, Margin = new Padding(0, 0, 12, 8)
-        };
-        UiStyle.StyleSecondaryButton(back);
-        back.Click += GoBack;
-        _startButton = new Button
-        {
-            Text = "&Bắt đầu làm bài", AutoSize = true, Anchor = AnchorStyles.Right, BackColor = UiStyle.Primary, ForeColor = UiStyle.Surface,
-            FlatStyle = FlatStyle.Flat, Enabled = false, TabIndex = 1, Margin = new Padding(0, 0, 0, 8)
-        };
-        UiStyle.StylePrimaryButton(_startButton);
-        // Nút bật sau khi sinh viên xác nhận đã đọc hướng dẫn.
-        actions.Controls.Add(back);
-        actions.Controls.Add(_startButton);
-        page.Controls.Add(actions, 0, 3);
-
-        // Khi phần nội dung hẹp, xếp hai thẻ theo chiều dọc để chữ không bị bó hẹp.
-        void FitDetails()
-        {
-            bool stacked=details.ClientSize.Width < (int)(820*DeviceDpi/96f);
-            int columns=stacked ? 1 : 2;
-            if(details.ColumnCount==columns) return;
-            details.SuspendLayout();
-            details.ColumnCount=columns; details.RowCount=stacked ? 2 : 1;
-            details.ColumnStyles.Clear(); details.RowStyles.Clear();
-            details.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,stacked ? 100 : 60));
-            if(!stacked) details.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,40));
-            details.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            if(stacked) details.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            details.SetCellPosition(instructions,new TableLayoutPanelCellPosition(0,0));
-            details.SetCellPosition(attempt,new TableLayoutPanelCellPosition(stacked ? 0 : 1,stacked ? 1 : 0));
-            instructions.Margin=new Padding(0,0,stacked ? 0 : 12,stacked ? 12 : 0);
-            attempt.Margin=new Padding(stacked ? 0 : 8,0,0,0);
-            details.ResumeLayout(true);
-        }
-        details.SizeChanged+=(_,_)=>FitDetails();
-        Load+=(_,_)=>FitDetails();
-        heading.SizeChanged += (_, _) => WrapLabels(heading);
-        instructions.SizeChanged += (_, _) => WrapLabels(instructions);
-        attempt.SizeChanged += (_, _) => WrapLabels(attempt);
-        Controls.Add(page);
-        ResumeLayout(false);
-        PerformLayout();
+        Controls.Add(viewport);
+        Controls.Add(footer);
+        ResumeLayout(true);
     }
 
-    private static FlowLayoutPanel Surface() => new()
+    private static TableLayoutPanel Column()
     {
-        Dock = DockStyle.Fill, AutoSize = true, BackColor = UiStyle.Surface,
-        Padding = new Padding(16), FlowDirection = FlowDirection.TopDown,
-        WrapContents = false, BorderStyle = BorderStyle.FixedSingle, TabStop = false
-    };
+        var column = new TableLayoutPanel
+        {
+            Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, Margin = Padding.Empty
+        };
+        column.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        return column;
+    }
+
+    private static TableLayoutPanel StatTile(string caption, out Label value)
+    {
+        var tile = Column();
+        tile.Dock = DockStyle.Fill;
+        tile.BackColor = UiStyle.Surface;
+        tile.Padding = new Padding(12, 8, 12, 4);
+        tile.Margin = new Padding(0, 0, 8, 0);
+        tile.RowCount = 2;
+        tile.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        tile.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
+        var label = TextLabel(caption, 9);
+        label.ForeColor = UiStyle.TextMuted;
+        label.Margin = new Padding(0, 0, 0, 4);
+        value = new Label
+        {
+            Text = "—", Dock = DockStyle.Fill, AutoEllipsis = true, UseMnemonic = false,
+            Font = UiStyle.TitleFont, Margin = Padding.Empty, TextAlign = ContentAlignment.MiddleLeft
+        };
+        tile.Controls.Add(label);
+        tile.Controls.Add(value);
+        return tile;
+    }
 
     private static Label TextLabel(string text, float size = 10, FontStyle style = FontStyle.Regular) => new()
     {

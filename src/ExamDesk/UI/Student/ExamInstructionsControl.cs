@@ -10,7 +10,10 @@ public partial class ExamInstructionsControl : UserControl
     {
         InitializeComponent();
         _readCheckBox.CheckedChanged += (_, _) => _startButton.Enabled = _readCheckBox.Checked;
+        _backButton.Click += GoBack;
         _startButton.Click += (_, _) => StartRequested?.Invoke(this, EventArgs.Empty);
+        _page.SizeChanged += (_, _) => WrapLabels(_page);
+        _rules.SizeChanged += (_, _) => WrapLabels(_rules);
         Resize += (_, _) => CenterContent();
         CenterContent();
     }
@@ -35,10 +38,13 @@ public partial class ExamInstructionsControl : UserControl
         }
 
         _sessionTitle.Text = session.SessionName;
-        _studentInfo.Text = $"{student.FullName} · {student.StudentCode}";
-        _sessionInfo.Text = $"Lớp {student.ClassName} · Phòng {session.RoomName} · Mã ca {session.SessionCode}";
-        _paperInfo.Text = $"{paper.Title} · {paper.TotalQuestions} câu · {paper.DurationMinutes} phút";
-        _durationRule.Text = $"01  Bài thi có {paper.TotalQuestions} câu trắc nghiệm, thời gian {paper.DurationMinutes} phút.";
+        _studentInfo.Text = $"{student.FullName} · {student.StudentCode} · Lớp {student.ClassName}";
+        _paperInfo.Text = paper.Title;
+        _questionCount.Text = $"{paper.TotalQuestions}";
+        _duration.Text = $"{paper.DurationMinutes} phút";
+        _room.Text = session.RoomName;
+        _sessionCode.Text = session.SessionCode;
+        _durationRule.Text = $"01. Bài thi có {paper.TotalQuestions} câu trắc nghiệm, thời gian {paper.DurationMinutes} phút.";
     }
 
     private void CenterContent()
@@ -54,7 +60,7 @@ public partial class ExamInstructionsControl : UserControl
     }
 
     // Nhãn dài tự xuống dòng theo bề ngang của khung chứa nó.
-    private static void WrapLabels(FlowLayoutPanel panel)
+    private static void WrapLabels(TableLayoutPanel panel)
     {
         int width = panel.ClientSize.Width - panel.Padding.Horizontal;
         if (width <= 0) return;
