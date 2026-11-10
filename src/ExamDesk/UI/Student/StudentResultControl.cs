@@ -11,25 +11,75 @@ public sealed class StudentResultControl : UserControl
 
     internal StudentResultControl(StudentResult result)
     {
-        var page = StudentLayout.Page(this, "Kết quả bài thi");
+        AutoScaleDimensions = new SizeF(7, 17);
+        AutoScaleMode = AutoScaleMode.Font;
+        Font = UiStyle.BodyFont;
+        BackColor = UiStyle.Background;
+        ForeColor = UiStyle.Text;
+        AutoScroll = true;
+        var page = new TableLayoutPanel
+        {
+            Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, Padding = new Padding(24)
+        };
+        page.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        page.Controls.Add(StudentLayout.Label("Kết quả bài thi", 18, FontStyle.Bold));
         page.Controls.Add(StudentLayout.Label($"Sinh viên: {result.StudentName} · MSSV: {result.StudentCode}"));
         page.Controls.Add(StudentLayout.Label($"Ca thi: {result.SessionName}"));
         page.Controls.Add(StudentLayout.Label($"Đề thi: {result.PaperTitle}"));
 
-        var score = StudentLayout.Label($"Điểm: {result.Score:F2}/10", 18, FontStyle.Bold);
-        score.Padding = new Padding(16, 8, 16, 8);
-        score.BackColor = UiStyle.Background;
-        score.ForeColor = UiStyle.Primary;
-        page.Controls.Add(score);
-        page.Controls.Add(StudentLayout.Label($"Số câu đúng: {result.Correct}/{result.Total}"));
-        page.Controls.Add(StudentLayout.Label($"Số câu sai: {result.Total - result.Correct - result.Blank}"));
-        page.Controls.Add(StudentLayout.Label($"Số câu bỏ trống: {result.Blank}"));
+        var metrics = new TableLayoutPanel
+        {
+            Dock = DockStyle.Top, AutoSize = true, ColumnCount = 4, RowCount = 1,
+            Margin = new Padding(0, 8, 0, 12)
+        };
+        for (int i = 0; i < metrics.ColumnCount; i++)
+            metrics.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+        metrics.Controls.Add(Metric("Điểm", $"{result.Score:F2}/10", isScore: true), 0, 0);
+        metrics.Controls.Add(Metric("Đúng", $"{result.Correct}/{result.Total}"), 1, 0);
+        metrics.Controls.Add(Metric("Sai", $"{result.Total - result.Correct - result.Blank}"), 2, 0);
+        var blank = Metric("Bỏ trống", $"{result.Blank}");
+        blank.Margin = Padding.Empty;
+        metrics.Controls.Add(blank, 3, 0);
+        page.Controls.Add(metrics);
+
         page.Controls.Add(StudentLayout.Label($"Thời điểm nộp bài: {result.SubmittedAt.ToLocalTime():dd/MM/yyyy HH:mm:ss}"));
         page.Controls.Add(StudentLayout.Label($"Lý do: {(result.IsAutoSubmitted ? "Hết giờ" : "Nộp bài chủ động")}"));
-        var actions = new FlowLayoutPanel { AutoSize = true, WrapContents = true };
+        var actions = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = true };
         actions.Controls.Add(StudentLayout.Button("&Quay lại chọn ca", (_, _) => BackRequested?.Invoke(this, EventArgs.Empty)));
         actions.Controls.Add(StudentLayout.Button("Kết thúc phiên sinh viên", (_, _) => EndSessionRequested?.Invoke(this, EventArgs.Empty)));
         actions.Controls.Add(StudentLayout.Button("&Đóng", (_, _) => CloseRequested?.Invoke(this, EventArgs.Empty), true));
         page.Controls.Add(actions);
+        page.SizeChanged += (_, _) =>
+        {
+            int width = page.ClientSize.Width - page.Padding.Horizontal;
+            foreach (var label in page.Controls.OfType<Label>())
+                label.MaximumSize = new Size(Math.Max(1, width - label.Margin.Horizontal), 0);
+        };
+        Controls.Add(page);
+    }
+
+    private static TableLayoutPanel Metric(string title, string value, bool isScore = false)
+    {
+        var tile = new TableLayoutPanel
+        {
+            AutoSize = true, Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2,
+            BackColor = UiStyle.Surface, Padding = new Padding(12, 8, 12, 8),
+            Margin = new Padding(0, 0, 8, 0)
+        };
+        tile.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        tile.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        // Các giá trị dùng cùng chiều cao để bốn ô thẳng hàng.
+        tile.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
+        var caption = StudentLayout.Label(title, 9);
+        caption.ForeColor = UiStyle.TextMuted;
+        caption.Margin = new Padding(0, 0, 0, 4);
+        tile.Controls.Add(caption, 0, 0);
+        tile.Controls.Add(new Label
+        {
+            Text = value, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft,
+            Font = isScore ? StudentLayout.GetLabelFont(18, FontStyle.Bold) : UiStyle.TitleFont,
+            ForeColor = isScore ? UiStyle.Primary : UiStyle.Text, Margin = Padding.Empty
+        }, 0, 1);
+        return tile;
     }
 }
