@@ -6,6 +6,38 @@ namespace ExamDesk.Repositories;
 // Bạn 3: SQL phục vụ quản lý ca; không thay đổi dữ liệu đề của Bạn 1.
 public sealed class ExamSessionRepository
 {
+    private const string EditableSession = """
+        IsOpen = 0
+        AND NOT EXISTS (SELECT 1 FROM StudentDrafts d WHERE d.SessionId = ExamSessions.Id)
+        AND NOT EXISTS (SELECT 1 FROM ExamAttempts a WHERE a.SessionId = ExamSessions.Id)
+        """;
+
+    internal HashSet<int> FindEditableSessionIds()
+    {
+        using var connection = SqliteContext.CreateConnection();
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = $"SELECT Id FROM ExamSessions WHERE {EditableSession}";
+        using var reader = command.ExecuteReader();
+        var ids = new HashSet<int>();
+        while (reader.Read()) ids.Add(reader.GetInt32(0));
+        return ids;
+    }
+
+    internal bool UpdateSession(int id, string name, string room, int paperId)
+    {
+        using var connection = SqliteContext.CreateConnection();
+        connection.Open();
+        using var command = connection.CreateCommand();
+        // Kiểm tra và ghi cùng câu SQL để tránh dùng trạng thái cũ từ giao diện.
+        command.CommandText = $"UPDATE ExamSessions SET SessionName = $name, RoomName = $room, PaperId = $paper WHERE Id = $id AND {EditableSession}";
+        command.Parameters.AddWithValue("$id", id);
+        command.Parameters.AddWithValue("$name", name);
+        command.Parameters.AddWithValue("$room", room);
+        command.Parameters.AddWithValue("$paper", paperId);
+        return command.ExecuteNonQuery() == 1;
+    }
+
     public List<ExamPaper> FindPapers()
     {
         using var connection = SqliteContext.CreateConnection();
@@ -61,6 +93,60 @@ public sealed class ExamSessionRepository
         command.Parameters.AddWithValue("$id", sessionId);
         command.Parameters.AddWithValue("$open", isOpen ? 1 : 0);
         if (command.ExecuteNonQuery() != 1)
-            throw new InvalidOperationException("Ca không còn tồn tại hoặc đề chưa có đủ số câu. Hãy tải lại và kiểm tra đề.");
+            throw new ExamDesk.Services.ExamSessionInputException("Ca không còn tồn tại hoặc đề chưa có đủ số câu. Hãy tải lại và kiểm tra đề.");
+    }
+
+    internal int CountInProgress(int sessionId)
+    {
+        using var connection = SqliteContext.CreateConnection();
+        connection.Open();
+        using var command = connection.CreateCommand();
+        return CountInProgress(command, sessionId);
+    }
+
+    // Giữ khóa ghi trong lúc đếm và đóng ca để một lượt mới không chen vào sau xác nhận.
+    internal int CloseSession(int sessionId, bool allowInProgress)
+    {
+        using var connection = SqliteContext.CreateConnection();
+        connection.Open();
+        using var transaction = connection.BeginTransaction();
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        if (!allowInProgress)
+        {
+            int count = CountInProgress(command, sessionId);
+            if (count > 0) return count;
+        }
+
+        command.Parameters.Clear();
+        command.Parameters.AddWithValue("$session", sessionId);
+        command.CommandText = "UPDATE ExamSessions SET IsOpen = 0 WHERE Id = $session";
+        if (command.ExecuteNonQuery() != 1)
+            throw new ExamDesk.Services.ExamSessionInputException("Ca thi không còn tồn tại. Hãy tải lại danh sách.");
+
+        transaction.Commit();
+        return 0;
+    }
+
+    private static int CountInProgress(Microsoft.Data.Sqlite.SqliteCommand command, int sessionId)
+    {
+        command.CommandText = """
+            SELECT d.Payload
+            FROM StudentDrafts d
+            WHERE d.SessionId = $session AND NOT EXISTS (
+                SELECT 1 FROM ExamAttempts a
+                WHERE a.SessionId = d.SessionId AND a.StudentCode = d.StudentCode
+            )
+            """;
+        command.Parameters.AddWithValue("$session", sessionId);
+        var now = DateTimeOffset.UtcNow;
+        int count = 0;
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            var draft = System.Text.Json.JsonSerializer.Deserialize<StudentDraft>(reader.GetString(0));
+            if (draft is { PendingSubmission: false } && draft.DeadlineUtc > now) count++;
+        }
+        return count;
     }
 }

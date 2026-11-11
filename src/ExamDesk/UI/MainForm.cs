@@ -190,6 +190,7 @@ public sealed class MainForm : Form
             ForeColor = UiStyle.TextMuted,
             BackColor = UiStyle.Background,
             TextAlign = ContentAlignment.MiddleLeft
+            
         };
 
         Controls.Add(_content);

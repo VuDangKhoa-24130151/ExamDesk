@@ -21,6 +21,7 @@ internal static class Program
             return;
         }
 
+#if DEBUG
         // Nạp dữ liệu mẫu ngân hàng câu hỏi khi người dùng yêu cầu qua tham số dòng lệnh
         if (args.Contains("--seed-questions") || args.Contains("--seed-question-bank"))
         {
@@ -57,6 +58,7 @@ internal static class Program
             }
             return;
         }
+#endif
         Application.Run(new MainForm());
     }
 }
