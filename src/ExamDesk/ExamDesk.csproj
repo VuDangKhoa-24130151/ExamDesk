@@ -10,6 +10,7 @@
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.14" />
     <EmbeddedResource Include="../../database/sql/schema.sql" LogicalName="ExamDesk.Data.schema.sql" />
     <EmbeddedResource Include="../../database/sql/seed_student_test.sql" LogicalName="ExamDesk.Data.seed_student_test.sql" Condition="'$(Configuration)' == 'Debug'" />
+    <EmbeddedResource Include="../../database/sql/seed_questions.sql" LogicalName="ExamDesk.Data.seed_questions.sql" />
     <Compile Remove="Services/StudentTestDataService.cs" Condition="'$(Configuration)' != 'Debug'" />
   </ItemGroup>
 </Project>
