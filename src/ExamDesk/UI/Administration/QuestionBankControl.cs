@@ -10,6 +10,7 @@ public partial class QuestionBankControl : UserControl, IUnsavedChangesGuard
     private readonly QuestionBankService _service;
     private Dictionary<int, Subject> _subjectMap = [];
     private bool _suppressFilterEvents;
+    private Button _btnSeedData = null!;
 
     // Thêm/sửa câu hỏi thực hiện qua hộp thoại modal QuestionEditorDialog (đã tự kiểm tra thay đổi chưa lưu).
     public bool HasUnsavedChanges => false;
@@ -28,8 +29,84 @@ public partial class QuestionBankControl : UserControl, IUnsavedChangesGuard
         // Đã kết nối SQLite thật: ẩn nhãn dữ liệu minh họa
         _lblDemoBadge.Visible = false;
 
+        InitializeSeedButton();
         InitializeFilterOptions();
         RefreshGrid();
+    }
+
+    private void InitializeSeedButton()
+    {
+        _btnSeedData = new Button
+        {
+            Text = "Nạp dữ liệu mẫu thử nghiệm",
+            Font = UiStyle.BodyFont,
+            BackColor = UiStyle.Primary,
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Cursor = Cursors.Hand,
+            AutoSize = true,
+            Padding = new Padding(14, 8, 14, 8),
+            Visible = false
+        };
+        _btnSeedData.FlatAppearance.BorderSize = 0;
+        _btnSeedData.Click += OnSeedDataClick;
+
+        _gridHostPanel.Controls.Add(_btnSeedData);
+        _gridHostPanel.ClientSizeChanged += (_, _) => PositionSeedButton();
+    }
+
+    private void PositionSeedButton()
+    {
+        if (_btnSeedData != null && _btnSeedData.Visible)
+        {
+            _btnSeedData.Location = new Point(
+                Math.Max(0, (_gridHostPanel.ClientSize.Width - _btnSeedData.Width) / 2),
+                Math.Max(0, _gridHostPanel.ClientSize.Height / 2 + 30));
+        }
+    }
+
+    private void OnSeedDataClick(object? sender, EventArgs e)
+    {
+        var confirm = MessageBox.Show(
+            this,
+            "Bạn có muốn nạp bộ câu hỏi mẫu cho 3 môn học (Lập trình .NET, Cơ sở dữ liệu, Mạng máy tính) vào cơ sở dữ liệu SQLite không?",
+            "Xác nhận nạp dữ liệu mẫu",
+            MessageBoxButtons.YesNo,
+            MessageBoxIcon.Question);
+
+        if (confirm != DialogResult.Yes)
+        {
+            return;
+        }
+
+        try
+        {
+            var seedService = new QuestionSeedService();
+            var (subjectsAdded, questionsAdded) = seedService.SeedQuestionBank();
+
+            InitializeFilterOptions();
+            RefreshGrid();
+
+            var message = questionsAdded > 0
+                ? $"Đã nạp thành công:\n• {subjectsAdded} môn học mới\n• {questionsAdded} câu hỏi mới vào cơ sở dữ liệu SQLite."
+                : "Cơ sở dữ liệu đã có sẵn dữ liệu mẫu (không có bản ghi trùng lặp nào được thêm mới).";
+
+            MessageBox.Show(
+                this,
+                message,
+                "Nạp dữ liệu mẫu",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                $"Lỗi khi nạp dữ liệu: {ex.Message}",
+                "Lỗi nạp dữ liệu",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+        }
     }
 
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
@@ -232,8 +309,28 @@ public partial class QuestionBankControl : UserControl, IUnsavedChangesGuard
         _dgvQuestions.ResumeLayout();
 
         var isEmpty = filtered.Count == 0;
-        _lblEmptyState.Visible = isEmpty;
-        _dgvQuestions.Visible = !isEmpty;
+        if (totalCount == 0)
+        {
+            _lblEmptyState.Text = "Ngân hàng câu hỏi trong cơ sở dữ liệu hiện đang trống.\nBạn có thể tự bấm \"Thêm câu hỏi\" hoặc nạp nhanh bộ dữ liệu mẫu:";
+            _lblEmptyState.Visible = true;
+            _dgvQuestions.Visible = false;
+            _btnSeedData.Visible = true;
+            _btnSeedData.BringToFront();
+            PositionSeedButton();
+        }
+        else if (isEmpty)
+        {
+            _lblEmptyState.Text = "Không có câu hỏi phù hợp với bộ lọc hiện tại. Thử đổi bộ lọc hoặc từ khóa tìm kiếm.";
+            _lblEmptyState.Visible = true;
+            _dgvQuestions.Visible = false;
+            _btnSeedData.Visible = false;
+        }
+        else
+        {
+            _lblEmptyState.Visible = false;
+            _dgvQuestions.Visible = true;
+            _btnSeedData.Visible = false;
+        }
 
         if (!isEmpty)
         {
