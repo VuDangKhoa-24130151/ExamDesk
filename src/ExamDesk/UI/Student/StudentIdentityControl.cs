@@ -10,7 +10,7 @@ public sealed class StudentIdentityControl : UserControl
     private readonly StudentExamService _service = new();
     private readonly TextBox _code = new()
     {
-        AutoSize = false, Dock = DockStyle.Top, Height = 38, MaxLength = 50,
+        AutoSize = true, Dock = DockStyle.Top, MaxLength = 50,
         AccessibleName = "Mã sinh viên", PlaceholderText = "Ví dụ: 24130151", Margin = Padding.Empty
     };
     private readonly Label _identity = StudentLayout.Label("");

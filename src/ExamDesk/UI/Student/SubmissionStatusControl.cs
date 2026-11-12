@@ -1,3 +1,5 @@
+using ExamDesk.UI.Shared;
+
 namespace ExamDesk.UI.Student;
 
 public partial class SubmissionStatusControl : UserControl
@@ -15,18 +17,28 @@ public partial class SubmissionStatusControl : UserControl
     {
         _actions.Enabled = !busy;
         UseWaitCursor = busy;
+        _busyProgress.MarqueeAnimationSpeed = busy ? 30 : 0;
+        _busyProgress.Visible = busy;
         if (busy) _status.Text = "Đang nộp bài…";
     }
     internal void AddAction(Control action) => _actions.Controls.Add(action);
 
     internal void SetAttempt(StudentAttemptState attempt, string? error)
     {
+        bool hasError = !string.IsNullOrWhiteSpace(error);
+        // Bài thật chưa hiển thị điểm ở màn này; kết quả có màn riêng sau khi tải xong.
+        bool awaitingResult = attempt.Draft is not null;
+        _status.BackColor = hasError ? UiStyle.ErrorBack
+            : awaitingResult ? UiStyle.WarningBack : UiStyle.SuccessBack;
+        _status.ForeColor = hasError ? UiStyle.ErrorText
+            : awaitingResult ? UiStyle.WarningText : UiStyle.SuccessText;
         if(attempt.Draft is { } draft)
         {
             _lockStatus.Text = draft.PendingSubmission ? "Bài đã khóa. Bạn không thể sửa đáp án." : "Chưa khóa được bài thi.";
             _status.Text = attempt.Submitted
-                ? $"Đã nộp bài. Chưa hiển thị được kết quả.\n{error}"
-                : $"Chưa nộp bài xong. Bạn có thể thử nộp bài lại.\n{error}";
+                ? "Đã nộp bài. Chưa hiển thị được kết quả."
+                : "Chưa nộp bài xong. Bạn có thể thử nộp bài lại.";
+            if (hasError) _status.Text += $"\n{error}";
             _summary.Text=$"Sinh viên: {draft.StudentName} · {draft.StudentCode}\nLớp: {draft.ClassName}\n\n{attempt.Title}\nĐã trả lời: {attempt.Answered}/{attempt.Answers.Length} câu";
             if (draft.PendingSubmission)
                 _summary.Text += $"\nLý do: {(draft.AutoSubmitted ? "Hết giờ" : "Nộp bài chủ động")}";
@@ -34,6 +46,7 @@ public partial class SubmissionStatusControl : UserControl
         }
 #if DEBUG
         _status.Text = "Đã kết thúc lượt làm bài demo.";
+        if (hasError) _status.Text += $"\n{error}";
         string previewReason = attempt.IsExpired ? "Hết giờ" : "Nộp bài chủ động";
         _summary.Text = $"Sinh viên: Sinh viên mẫu · SV0001\n\nĐã chốt: {attempt.Answered}/{attempt.Answers.Length} câu có đáp án · Lý do: {previewReason}";
 #endif

@@ -39,7 +39,7 @@ internal sealed class OptionRow : Panel
 
     internal int MeasureHeight(int width)
     {
-        int textWidth = Math.Max(1, width - ScalePixels(56));
+        int textWidth = Math.Max(1, width - ScalePixels(80));
         int textHeight = TextRenderer.MeasureText(Text, Font, new Size(textWidth, int.MaxValue),
             AnswerTextFlags).Height;
         return Math.Max(ScalePixels(40), textHeight + ScalePixels(16));
@@ -63,7 +63,15 @@ internal sealed class OptionRow : Panel
     protected override void OnMouseEnter(EventArgs e)
     {
         base.OnMouseEnter(e);
-        _hovered = true;
+        _hovered = Enabled;
+        Invalidate();
+    }
+
+    protected override void OnEnabledChanged(EventArgs e)
+    {
+        base.OnEnabledChanged(e);
+        Cursor = Enabled ? Cursors.Hand : Cursors.Default;
+        if (!Enabled) _hovered = false;
         Invalidate();
     }
 
@@ -116,10 +124,18 @@ internal sealed class OptionRow : Panel
             TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
 
         int textLeft = ScalePixels(48);
-        var textBounds = new Rectangle(textLeft, inset, Math.Max(1, Width - ScalePixels(56)),
+        // Chừa riêng chỗ cho dấu chọn để không đè lên đáp án dài khi xem lại.
+        var textBounds = new Rectangle(textLeft, inset, Math.Max(1, Width - ScalePixels(80)),
             Math.Max(1, Height - inset * 2));
         TextRenderer.DrawText(e.Graphics, Text, Font, textBounds, Enabled ? UiStyle.Text : UiStyle.TextMuted,
             AnswerTextFlags);
+
+        if (Checked)
+        {
+            var checkBounds = new Rectangle(Width - inset - tileSize, inset, tileSize, tileSize);
+            TextRenderer.DrawText(e.Graphics, "✓", Font, checkBounds, UiStyle.Primary,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+        }
 
         if (Focused && ShowFocusCues)
         {

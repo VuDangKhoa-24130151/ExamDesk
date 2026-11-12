@@ -58,10 +58,6 @@ public partial class StudentExamControl : UserControl
         else
         {
             _submit.Click += (_, _) => SubmitRequested?.Invoke(this, EventArgs.Empty);
-            _submit.KeyDown += (_, e) =>
-            {
-                if (e.KeyCode is Keys.Space or Keys.Enter) e.SuppressKeyPress = true;
-            };
         }
 
         _image.Click += (_, _) => ShowQuestionImage();
@@ -106,6 +102,9 @@ public partial class StudentExamControl : UserControl
         _fittingContent = true;
         try
         {
+            if (_saveStatus.Parent is { } statusContainer)
+                _saveStatus.MaximumSize = new Size(
+                    Math.Max(1, statusContainer.DisplayRectangle.Width - _saveStatus.Margin.Horizontal), 0);
             // Chừa chỗ cho thanh cuộn để độ rộng đáp án không đổi khi nội dung dài.
             int width = Math.Max(1, _questionViewport.ClientSize.Width - SystemInformation.VerticalScrollBarWidth);
             _body.SuspendLayout();
@@ -227,7 +226,7 @@ public partial class StudentExamControl : UserControl
         {
             var option = _options[i];
             option.Checked = selected == i;
-            option.Enabled = !locked;
+            option.Enabled = !_attempt.Submitted && !locked;
             option.TabStop = !_attempt.Submitted && !locked && i == (selected ?? 0);
         }
         _flag.Checked = _attempt.Flags[_attempt.Current];
@@ -366,9 +365,28 @@ public partial class StudentExamControl : UserControl
     internal bool IsSaving { get; private set; }
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
-        // Phím tắt chỉ thao tác bài đang mở, không kích hoạt nút nộp đang có focus.
-        if (keyData is Keys.Escape or Keys.Enter || keyData == (Keys.Alt | Keys.N))
-            return true;
+        // Không chuyển Esc lên Form để tránh kích hoạt thao tác nộp bài.
+        if ((keyData & Keys.KeyCode) == Keys.Escape) return true;
+
+        if (ActiveControl is Button button)
+        {
+            if (keyData == Keys.Enter)
+            {
+                button.PerformClick();
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+        if (ActiveControl == _flag)
+        {
+            // CheckBox dạng nút hỗ trợ Space sẵn, nhưng cần xử lý Enter riêng.
+            if (keyData == Keys.Enter)
+            {
+                if (_flag.Enabled) _flag.Checked = !_flag.Checked;
+                return true;
+            }
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
         int choice = keyData switch
         {
             Keys.A or Keys.D1 or Keys.NumPad1 => 0,
@@ -384,10 +402,7 @@ public partial class StudentExamControl : UserControl
             _ => 0
         };
         if (choice < 0 && direction == 0)
-        {
-            if (keyData == Keys.Space && _submit.Focused) return true;
             return base.ProcessCmdKey(ref msg, keyData);
-        }
         if (IsSaving) return true;
         if (choice >= 0)
         {

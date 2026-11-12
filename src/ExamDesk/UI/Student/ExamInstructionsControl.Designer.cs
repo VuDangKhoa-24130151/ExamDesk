@@ -122,13 +122,13 @@ partial class ExamInstructionsControl
         tile.Margin = new Padding(0, 0, 8, 0);
         tile.RowCount = 2;
         tile.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        tile.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
+        tile.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         var label = TextLabel(caption, 9);
         label.ForeColor = UiStyle.TextMuted;
         label.Margin = new Padding(0, 0, 0, 4);
         value = new Label
         {
-            Text = "—", Dock = DockStyle.Fill, AutoEllipsis = true, UseMnemonic = false,
+            Text = "—", Dock = DockStyle.Fill, AutoSize = true, UseMnemonic = false,
             Font = UiStyle.TitleFont, Margin = Padding.Empty, TextAlign = ContentAlignment.MiddleLeft
         };
         tile.Controls.Add(label);

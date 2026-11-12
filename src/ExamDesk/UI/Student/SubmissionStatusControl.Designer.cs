@@ -7,6 +7,7 @@ partial class SubmissionStatusControl
     private Label _status = null!, _summary = null!, _lockStatus = null!;
     private FlowLayoutPanel _actions = null!;
     private Panel _cardHost = null!;
+    private ProgressBar _busyProgress = null!;
 
     private void InitializeComponent()
     {
@@ -33,6 +34,13 @@ partial class SubmissionStatusControl
         _status.Dock = DockStyle.Top;
         _status.Padding = new Padding(16);
         card.Controls.Add(_status);
+        _busyProgress = new ProgressBar
+        {
+            Dock = DockStyle.Top, Height = StudentLayout.Scale(this, 8), Style = ProgressBarStyle.Marquee,
+            MarqueeAnimationSpeed = 0, Visible = false, TabStop = false,
+            AccessibleName = "Đang xử lý bài nộp"
+        };
+        card.Controls.Add(_busyProgress);
         _summary = StudentLayout.Label("Chưa có lượt thi.");
         card.Controls.Add(_summary);
         var actions = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = true };

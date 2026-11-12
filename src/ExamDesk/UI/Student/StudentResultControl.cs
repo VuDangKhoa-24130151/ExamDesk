@@ -68,15 +68,14 @@ public sealed class StudentResultControl : UserControl
         };
         tile.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         tile.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        // Các giá trị dùng cùng chiều cao để bốn ô thẳng hàng.
-        tile.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
+        tile.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         var caption = StudentLayout.Label(title, 9);
         caption.ForeColor = UiStyle.TextMuted;
         caption.Margin = new Padding(0, 0, 0, 4);
         tile.Controls.Add(caption, 0, 0);
         tile.Controls.Add(new Label
         {
-            Text = value, Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft,
+            Text = value, Dock = DockStyle.Fill, AutoSize = true, TextAlign = ContentAlignment.MiddleLeft,
             Font = isScore ? StudentLayout.GetLabelFont(18, FontStyle.Bold) : UiStyle.TitleFont,
             ForeColor = isScore ? UiStyle.Primary : UiStyle.Text, Margin = Padding.Empty
         }, 0, 1);

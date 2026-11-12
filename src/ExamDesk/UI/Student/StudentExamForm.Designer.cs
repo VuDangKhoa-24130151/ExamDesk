@@ -29,7 +29,7 @@ partial class StudentExamForm
         // Thanh trên cùng giữ tên kỳ thi và sinh viên khi chuyển giữa các màn.
         var header = new TableLayoutPanel
         {
-            Dock = DockStyle.Top, Height = 64, ColumnCount = 2, RowCount = 1,
+            Dock = DockStyle.Top, Height = StudentLayout.Scale(this, 64), ColumnCount = 2, RowCount = 1,
             BackColor = UiStyle.Surface, Padding = new Padding(24, 12, 24, 12)
         };
         header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 67));

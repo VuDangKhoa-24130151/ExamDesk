@@ -34,7 +34,8 @@ partial class StudentExamControl
             Dock = DockStyle.Top, AutoSize = true, ColumnCount = 2, RowCount = 2,
             Margin = new Padding(0, 0, 16, 8),
             ColumnStyles = { new ColumnStyle(SizeType.AutoSize), new ColumnStyle(SizeType.Percent, 100) },
-            RowStyles = { new RowStyle(SizeType.Absolute, 24), new RowStyle(SizeType.Absolute, 32) }
+            RowStyles = { new RowStyle(SizeType.Absolute, StudentLayout.Scale(this, 24)),
+                new RowStyle(SizeType.Absolute, StudentLayout.Scale(this, 32)) }
         };
         _section = new Label
         {
@@ -68,11 +69,11 @@ partial class StudentExamControl
         {
             Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2,
             ColumnStyles = { new ColumnStyle(SizeType.Percent, 100) },
-            RowStyles = { new RowStyle(SizeType.Absolute, 40), new RowStyle(SizeType.Percent, 100) }
+            RowStyles = { new RowStyle(SizeType.AutoSize), new RowStyle(SizeType.Percent, 100) }
         };
         _saveStatus = new Label
         {
-            Dock = DockStyle.Fill, Font = UiStyle.SmallFont, AutoEllipsis = true,
+            Dock = DockStyle.Fill, Font = UiStyle.SmallFont, AutoSize = true,
             Padding = new Padding(8, 4, 8, 4), Margin = new Padding(0, 0, 0, 8),
             TextAlign = ContentAlignment.MiddleLeft, UseMnemonic = false
         };
@@ -130,7 +131,7 @@ partial class StudentExamControl
         _clearChoice = StudentLayout.Button("&Bỏ chọn");
         _flag = new CheckBox { Appearance = Appearance.Button, Text = FlagText, AutoSize = true,
             FlatStyle = FlatStyle.Flat, Padding = new Padding(8, 4, 8, 4),
-            BackColor = UiStyle.Surface, MinimumSize = new Size(0, 38) };
+            BackColor = UiStyle.Surface, MinimumSize = new Size(0, StudentLayout.Scale(this, 38)) };
         _flag.FlatAppearance.BorderColor = UiStyle.Border;
         _flag.FlatAppearance.CheckedBackColor = UiStyle.Background;
         // Giữ thứ tự Tab cũ khi đổi vị trí các nút.
@@ -151,7 +152,7 @@ partial class StudentExamControl
             Margin = Padding.Empty,
             RowStyles =
             {
-                new RowStyle(SizeType.Absolute, 48),
+                new RowStyle(SizeType.AutoSize),
                 new RowStyle(SizeType.AutoSize),
                 new RowStyle(SizeType.AutoSize),
                 new RowStyle(SizeType.AutoSize),
@@ -163,7 +164,7 @@ partial class StudentExamControl
         _right.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         _clock = new Label
         {
-            Dock = DockStyle.Fill, Font = StudentLayout.GetLabelFont(18, FontStyle.Bold),
+            Dock = DockStyle.Fill, AutoSize = true, Font = StudentLayout.GetLabelFont(18, FontStyle.Bold),
             TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiStyle.Primary, BackColor = UiStyle.Background,
             Margin = new Padding(0, 0, 0, 8)
         };
@@ -175,7 +176,7 @@ partial class StudentExamControl
         _progress.ForeColor = UiStyle.TextMuted;
         _progress.Margin = new Padding(0, 0, 0, 8);
         _right.Controls.Add(_progress, 0, 2);
-        _progressTrack = new Panel { Dock = DockStyle.Fill, Height = 8, BackColor = UiStyle.Background, Margin = new Padding(0, 0, 0, 8) };
+        _progressTrack = new Panel { Dock = DockStyle.Fill, Height = StudentLayout.Scale(this, 8), BackColor = UiStyle.Background, Margin = new Padding(0, 0, 0, 8) };
         _right.Controls.Add(_progressTrack, 0, 3);
         _gridViewport = new Panel { Dock = DockStyle.Fill, AutoScroll = true, Margin = Padding.Empty };
         _right.Controls.Add(_gridViewport, 0, 4);
