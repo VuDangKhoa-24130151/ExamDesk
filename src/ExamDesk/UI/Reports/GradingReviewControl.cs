@@ -87,15 +87,6 @@ public partial class GradingReviewControl : UserControl
             return;
         }
 
-            private void ShowSelectedDetail()
-    {
-        if (_dgvResults.CurrentRow?.DataBoundItem is not AttemptResultItem item)
-        {
-            MessageBox.Show(this, "Hãy chọn một bài thi trong bảng.", "Chưa chọn bài",
-                MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            return;
-        }
-
         using var dialog = new AttemptDetailDialog(item);
         dialog.ShowDialog(this);
     }
