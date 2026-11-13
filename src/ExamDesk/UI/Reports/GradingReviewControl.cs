@@ -72,6 +72,8 @@ public partial class GradingReviewControl : UserControl
 
         _btnViewDetail.Click += (_, _) => ShowSelectedDetail();
         _dgvResults.CellDoubleClick += (_, e) => { if (e.RowIndex >= 0) ShowSelectedDetail(); };
+
+        //GV-14
         _btnStatistics.Click += (_, _) => MessageBox.Show(this,"Màn hình phổ điểm (GV-14) đang được dựng.", "Thông báo",
             MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
