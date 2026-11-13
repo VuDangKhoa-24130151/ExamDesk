@@ -628,6 +628,17 @@ public sealed class QuestionRepository
         deleteCmd.ExecuteNonQuery();
     }
 
+    public bool IsQuestionUsedInAnyPaper(int questionId)
+    {
+        using var connection = SqliteContext.CreateConnection();
+        connection.Open();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT EXISTS(SELECT 1 FROM ExamPaperQuestions WHERE QuestionId = $questionId);";
+        command.Parameters.AddWithValue("$questionId", questionId);
+        return Convert.ToInt32(command.ExecuteScalar()) == 1;
+    }
+
     public int CountAllQuestions()
     {
         using var connection = SqliteContext.CreateConnection();
