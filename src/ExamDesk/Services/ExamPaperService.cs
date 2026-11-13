@@ -168,6 +168,62 @@ public sealed class ExamPaperService
         _examPaperRepository.DeletePaper(paperId);
     }
 
+    /// <summary>
+    /// Dành cho phân hệ Ca thi &amp; Màn thi (Bạn 3): lấy danh sách đề thi đã có đủ số lượng câu hỏi theo cấu hình
+    /// (<c>COUNT(*) = EasyCount + MediumCount + HardCount</c> và tổng câu &gt; 0) để sẵn sàng mở ca thi.
+    /// </summary>
+    public List<ExamPaper> GetReadyPapers()
+        => _examPaperRepository.GetReadyPapers();
+
+    /// <summary>
+    /// Dành cho phân hệ Màn thi sinh viên (Bạn 3): trả về danh sách câu hỏi theo đúng <c>OrderIndex</c>
+    /// dưới dạng <see cref="ExamQuestionView"/> (đảm bảo tuyệt đối không chứa đáp án đúng <c>CorrectOption</c>).
+    /// Nếu đề không tồn tại hoặc chưa đủ số câu theo cấu hình sẽ ném <see cref="InvalidOperationException"/>.
+    /// </summary>
+    public List<ExamQuestionView> GetQuestionsForExam(int paperId)
+    {
+        if (paperId <= 0)
+        {
+            throw new InvalidOperationException("Mã định danh đề thi không hợp lệ.");
+        }
+
+        var paper = _examPaperRepository.GetPaperById(paperId)
+            ?? throw new InvalidOperationException($"Không tìm thấy đề thi có mã định danh {paperId}.");
+
+        var questions = _examPaperRepository.GetQuestionsForExam(paperId);
+        if (paper.TotalQuestions <= 0 || questions.Count != paper.TotalQuestions)
+        {
+            throw new InvalidOperationException(
+                $"Đề thi '{paper.PaperCode}' chưa đủ số lượng câu hỏi theo cấu hình ({questions.Count}/{paper.TotalQuestions} câu). Vui lòng kiểm tra lại đề thi.");
+        }
+
+        return questions;
+    }
+
+    /// <summary>
+    /// Dành cho phân hệ Chấm điểm (<c>SubmissionService</c> - Bạn 2): trả về danh sách đáp án chuẩn
+    /// (<see cref="AnswerKeyItem"/> gồm PaperId, OrderIndex, QuestionId, CorrectOption) theo đúng <c>OrderIndex</c>.
+    /// </summary>
+    public List<AnswerKeyItem> GetAnswerKey(int paperId)
+    {
+        if (paperId <= 0)
+        {
+            throw new InvalidOperationException("Mã định danh đề thi không hợp lệ.");
+        }
+
+        var paper = _examPaperRepository.GetPaperById(paperId)
+            ?? throw new InvalidOperationException($"Không tìm thấy đề thi có mã định danh {paperId} để lấy bảng đáp án.");
+
+        var answerKey = _examPaperRepository.GetAnswerKey(paperId);
+        if (paper.TotalQuestions <= 0 || answerKey.Count != paper.TotalQuestions)
+        {
+            throw new InvalidOperationException(
+                $"Đề thi '{paper.PaperCode}' chưa đủ câu hỏi ({answerKey.Count}/{paper.TotalQuestions}), không thể lấy bảng đáp án chấm điểm.");
+        }
+
+        return answerKey;
+    }
+
     private List<int> PickUniqueRandomQuestions(int subjectId, int easyCount, int mediumCount, int hardCount)
     {
         var available = _examPaperRepository.GetAvailableCountsByDifficulty(subjectId);

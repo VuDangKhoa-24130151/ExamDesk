@@ -53,3 +53,31 @@ public sealed class ExamPaperQuestionDetail
     public string CorrectOption { get; set; } = string.Empty;
     public string? ImagePath { get; set; }
 }
+
+/// <summary>
+/// Dữ liệu câu hỏi hiển thị trên màn hình làm bài thi của sinh viên (phân hệ Bạn 3).
+/// Tuyệt đối không chứa thuộc tính đáp án đúng (CorrectOption) để tránh lộ đáp án về phía giao diện thi.
+/// </summary>
+public sealed class ExamQuestionView
+{
+    public int PaperId { get; set; }
+    public int OrderIndex { get; set; }
+    public int QuestionId { get; set; }
+    public string Content { get; set; } = string.Empty;
+    public string OptionA { get; set; } = string.Empty;
+    public string OptionB { get; set; } = string.Empty;
+    public string OptionC { get; set; } = string.Empty;
+    public string OptionD { get; set; } = string.Empty;
+    public string ImagePath { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Phần tử đáp án chuẩn dùng cho phân hệ chấm điểm tự động (SubmissionService - Bạn 2).
+/// </summary>
+public sealed class AnswerKeyItem
+{
+    public int PaperId { get; set; }
+    public int OrderIndex { get; set; }
+    public int QuestionId { get; set; }
+    public string CorrectOption { get; set; } = string.Empty;
+}

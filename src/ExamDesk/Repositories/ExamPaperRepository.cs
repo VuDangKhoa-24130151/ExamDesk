@@ -412,6 +412,119 @@ public sealed class ExamPaperRepository
         }
     }
 
+    /// <summary>
+    /// Dành cho phân hệ Ca thi &amp; Màn thi (Bạn 3): trả về danh sách các đề thi đã sẵn sàng sử dụng
+    /// (tổng số câu cấu hình &gt; 0 và đã gắn đủ số câu tương ứng trong ExamPaperQuestions).
+    /// </summary>
+    public List<ExamPaper> GetReadyPapers()
+    {
+        var list = new List<ExamPaper>();
+        using var connection = SqliteContext.CreateConnection();
+        connection.Open();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT p.Id, p.PaperCode, p.Title, p.SubjectId, p.DurationMinutes, p.EasyCount, p.MediumCount, p.HardCount
+            FROM ExamPapers p
+            WHERE (p.EasyCount + p.MediumCount + p.HardCount) > 0
+              AND (SELECT COUNT(*) FROM ExamPaperQuestions epq WHERE epq.PaperId = p.Id) = (p.EasyCount + p.MediumCount + p.HardCount)
+            ORDER BY p.Id DESC;";
+
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            list.Add(MapExamPaper(reader));
+        }
+
+        return list;
+    }
+
+    /// <summary>
+    /// Dành cho phân hệ Màn thi sinh viên (Bạn 3): đọc danh sách câu hỏi của đề theo đúng OrderIndex.
+    /// Truy vấn tuyệt đối không SELECT cột CorrectOption để đảm bảo không lộ đáp án đúng.
+    /// </summary>
+    public List<ExamQuestionView> GetQuestionsForExam(int paperId)
+    {
+        var list = new List<ExamQuestionView>();
+        using var connection = SqliteContext.CreateConnection();
+        connection.Open();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT
+                epq.PaperId,
+                epq.OrderIndex,
+                q.Id,
+                q.Content,
+                q.OptionA,
+                q.OptionB,
+                q.OptionC,
+                q.OptionD,
+                q.ImagePath
+            FROM ExamPaperQuestions epq
+            INNER JOIN Questions q ON q.Id = epq.QuestionId
+            WHERE epq.PaperId = $paperId
+            ORDER BY epq.OrderIndex;";
+        command.Parameters.AddWithValue("$paperId", paperId);
+
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            list.Add(new ExamQuestionView
+            {
+                PaperId = reader.GetInt32(0),
+                OrderIndex = reader.GetInt32(1),
+                QuestionId = reader.GetInt32(2),
+                Content = reader.GetString(3),
+                OptionA = reader.GetString(4),
+                OptionB = reader.GetString(5),
+                OptionC = reader.GetString(6),
+                OptionD = reader.GetString(7),
+                ImagePath = reader.IsDBNull(8) ? string.Empty : reader.GetString(8)
+            });
+        }
+
+        return list;
+    }
+
+    /// <summary>
+    /// Dành cho phân hệ Chấm điểm (SubmissionService - Bạn 2): đọc bảng đáp án chuẩn (QuestionId, OrderIndex, CorrectOption)
+    /// của một đề thi theo đúng thứ tự OrderIndex.
+    /// </summary>
+    public List<AnswerKeyItem> GetAnswerKey(int paperId)
+    {
+        var list = new List<AnswerKeyItem>();
+        using var connection = SqliteContext.CreateConnection();
+        connection.Open();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT
+                epq.PaperId,
+                epq.OrderIndex,
+                q.Id,
+                q.CorrectOption
+            FROM ExamPaperQuestions epq
+            INNER JOIN Questions q ON q.Id = epq.QuestionId
+            WHERE epq.PaperId = $paperId
+            ORDER BY epq.OrderIndex;";
+        command.Parameters.AddWithValue("$paperId", paperId);
+
+        using var reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            list.Add(new AnswerKeyItem
+            {
+                PaperId = reader.GetInt32(0),
+                OrderIndex = reader.GetInt32(1),
+                QuestionId = reader.GetInt32(2),
+                CorrectOption = reader.GetString(3)
+            });
+        }
+
+        return list;
+    }
+
     private static void InsertPaperQuestionsInternal(
         SqliteConnection connection,
         SqliteTransaction transaction,
