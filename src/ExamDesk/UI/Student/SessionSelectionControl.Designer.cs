@@ -26,7 +26,7 @@ partial class SessionSelectionControl
 
     private static TableLayoutPanel SessionList()
     {
-        var list = new TableLayoutPanel
+        var list = new BufferedStudentTable
         {
             Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1,
             Margin = new Padding(0, StudentLayout.Space12, 0, StudentLayout.Space12)

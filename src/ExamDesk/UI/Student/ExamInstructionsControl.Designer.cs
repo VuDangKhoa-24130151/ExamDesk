@@ -19,11 +19,11 @@ partial class ExamInstructionsControl
         BackColor = UiStyle.Background;
         ForeColor = UiStyle.Text;
 
-        var viewport = new Panel { Dock = DockStyle.Fill, AutoScroll = true };
+        var viewport = new BufferedStudentPanel { Dock = DockStyle.Fill, AutoScroll = true };
         _page = Column();
         _page.Padding = new Padding(StudentLayout.Space24, StudentLayout.Space24, StudentLayout.Space24, StudentLayout.Space16);
         _page.Controls.Add(TextLabel("Hướng dẫn trước khi thi", StudentLayout.PageTitleFontSize, FontStyle.Bold));
-        var stats = new TableLayoutPanel
+        var stats = new BufferedStudentTable
         {
             Dock = DockStyle.Top, AutoSize = true, ColumnCount = 4, RowCount = 1,
             Margin = new Padding(0, StudentLayout.Space8, 0, StudentLayout.Space16)
@@ -52,6 +52,8 @@ partial class ExamInstructionsControl
         _page.Controls.Add(_paperInfo);
 
         _resumeInfo = TextLabel("");
+        _resumeInfo.AutoSize = false;
+        _resumeInfo.Dock = DockStyle.Top;
         _resumeInfo.ForeColor = UiStyle.WarningText;
         _resumeInfo.Visible = false;
         _page.Controls.Add(_resumeInfo);
@@ -75,7 +77,7 @@ partial class ExamInstructionsControl
         ];
         for (int i = 0; i < rules.Length; i++)
         {
-            var ruleRow = new TableLayoutPanel
+            var ruleRow = new BufferedStudentTable
             {
                 Dock = DockStyle.Top, AutoSize = true, ColumnCount = 2, RowCount = 1,
                 Margin = Padding.Empty,
@@ -94,7 +96,7 @@ partial class ExamInstructionsControl
         viewport.Controls.Add(_page);
 
         // Chỉ vùng hướng dẫn cuộn; thanh xác nhận luôn ở dưới cùng.
-        var footer = new TableLayoutPanel
+        var footer = new BufferedStudentTable
         {
             Dock = DockStyle.Bottom, AutoSize = true, ColumnCount = 2, RowCount = 2,
             Padding = new Padding(StudentLayout.Space24, StudentLayout.Space12, StudentLayout.Space24, StudentLayout.Space12),
@@ -128,7 +130,7 @@ partial class ExamInstructionsControl
 
     private static TableLayoutPanel Column()
     {
-        var column = new TableLayoutPanel
+        var column = new BufferedStudentTable
         {
             Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, Margin = Padding.Empty
         };

@@ -22,6 +22,7 @@ partial class StudentExamControl
     private void InitializeComponent()
     {
         SuspendLayout();
+        DoubleBuffered = true;
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         Font = UiStyle.BodyFont;
@@ -71,7 +72,7 @@ partial class StudentExamControl
             TabIndex = 0
         };
 
-        var identityActions = new TableLayoutPanel
+        var identityActions = new BufferedStudentTable
         {
             Dock = DockStyle.Fill,
             ColumnCount = 2,
@@ -89,7 +90,7 @@ partial class StudentExamControl
         identityActions.Controls.Add(_identity, 0, 0);
         identityActions.Controls.Add(_submit, 1, 0);
 
-        _examHeader = new TableLayoutPanel
+        _examHeader = new BufferedStudentTable
         {
             Dock = DockStyle.Fill,
             ColumnCount = 3,
@@ -152,7 +153,7 @@ partial class StudentExamControl
             AccessibleName = "Trạng thái lưu tiến độ"
         };
 
-        _questionHeading = new TableLayoutPanel
+        _questionHeading = new BufferedStudentTable
         {
             ColumnCount = 2,
             RowCount = 1,
@@ -194,7 +195,7 @@ partial class StudentExamControl
         _viewImage.Visible = false;
         _viewImage.TabIndex = 3;
 
-        _body = new FlowLayoutPanel
+        _body = new BufferedStudentFlow
         {
             Dock = DockStyle.Top,
             AutoSize = true,
@@ -216,7 +217,7 @@ partial class StudentExamControl
             _body.Controls.Add(option);
         }
 
-        _questionViewport = new Panel
+        _questionViewport = new BufferedStudentPanel
         {
             Name = "QuestionViewport",
             Dock = DockStyle.Fill,
@@ -258,7 +259,7 @@ partial class StudentExamControl
             Margin = Padding.Empty
         };
 
-        var centerActions = new FlowLayoutPanel
+        var centerActions = new BufferedStudentFlow
         {
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
@@ -273,7 +274,7 @@ partial class StudentExamControl
         };
         centerActions.Controls.AddRange([_clearChoice, _flag]);
 
-        _actionBar = new TableLayoutPanel
+        _actionBar = new BufferedStudentTable
         {
             Dock = DockStyle.Fill,
             ColumnCount = 3,
@@ -296,12 +297,13 @@ partial class StudentExamControl
         _actionBar.Controls.Add(centerActions, 1, 0);
         _actionBar.Controls.Add(_next, 2, 0);
 
-        var cardLayout = new TableLayoutPanel
+        var cardLayout = new BufferedStudentTable
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
             RowCount = 3,
             Margin = Padding.Empty,
+            // Giữ nền trong suốt ở lớp sát viền bo của thẻ.
             BackColor = Color.Transparent,
             TabIndex = 0,
             TabStop = false,
@@ -344,7 +346,7 @@ partial class StudentExamControl
             TabIndex = 1
         };
 
-        _gridViewport = new Panel
+        _gridViewport = new BufferedStudentPanel
         {
             Dock = DockStyle.Fill,
             AutoScroll = true,
@@ -352,7 +354,7 @@ partial class StudentExamControl
             TabIndex = 2
         };
 
-        _questionLegend = new FlowLayoutPanel
+        _questionLegend = new BufferedStudentFlow
         {
             Dock = DockStyle.Fill,
             AutoSize = true,
@@ -373,7 +375,7 @@ partial class StudentExamControl
             _questionLegend.Controls.Add(new LegendItem(label, state));
         }
 
-        _right = new TableLayoutPanel
+        _right = new BufferedStudentTable
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,
@@ -406,7 +408,7 @@ partial class StudentExamControl
         sidebar.Controls.Add(_right);
 
         // 6. Bố cục 2 cột chính: Thẻ làm bài (trái) và Cột câu hỏi (phải)
-        _layout = new TableLayoutPanel
+        _layout = new BufferedStudentTable
         {
             Dock = DockStyle.Fill,
             ColumnCount = 2,
@@ -424,7 +426,7 @@ partial class StudentExamControl
         _layout.Controls.Add(sidebar, 1, 0);
 
         // 6. Khung tổng thể 2 hàng: Header -> Bố cục làm bài
-        _examShell = new TableLayoutPanel
+        _examShell = new BufferedStudentTable
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,

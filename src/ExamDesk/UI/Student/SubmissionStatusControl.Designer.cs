@@ -16,14 +16,14 @@ partial class SubmissionStatusControl
         Font = UiStyle.BodyFont;
         BackColor = UiStyle.Background;
         ForeColor = UiStyle.Text;
-        var heading = new TableLayoutPanel
+        var heading = new BufferedStudentTable
         {
             Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1,
             Padding = new Padding(StudentLayout.Space24, StudentLayout.Space16, StudentLayout.Space24, 0)
         };
         heading.Controls.Add(StudentLayout.Label("Trạng thái nộp bài", StudentLayout.PageTitleFontSize, FontStyle.Bold));
-        _cardHost = new Panel { Dock = DockStyle.Fill, AutoScroll = true };
-        var card = new TableLayoutPanel
+        _cardHost = new BufferedStudentPanel { Dock = DockStyle.Fill, AutoScroll = true };
+        var card = new BufferedStudentTable
         {
             Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1,
             BackColor = UiStyle.Surface, Padding = new Padding(StudentLayout.Space24)
@@ -45,7 +45,7 @@ partial class SubmissionStatusControl
         card.Controls.Add(_busyProgress);
         _summary = StudentLayout.Label("Chưa có lượt thi.");
         card.Controls.Add(_summary);
-        var actions = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = true };
+        var actions = new BufferedStudentFlow { Dock = DockStyle.Top, AutoSize = true, WrapContents = true };
         actions.Controls.Add(StudentLayout.Button("&Đóng cửa sổ", (_, _) => CloseRequested?.Invoke(this, EventArgs.Empty)));
         _actions = actions;
         card.Controls.Add(actions);

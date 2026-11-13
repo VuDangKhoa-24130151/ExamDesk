@@ -9,6 +9,7 @@ public partial class ExamInstructionsControl : UserControl
 
     public ExamInstructionsControl()
     {
+        DoubleBuffered = true;
         InitializeComponent();
         _readCheckBox.CheckedChanged += (_, _) => _startButton.Enabled = _expired || _readCheckBox.Checked;
         var sessionToolTip = new ToolTip();
@@ -22,6 +23,8 @@ public partial class ExamInstructionsControl : UserControl
         _page.SizeChanged += (_, _) => WrapLabels(_page);
         _rules.SizeChanged += (_, _) => WrapLabels(_rules);
         Resize += (_, _) => CenterContent();
+        DpiChangedAfterParent += (_, _) => CenterContent();
+        _resumeInfo.FontChanged += (_, _) => SizeResumeInfo();
         CenterContent();
     }
 
@@ -29,21 +32,28 @@ public partial class ExamInstructionsControl : UserControl
     {
         if (draft is not null)
         {
-            _startButton.Text = "&Tiếp tục làm bài";
-            _resumeInfo.Visible = true;
             var attemptClock = ResumeClock = new StudentAttemptClock(draft.StartedUtc, draft.DeadlineUtc);
             var clock = new System.Windows.Forms.Timer { Interval = 1000 };
+            var progressText = $"Đã trả lời: {draft.Answers.Count(a => a.HasValue)}/{draft.Answers.Length} câu";
+            string? lastRemainingText = null;
             void UpdateProgress()
             {
                 var remainingText = attemptClock.FormatRemaining();
+                if (remainingText == lastRemainingText) return;
+                lastRemainingText = remainingText;
                 _expired = remainingText == "00:00";
-                _startButton.Text = _expired ? "Nộp bài ngay" : "&Tiếp tục làm bài";
-                _startButton.Enabled = _expired || _readCheckBox.Checked;
-                _resumeInfo.Text = $"Đã trả lời: {draft.Answers.Count(a => a.HasValue)}/{draft.Answers.Length} câu"
-                    + $"\nCòn lại: {remainingText}"
+                var buttonText = _expired ? "Nộp bài ngay" : "&Tiếp tục làm bài";
+                if (_startButton.Text != buttonText)
+                {
+                    _startButton.Text = buttonText;
+                    _startButton.Enabled = _expired || _readCheckBox.Checked;
+                    SizeResumeInfo();
+                }
+                _resumeInfo.Text = progressText + $"\nCòn lại: {remainingText}"
                     + (_expired ? "\nLượt này đã hết giờ. Bấm để nộp bài ngay." : "");
             }
             UpdateProgress();
+            _resumeInfo.Visible = true;
             clock.Tick += (_, _) => UpdateProgress();
             Disposed += (_, _) => clock.Dispose();
             clock.Start();
@@ -59,11 +69,15 @@ public partial class ExamInstructionsControl : UserControl
         _durationRule.Text = $"Bài thi có {paper.TotalQuestions} câu trắc nghiệm, thời gian {paper.DurationMinutes} phút.";
     }
 
+    // Giữ chiều cao theo số dòng để mỗi nhịp đồng hồ chỉ cần vẽ lại chữ.
+    private void SizeResumeInfo() => _resumeInfo.Height = _resumeInfo.Font.Height * (_expired ? 3 : 2);
+
     private void CenterContent()
     {
         int maxWidth = StudentLayout.Scale(this, StudentLayout.InstructionsMaxWidth);
-        int side = Math.Max(0, (ClientSize.Width - maxWidth) / 2);
-        Padding = new Padding(side, 0, side, 0);
+        int side = Math.Max(0, (Width - maxWidth) / 2);
+        var padding = new Padding(side, 0, side, 0);
+        if (Padding != padding) Padding = padding;
     }
 
     private void GoBack(object? sender, EventArgs e)

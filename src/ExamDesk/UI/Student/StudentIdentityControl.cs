@@ -20,7 +20,7 @@ public sealed class StudentIdentityControl : UserControl
     {
         Dock = DockStyle.Top, AutoSize = true, Padding = new Padding(StudentLayout.Space24)
     };
-    private readonly TableLayoutPanel _page = new()
+    private readonly TableLayoutPanel _page = new BufferedStudentTable
     {
         Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, Margin = Padding.Empty
     };
@@ -31,6 +31,7 @@ public sealed class StudentIdentityControl : UserControl
     public StudentIdentityControl()
     {
         SuspendLayout();
+        DoubleBuffered = true;
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         Font = UiStyle.BodyFont;
@@ -56,7 +57,7 @@ public sealed class StudentIdentityControl : UserControl
         _identity.Margin = new Padding(0, 0, 0, StudentLayout.Space12);
         AddRow(_identity);
 
-        var actions = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Top, WrapContents = true, Margin = Padding.Empty };
+        var actions = new BufferedStudentFlow { AutoSize = true, Dock = DockStyle.Top, WrapContents = true, Margin = Padding.Empty };
         var find = StudentLayout.Button("Tra cứu sinh viên", (_, _) => Identify(), true);
         _view = StudentLayout.CreateButton("Tiếp tục chọn ca", (_, _) => SelectSession(),
             StudentButtonKind.Secondary, StudentArrow.Right);
@@ -98,9 +99,9 @@ public sealed class StudentIdentityControl : UserControl
     private void FitPage()
     {
         int inset = StudentLayout.Scale(this, StudentLayout.Space24);
-        int side = Math.Max(inset, (ClientSize.Width - StudentLayout.Scale(this, StudentLayout.IdentityCardWidth)) / 2);
-        // Căn giữa theo chiều dọc nếu đủ chỗ, chừa lề cuộn khi thẻ cao hơn vùng xem.
-        int vertical = _card.Height <= ClientSize.Height ? (ClientSize.Height - _card.Height) / 2 : inset;
+        // Tính lề theo kích thước ngoài để thanh cuộn không đổi mốc căn giữa.
+        int side = Math.Max(inset, (Width - StudentLayout.Scale(this, StudentLayout.IdentityCardWidth)) / 2);
+        int vertical = _card.Height <= Height ? (Height - _card.Height) / 2 : inset;
         var padding = new Padding(side, vertical, side, vertical);
         if (Padding != padding) Padding = padding;
     }

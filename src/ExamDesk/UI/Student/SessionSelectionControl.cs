@@ -32,7 +32,7 @@ public partial class SessionSelectionControl : UserControl
         SuspendLayout();
 
         // Chia màn hình thành 4 hàng: tiêu đề, thông tin sinh viên, ca thi và nút quay lại.
-        var page = new TableLayoutPanel
+        var page = new BufferedStudentTable
         {
             Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, RowCount = 4,
             Padding = new Padding(StudentLayout.Space24), TabIndex = 0, TabStop = false
@@ -44,7 +44,7 @@ public partial class SessionSelectionControl : UserControl
         page.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         page.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
-        var heading = new FlowLayoutPanel
+        var heading = new BufferedStudentFlow
         {
             AutoSize = true, Dock = DockStyle.Top, FlowDirection = FlowDirection.TopDown,
             WrapContents = false, Margin = new Padding(0, 0, 0, StudentLayout.Space12)
@@ -88,7 +88,9 @@ public partial class SessionSelectionControl : UserControl
 
     private void ConfigureViewport()
     {
+        DoubleBuffered = true;
         Resize += (_, _) => CenterContent();
+        DpiChangedAfterParent += (_, _) => CenterContent();
         CenterContent();
         Load += (_, _) => SelectNextControl(null, true, true, true, false);
     }
@@ -96,7 +98,7 @@ public partial class SessionSelectionControl : UserControl
     private static TableLayoutPanel SessionRow(string title, string paper, string details, string state,
         Button action)
     {
-        var row = new TableLayoutPanel
+        var row = new BufferedStudentTable
         {
             Dock = DockStyle.Top, AutoSize = true, ColumnCount = 3, RowCount = 1,
             BackColor = UiStyle.Surface,
@@ -109,7 +111,7 @@ public partial class SessionSelectionControl : UserControl
         row.Paint += (_, e) => ControlPaint.DrawBorder(e.Graphics, row.ClientRectangle,
             UiStyle.Border, ButtonBorderStyle.Solid);
 
-        var info = new FlowLayoutPanel
+        var info = new BufferedStudentFlow
         {
             Dock = DockStyle.Top, AutoSize = true, FlowDirection = FlowDirection.TopDown,
             WrapContents = false, Margin = new Padding(0, 0, StudentLayout.Space12, 0)
@@ -161,7 +163,7 @@ public partial class SessionSelectionControl : UserControl
 
     private void BuildSessionPage(User student)
     {
-        var page = new TableLayoutPanel
+        var page = new BufferedStudentTable
         {
             Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, Padding = new Padding(StudentLayout.Space24)
         };
@@ -193,27 +195,64 @@ public partial class SessionSelectionControl : UserControl
             status.ForeColor = UiStyle.ErrorText;
         }
 
-        void Reload()
+        bool reloading = false;
+        async Task Reload()
         {
+            if (reloading) return;
+            reloading = true;
+            UseWaitCursor = true;
+            list.Enabled = false;
+            try
+            {
+                // Đọc SQLite ngoài luồng UI để màn chọn ca có thể vẽ ngay.
+                var sessions = await Task.Run(() =>
+                {
+                    var sessionService = new ExamSessionService();
+                    var papers = sessionService.GetExamPapers();
+                    var progress = new StudentExamService().GetSessionProgress(student.StudentCode);
+                    return sessionService.GetSessions().Select(session =>
+                    {
+                        var paper = papers.FirstOrDefault(p => p.Id == session.PaperId);
+                        bool hasProgress = progress.TryGetValue(session.Id, out bool submitted);
+                        bool canEnter = submitted || (paper is not null && (session.IsOpen || hasProgress));
+                        return (session, paper, hasProgress, submitted, canEnter);
+                    })
+                    .OrderBy(entry => !entry.canEnter ? 2 : entry.session.IsOpen ? 0 : 1)
+                    .ThenBy(entry => entry.submitted)
+                    .ToList();
+                });
+                if (IsDisposed || Disposing) return;
+                ReplaceRows(sessions);
+            }
+            catch (Exception ex)
+            {
+                if (IsDisposed || Disposing) return;
+                ClearRows();
+                ShowError(ex, "Không truy cập được danh sách ca thi. Hãy bấm Tải lại ca thi hoặc liên hệ giảng viên.");
+            }
+            finally
+            {
+                reloading = false;
+                if (!IsDisposed && !Disposing)
+                {
+                    UseWaitCursor = false;
+                    list.Enabled = true;
+                }
+            }
+        }
+
+        void ClearRows()
+        {
+            while (list.Controls.Count > 0) list.Controls[0].Dispose();
+        }
+
+        void ReplaceRows(List<(ExamSession session, ExamPaper? paper, bool hasProgress, bool submitted, bool canEnter)> sessions)
+        {
+            var examService = new StudentExamService();
             list.SuspendLayout();
             try
             {
-                while (list.Controls.Count > 0) list.Controls[0].Dispose();
-                var sessionService = new ExamSessionService();
-                var examService = new StudentExamService();
-                var papers = sessionService.GetExamPapers();
-                var progress = examService.GetSessionProgress(student.StudentCode);
-                var sessions = sessionService.GetSessions().Select(session =>
-                {
-                    var paper = papers.FirstOrDefault(p => p.Id == session.PaperId);
-                    bool hasProgress = progress.TryGetValue(session.Id, out bool submitted);
-                    bool canEnter = submitted || (paper is not null && (session.IsOpen || hasProgress));
-                    return (session, paper, hasProgress, submitted, canEnter);
-                })
-                // Ca mở dùng được đứng đầu, ca không có thao tác xuống cuối.
-                .OrderBy(entry => !entry.canEnter ? 2 : entry.session.IsOpen ? 0 : 1)
-                .ThenBy(entry => entry.submitted)
-                .ToList();
+                ClearRows();
                 foreach (var (session, paper, hasProgress, submitted, canEnter) in sessions)
                 {
                     var enter = StudentLayout.CreateButton(submitted ? "Xem kết quả"
@@ -269,21 +308,17 @@ public partial class SessionSelectionControl : UserControl
                 status.Text = sessions.Count == 0
                     ? "Chưa có ca thi. Hãy liên hệ giảng viên hoặc tải lại danh sách." : "";
             }
-            catch (Exception ex)
-            {
-                ShowError(ex, "Không truy cập được danh sách ca thi. Hãy bấm Tải lại ca thi hoặc liên hệ giảng viên.");
-            }
             finally
             {
                 list.ResumeLayout(true);
             }
         }
 
-        var actions = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = true };
+        var actions = new BufferedStudentFlow { Dock = DockStyle.Top, AutoSize = true, WrapContents = true };
         actions.Controls.Add(StudentLayout.CreateButton("Quay lại nhập MSSV",
             (_, _) => CloseRequested?.Invoke(this, EventArgs.Empty),
             StudentButtonKind.Secondary, StudentArrow.Left));
-        actions.Controls.Add(StudentLayout.Button("Tải lại ca thi", (_, _) => Reload()));
+        actions.Controls.Add(StudentLayout.Button("Tải lại ca thi", async (_, _) => await Reload()));
         AddRow(actions);
         page.SizeChanged += (_, _) =>
         {
@@ -292,15 +327,17 @@ public partial class SessionSelectionControl : UserControl
                 label.MaximumSize = new Size(width, 0);
         };
         Controls.Add(page);
-        Reload();
+        Load += async (_, _) => await Reload();
     }
 
     // Màn này ít thông tin nên giới hạn bề ngang, phần dư chia đều sang hai bên.
     private void CenterContent()
     {
         int maxWidth = StudentLayout.Scale(this, StudentLayout.SessionPageMaxWidth);
-        int side = Math.Max(0, (ClientSize.Width - maxWidth) / 2);
-        Padding = new Padding(side, 0, side, 0);
+        // Giữ mốc căn giữa khi thanh cuộn xuất hiện và chỉ đổi lề khi cần.
+        int side = Math.Max(0, (Width - maxWidth) / 2);
+        var padding = new Padding(side, 0, side, 0);
+        if (Padding != padding) Padding = padding;
     }
 
     private static void WrapLabels(Control panel)

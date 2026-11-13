@@ -7,7 +7,7 @@ partial class StudentExamForm
 {
     private System.ComponentModel.IContainer? components = null;
     private Label _studentLabel = null!, _examLabel = null!;
-    private Panel _studentContent = new() { Dock = DockStyle.Fill };
+    private readonly Panel _studentContent = new BufferedStudentPanel { Dock = DockStyle.Fill };
 
     protected override void Dispose(bool disposing)
     {
@@ -24,10 +24,8 @@ partial class StudentExamForm
         ClientSize = new Size(StudentLayout.FormClientWidth, StudentLayout.FormClientHeight);
         MinimumSize = new Size(StudentLayout.FormMinWidth, StudentLayout.FormMinHeight);
         StartPosition = FormStartPosition.CenterParent;
-        WindowState = FormWindowState.Maximized;
-        Load += (_, _) => UiStyle.ClampToWorkingArea(this);
         // Thanh trên cùng giữ tên kỳ thi và sinh viên khi chuyển giữa các màn.
-        var header = new TableLayoutPanel
+        var header = new BufferedStudentTable
         {
             Dock = DockStyle.Top, Height = StudentLayout.BarHeight, ColumnCount = 2, RowCount = 1,
             BackColor = UiStyle.Surface,
