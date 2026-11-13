@@ -35,7 +35,7 @@ public partial class SessionSelectionControl : UserControl
         var page = new TableLayoutPanel
         {
             Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, RowCount = 4,
-            Padding = new Padding(24), TabIndex = 0, TabStop = false
+            Padding = new Padding(StudentLayout.Space24), TabIndex = 0, TabStop = false
         };
         page.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         page.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -47,47 +47,36 @@ public partial class SessionSelectionControl : UserControl
         var heading = new FlowLayoutPanel
         {
             AutoSize = true, Dock = DockStyle.Top, FlowDirection = FlowDirection.TopDown,
-            WrapContents = false, Margin = new Padding(0, 0, 0, 12)
+            WrapContents = false, Margin = new Padding(0, 0, 0, StudentLayout.Space12)
         };
-        heading.Controls.Add(TextLabel("Chọn ca thi", 18, FontStyle.Bold));
-        heading.Controls.Add(TextLabel("Chỉ hiển thị các ca thi có tên bạn trong danh sách.", 10));
+        heading.Controls.Add(TextLabel("Chọn ca thi", StudentLayout.PageTitleFontSize, FontStyle.Bold));
+        heading.Controls.Add(TextLabel("Chỉ hiển thị các ca thi có tên bạn trong danh sách.", StudentLayout.BodyFontSize));
         page.Controls.Add(heading, 0, 0);
 
         var identity = Surface();
-        identity.Margin = new Padding(0, 0, 0, 12);
-        identity.Controls.Add(TextLabel("Sinh viên mẫu · SV0001", 12, FontStyle.Bold));
-        identity.Controls.Add(TextLabel("Lớp DH23DT • Chọn ca thi trong danh sách được phân công", 10));
+        identity.Margin = new Padding(0, 0, 0, StudentLayout.Space12);
+        identity.Controls.Add(TextLabel("Sinh viên mẫu · SV0001", StudentLayout.HeadingFontSize, FontStyle.Bold));
+        identity.Controls.Add(TextLabel("Lớp DH23DT • Chọn ca thi trong danh sách được phân công", StudentLayout.BodyFontSize));
         page.Controls.Add(identity, 0, 1);
 
         var sessions = SessionList();
-        var enter = new Button
-        {
-            Text = "&Xem hướng dẫn →", AutoSize = true,
-            BackColor = UiStyle.Primary,
-            ForeColor = UiStyle.Surface, FlatStyle = FlatStyle.Flat,
-            Margin = new Padding(0, 8, 0, 0), Padding = new Padding(12, 4, 12, 4),
-            Cursor = Cursors.Hand, TabIndex = 0, AccessibleName = "Xem hướng dẫn ca thi 01"
-        };
-        UiStyle.StylePrimaryButton(enter);
+        var enter = StudentLayout.CreateButton("&Xem hướng dẫn", kind: StudentButtonKind.Primary, arrow: StudentArrow.Right);
+        enter.TabIndex = 0;
         sessions.Controls.Add(SessionRow("Cuối kỳ .NET – Ca 01", "Lập trình .NET · 30 câu · 45 phút",
-            "Khung giờ được bắt đầu: 30/10/2026, 08:00–08:30 · Lượt thi: Chưa bắt đầu",
-            "Đang mở", true, enter));
-        var unavailable = StudentLayout.Button("Xem hướng dẫn →", primary: true);
+            "Ca: CA01\nPhòng: P101",
+            "Đang mở", enter));
+        var unavailable = StudentLayout.CreateButton("Xem hướng dẫn", kind: StudentButtonKind.Primary, arrow: StudentArrow.Right);
         unavailable.Enabled = false;
         sessions.Controls.Add(SessionRow("Cuối kỳ .NET – Ca 02", "Lập trình .NET · 30 câu · 45 phút",
-            "Được bắt đầu lúc 13:30 ngày 30/10/2026. Bạn chưa thể vào ca thi này.",
-            "Chưa đến giờ", false, unavailable));
+            "Ca: CA02\nPhòng: P102",
+            "Ca đã đóng", unavailable));
         page.Controls.Add(sessions, 0, 2);
 
-        var back = new Button
-        {
-            Text = "← &Quay lại cửa sổ chính", AutoSize = true, TabIndex = 1,
-            BackColor = UiStyle.Surface,
-            ForeColor = UiStyle.Text, FlatStyle = FlatStyle.Flat,
-            Padding = new Padding(12, 4, 12, 4), Margin = new Padding(0, 12, 0, 0)
-        };
-        UiStyle.StyleSecondaryButton(back);
-        back.Click += (_, _) => CloseRequested?.Invoke(this, EventArgs.Empty);
+        var back = StudentLayout.CreateButton("&Quay lại cửa sổ chính",
+            (_, _) => CloseRequested?.Invoke(this, EventArgs.Empty),
+            StudentButtonKind.Secondary, StudentArrow.Left);
+        back.TabIndex = 1;
+        back.Margin = new Padding(0, StudentLayout.Space12, 0, 0);
         page.Controls.Add(back, 0, 3);
         // Cho chữ tự xuống dòng theo chiều rộng từng khung khi phóng to hoặc thu nhỏ.
         heading.SizeChanged += (_, _) => WrapLabels(heading);
@@ -105,38 +94,68 @@ public partial class SessionSelectionControl : UserControl
     }
 
     private static TableLayoutPanel SessionRow(string title, string paper, string details, string state,
-        bool open, Button action)
+        Button action)
     {
         var row = new TableLayoutPanel
         {
             Dock = DockStyle.Top, AutoSize = true, ColumnCount = 3, RowCount = 1,
-            BackColor = UiStyle.Surface, Padding = new Padding(16, 8, 16, 8), Margin = new Padding(0, 0, 0, 8)
+            BackColor = UiStyle.Surface,
+            Padding = new Padding(StudentLayout.Space16, StudentLayout.Space8, StudentLayout.Space16, StudentLayout.Space8),
+            Margin = new Padding(0, 0, 0, StudentLayout.Space8)
         };
         row.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         row.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         row.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        row.Paint += (_, e) => ControlPaint.DrawBorder(e.Graphics, row.ClientRectangle,
+            UiStyle.Border, ButtonBorderStyle.Solid);
 
         var info = new FlowLayoutPanel
         {
             Dock = DockStyle.Top, AutoSize = true, FlowDirection = FlowDirection.TopDown,
-            WrapContents = false, Margin = new Padding(0, 0, 12, 0)
+            WrapContents = false, Margin = new Padding(0, 0, StudentLayout.Space12, 0)
         };
-        info.Controls.Add(TextLabel(title, 11, FontStyle.Bold));
-        info.Controls.Add(TextLabel(paper));
-        var meta = TextLabel(details, 9);
+        info.Controls.Add(TextLabel(title, StudentLayout.SubheadingFontSize, FontStyle.Bold));
+        info.Controls.Add(TextLabel($"Đề: {paper}"));
+        var meta = TextLabel(details, StudentLayout.SmallFontSize);
         meta.ForeColor = UiStyle.TextMuted;
         meta.Margin = Padding.Empty;
         info.Controls.Add(meta);
+        info.Controls.Add(TextLabel($"Trạng thái: {state}", StudentLayout.SmallFontSize));
         // Tên ca và đề dài xuống dòng trong cột thông tin.
         info.SizeChanged += (_, _) => WrapLabels(info);
 
-        var badge = open ? Badge(state, UiStyle.SuccessBack, UiStyle.SuccessText)
-            : Badge(state, UiStyle.WarningBack, UiStyle.WarningText);
-        action.Anchor = AnchorStyles.Right;
+        var badge = Badge(state);
+        action.AccessibleName = $"{action.Text.Replace("&", "").Trim()}: {title}";
         action.Margin = Padding.Empty;
         row.Controls.Add(info, 0, 0);
         row.Controls.Add(badge, 1, 0);
         row.Controls.Add(action, 2, 0);
+        bool? stacked = null;
+        void ArrangeRow()
+        {
+            bool narrow = row.ClientSize.Width < StudentLayout.Scale(row, StudentLayout.SessionRowBreakpoint);
+            if (stacked == narrow) return;
+            stacked = narrow;
+            row.SuspendLayout();
+            // Đưa thông tin lên trên, badge và nút thành các hàng riêng ở màn hình hẹp.
+            row.ColumnCount = 3;
+            row.RowCount = narrow ? 3 : 1;
+            row.SetCellPosition(badge, new TableLayoutPanelCellPosition(narrow ? 0 : 1, narrow ? 1 : 0));
+            row.SetCellPosition(action, new TableLayoutPanelCellPosition(narrow ? 0 : 2, narrow ? 2 : 0));
+            row.ColumnCount = narrow ? 1 : 3;
+            row.RowStyles.Clear();
+            for (int i = 0; i < row.RowCount; i++) row.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            badge.Anchor = narrow ? AnchorStyles.Left : AnchorStyles.None;
+            badge.Margin = narrow
+                ? new Padding(0, StudentLayout.Space8, 0, StudentLayout.Space8)
+                : new Padding(0, 0, StudentLayout.Space12, 0);
+            action.Anchor = narrow ? AnchorStyles.Left : AnchorStyles.Right;
+            row.ResumeLayout(true);
+            WrapLabels(info);
+        }
+        row.SizeChanged += (_, _) => ArrangeRow();
+        row.DpiChangedAfterParent += (_, _) => ArrangeRow();
+        ArrangeRow();
         return row;
     }
 
@@ -144,7 +163,7 @@ public partial class SessionSelectionControl : UserControl
     {
         var page = new TableLayoutPanel
         {
-            Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, Padding = new Padding(24)
+            Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, Padding = new Padding(StudentLayout.Space24)
         };
         page.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
@@ -155,10 +174,10 @@ public partial class SessionSelectionControl : UserControl
             page.Controls.Add(control, 0, row);
         }
 
-        AddRow(TextLabel("Chọn ca thi", 18, FontStyle.Bold));
+        AddRow(TextLabel("Chọn ca thi", StudentLayout.PageTitleFontSize, FontStyle.Bold));
         AddRow(TextLabel("Chọn ca đang mở để bắt đầu, ca có tiến độ để tiếp tục hoặc ca đã nộp bài để xem kết quả."));
         var identity = Surface();
-        identity.Controls.Add(TextLabel($"{student.FullName} · {student.StudentCode}", 12, FontStyle.Bold));
+        identity.Controls.Add(TextLabel($"{student.FullName} · {student.StudentCode}", StudentLayout.HeadingFontSize, FontStyle.Bold));
         identity.Controls.Add(TextLabel($"Lớp {student.ClassName}"));
         identity.SizeChanged += (_, _) => WrapLabels(identity);
         AddRow(identity);
@@ -197,8 +216,8 @@ public partial class SessionSelectionControl : UserControl
                 .ToList();
                 foreach (var (session, paper, hasProgress, submitted, canEnter) in sessions)
                 {
-                    var enter = StudentLayout.Button(submitted ? "Xem kết quả"
-                        : hasProgress ? "Tiếp tục lượt thi →" : "Xem hướng dẫn →",
+                    var enter = StudentLayout.CreateButton(submitted ? "Xem kết quả"
+                        : hasProgress ? "Tiếp tục lượt thi" : "Xem hướng dẫn",
                         (_, _) =>
                         {
                             try
@@ -226,11 +245,11 @@ public partial class SessionSelectionControl : UserControl
                                     ? "Không tải được kết quả đã lưu. Hãy thử lại hoặc liên hệ giảng viên."
                                     : "Không mở được thông tin ca thi. Hãy tải lại danh sách hoặc liên hệ giảng viên.");
                             }
-                        }, true);
+                        }, StudentButtonKind.Primary, submitted ? StudentArrow.None : StudentArrow.Right);
                     enter.Enabled = canEnter;
                     var state = submitted ? "Đã nộp bài" : !enter.Enabled ? "Đã khóa"
                         : session.IsOpen ? "Đang mở" : "Ca đã đóng";
-                    var details = $"Mã ca: {session.SessionCode} · Phòng {session.RoomName}";
+                    var details = $"Ca: {session.SessionCode}\nPhòng: {session.RoomName}";
                     if (!enter.Enabled)
                     {
                         details += !session.IsOpen && !hasProgress
@@ -243,8 +262,7 @@ public partial class SessionSelectionControl : UserControl
                     }
                     var paperText = paper is null ? "Đề thi chưa sẵn sàng"
                         : $"{paper.Title} · {paper.TotalQuestions} câu · {paper.DurationMinutes} phút";
-                    list.Controls.Add(SessionRow(session.SessionName, paperText, details, state,
-                        session.IsOpen && !submitted && enter.Enabled, enter));
+                    list.Controls.Add(SessionRow(session.SessionName, paperText, details, state, enter));
                 }
 
                 status.ForeColor = UiStyle.TextMuted;
@@ -262,7 +280,9 @@ public partial class SessionSelectionControl : UserControl
         }
 
         var actions = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = true };
-        actions.Controls.Add(StudentLayout.Button("← Quay lại nhập MSSV", (_, _) => CloseRequested?.Invoke(this, EventArgs.Empty)));
+        actions.Controls.Add(StudentLayout.CreateButton("Quay lại nhập MSSV",
+            (_, _) => CloseRequested?.Invoke(this, EventArgs.Empty),
+            StudentButtonKind.Secondary, StudentArrow.Left));
         actions.Controls.Add(StudentLayout.Button("Tải lại ca thi", (_, _) => Reload()));
         AddRow(actions);
         page.SizeChanged += (_, _) =>
@@ -278,7 +298,7 @@ public partial class SessionSelectionControl : UserControl
     // Màn này ít thông tin nên giới hạn bề ngang, phần dư chia đều sang hai bên.
     private void CenterContent()
     {
-        int maxWidth = StudentLayout.Scale(this, 1040);
+        int maxWidth = StudentLayout.Scale(this, StudentLayout.SessionPageMaxWidth);
         int side = Math.Max(0, (ClientSize.Width - maxWidth) / 2);
         Padding = new Padding(side, 0, side, 0);
     }

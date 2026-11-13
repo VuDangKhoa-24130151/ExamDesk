@@ -18,9 +18,6 @@ public sealed class StudentDraftService
     public IReadOnlyList<AnswerChange> GetAnswerHistory(int sessionId, string studentCode)
         => FindDraft(sessionId, studentCode.Trim())?.History is { } history ? history.AsReadOnly() : [];
 
-    public StudentDraft Change(StudentDraft draft, int index, int? answer, bool? flag = null)
-        => Change(draft, index, answer, flag, () => DateTimeOffset.UtcNow);
-
     internal StudentDraft Change(StudentDraft draft, int index, int? answer, bool? flag, Func<DateTimeOffset> readUtc)
     {
         if (index < 0 || index >= draft.Questions.Count || answer is < 0 or > 3)
@@ -28,6 +25,7 @@ public sealed class StudentDraftService
 
         // Chỉ thay bản đang hiển thị sau khi bản sao đã lưu thành công.
         var next = JsonSerializer.Deserialize<StudentDraft>(JsonSerializer.Serialize(draft))!;
+        next.Revision = draft.Revision;
         if (flag.HasValue)
         {
             next.Flags[index] = flag.Value;
@@ -47,7 +45,6 @@ public sealed class StudentDraftService
         return next;
     }
 
-    public StudentDraft LockForSubmission(StudentDraft draft) => _repository.LockForSubmission(draft);
     internal StudentDraft LockForSubmission(StudentDraft draft, Func<DateTimeOffset> readUtc)
         => _repository.LockForSubmission(draft, readUtc);
     public void SendForGrading(StudentDraft lockedDraft) => _grader.GradeAndSave(lockedDraft);

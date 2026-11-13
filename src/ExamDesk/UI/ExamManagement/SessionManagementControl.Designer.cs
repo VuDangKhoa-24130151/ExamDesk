@@ -14,6 +14,7 @@ partial class SessionManagementControl
     private readonly Button _create = new() { Text = "Lưu ca mới", AutoSize = true };
     private readonly Button _edit = new() { Text = "Sửa ca", AutoSize = true, Enabled = false };
     private readonly Button _toggle = new() { Text = "Mở ca", AutoSize = true, Enabled = false };
+    private readonly Button _refresh = new() { Text = "Tải lại", AutoSize = true };
     private readonly Label _status = new() { AutoSize = true, ForeColor = UiStyle.TextMuted };
     private readonly TextBox _search = new() { AccessibleName = "Tìm ca theo mã, tên hoặc phòng", PlaceholderText = "Tìm theo mã ca, tên ca hoặc phòng" };
     private readonly ComboBox _stateFilter = new() { AccessibleName = "Lọc theo trạng thái", DropDownStyle = ComboBoxStyle.DropDownList };
@@ -64,12 +65,11 @@ partial class SessionManagementControl
             AutoSize = true, ForeColor = UiStyle.TextMuted }, 0, 2);
 
         var actions = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Top, WrapContents = true, Margin = new Padding(0, 12, 0, 12) };
-        var refresh = new Button { Text = "Tải lại", AutoSize = true };
         UiStyle.StylePrimaryButton(_create);
         UiStyle.StyleSecondaryButton(_edit);
         UiStyle.StyleSecondaryButton(_toggle);
-        UiStyle.StyleSecondaryButton(refresh);
-        actions.Controls.AddRange([_create, _edit, _toggle, refresh]);
+        UiStyle.StyleSecondaryButton(_refresh);
+        actions.Controls.AddRange([_create, _edit, _toggle, _refresh]);
         layout.Controls.Add(actions, 0, 3);
         _status.Margin = new Padding(0, 0, 0, 12);
         layout.Controls.Add(_status, 0, 4);
@@ -95,14 +95,6 @@ partial class SessionManagementControl
             _grid.Columns.Add(new DataGridViewTextBoxColumn { Name = column.Item1, HeaderText = column.Item2, MinimumWidth = 90 });
         layout.Controls.Add(_grid, 0, 7);
         Controls.Add(layout);
-        _create.Click += (_, _) => CreateSession();
-        _edit.Click += (_, _) => EditSession();
-        _toggle.Click += (_, _) => ToggleSession();
-        refresh.Click += (_, _) => Reload();
-        _grid.CurrentCellChanged += (_, _) => UpdateSelection();
-        _search.TextChanged += (_, _) => ApplyFilters(SelectedSession?.Id);
-        _stateFilter.SelectedIndexChanged += (_, _) => ApplyFilters(SelectedSession?.Id);
-        Load += (_, _) => Reload();
         Name = "SessionManagementControl";
         Size = new Size(1000, 600);
         ResumeLayout(false);

@@ -21,12 +21,12 @@ partial class ExamInstructionsControl
 
         var viewport = new Panel { Dock = DockStyle.Fill, AutoScroll = true };
         _page = Column();
-        _page.Padding = new Padding(24, 24, 24, 16);
-        _page.Controls.Add(TextLabel("Hướng dẫn trước khi thi", 18, FontStyle.Bold));
+        _page.Padding = new Padding(StudentLayout.Space24, StudentLayout.Space24, StudentLayout.Space24, StudentLayout.Space16);
+        _page.Controls.Add(TextLabel("Hướng dẫn trước khi thi", StudentLayout.PageTitleFontSize, FontStyle.Bold));
         var stats = new TableLayoutPanel
         {
             Dock = DockStyle.Top, AutoSize = true, ColumnCount = 4, RowCount = 1,
-            Margin = new Padding(0, 8, 0, 16)
+            Margin = new Padding(0, StudentLayout.Space8, 0, StudentLayout.Space16)
         };
         TableLayoutPanel[] statTiles =
         [
@@ -43,8 +43,8 @@ partial class ExamInstructionsControl
         statTiles[^1].Margin = Padding.Empty;
         _page.Controls.Add(stats);
 
-        _sessionTitle = TextLabel("Thông tin ca thi", 11, FontStyle.Bold);
-        _studentInfo = TextLabel("", 9);
+        _sessionTitle = TextLabel("Thông tin ca thi", StudentLayout.SubheadingFontSize, FontStyle.Bold);
+        _studentInfo = TextLabel("", StudentLayout.SmallFontSize);
         _studentInfo.ForeColor = UiStyle.TextMuted;
         _paperInfo = TextLabel("");
         _page.Controls.Add(_sessionTitle);
@@ -58,16 +58,38 @@ partial class ExamInstructionsControl
 
         _rules = Column();
         _rules.BackColor = UiStyle.Surface;
-        _rules.Padding = new Padding(16, 16, 16, 8);
-        _rules.Controls.Add(TextLabel("Quy tắc làm bài", 11, FontStyle.Bold));
+        _rules.Padding = new Padding(StudentLayout.Space16, StudentLayout.Space16, StudentLayout.Space16, StudentLayout.Space8);
+        _rules.Paint += (_, e) => ControlPaint.DrawBorder(e.Graphics, _rules.ClientRectangle,
+            UiStyle.Border, ButtonBorderStyle.Solid);
+        _rules.Controls.Add(TextLabel("Quy tắc làm bài", StudentLayout.SubheadingFontSize, FontStyle.Bold));
         _durationRule = TextLabel("");
-        _rules.Controls.Add(_durationRule);
-        _rules.Controls.Add(TextLabel("02. Mỗi câu có bốn đáp án A–D. Chọn một đáp án, có thể đổi hoặc bỏ lựa chọn."));
-        _rules.Controls.Add(TextLabel("03. Chọn đáp án bằng A/B/C/D hoặc 1–4. Chuyển câu bằng N/P hoặc PageDown/PageUp."));
-        _rules.Controls.Add(TextLabel("04. Có thể đánh dấu để quay lại xem sau."));
-        _rules.Controls.Add(TextLabel("05. Tiến độ được lưu khi thay đổi. Đóng cửa sổ không dừng đồng hồ."));
-        _rules.Controls.Add(TextLabel("06. Hết giờ, hệ thống tự động nộp bài. Nếu có lỗi, bạn có thể thử nộp bài lại."));
-        _rules.Controls.Add(TextLabel("07. Sau khi nộp bài, bạn không thể thay đổi đáp án."));
+        Label[] rules =
+        [
+            _durationRule,
+            TextLabel("Mỗi câu có bốn đáp án A–D. Chọn một đáp án, có thể đổi hoặc bỏ lựa chọn."),
+            TextLabel("Chọn đáp án bằng A/B/C/D hoặc 1–4. Chuyển câu bằng N/P hoặc PageDown/PageUp."),
+            TextLabel("Có thể đánh dấu để quay lại xem sau."),
+            TextLabel("Tiến độ được lưu khi thay đổi. Đóng cửa sổ không dừng đồng hồ."),
+            TextLabel("Hết giờ, hệ thống tự động nộp bài. Nếu có lỗi, bạn có thể thử nộp bài lại."),
+            TextLabel("Sau khi nộp bài, bạn không thể thay đổi đáp án.")
+        ];
+        for (int i = 0; i < rules.Length; i++)
+        {
+            var ruleRow = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top, AutoSize = true, ColumnCount = 2, RowCount = 1,
+                Margin = Padding.Empty,
+                ColumnStyles = { new ColumnStyle(SizeType.AutoSize), new ColumnStyle(SizeType.Percent, 100) }
+            };
+            var number = TextLabel($"{i + 1}.");
+            number.Margin = new Padding(0, 0, StudentLayout.Space8, StudentLayout.Space8);
+            var content = rules[i];
+            ruleRow.Controls.Add(number, 0, 0);
+            ruleRow.Controls.Add(content, 1, 0);
+            ruleRow.SizeChanged += (_, _) => content.MaximumSize = new Size(
+                Math.Max(1, ruleRow.ClientSize.Width - number.PreferredWidth - number.Margin.Horizontal), 0);
+            _rules.Controls.Add(ruleRow);
+        }
         _page.Controls.Add(_rules);
         viewport.Controls.Add(_page);
 
@@ -75,19 +97,20 @@ partial class ExamInstructionsControl
         var footer = new TableLayoutPanel
         {
             Dock = DockStyle.Bottom, AutoSize = true, ColumnCount = 2, RowCount = 2,
-            Padding = new Padding(24, 12, 24, 12), BackColor = UiStyle.Surface
+            Padding = new Padding(StudentLayout.Space24, StudentLayout.Space12, StudentLayout.Space24, StudentLayout.Space12),
+            BackColor = UiStyle.Surface
         };
         footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         _readCheckBox = new CheckBox
         {
             Text = "Tôi đã đọc và &hiểu hướng dẫn làm bài.", AutoSize = true,
-            Font = UiStyle.BodyFont, TabIndex = 0, Margin = new Padding(0, 0, 0, 8)
+            Font = UiStyle.BodyFont, TabIndex = 0, Margin = new Padding(0, 0, 0, StudentLayout.Space8)
         };
         footer.Controls.Add(_readCheckBox, 0, 0);
         footer.SetColumnSpan(_readCheckBox, 2);
 
-        _backButton = StudentLayout.Button("← &Quay lại chọn ca");
+        _backButton = StudentLayout.CreateButton("&Quay lại chọn ca", arrow: StudentArrow.Left);
         _backButton.TabIndex = 1;
         _backButton.Margin = Padding.Empty;
         footer.Controls.Add(_backButton, 0, 1);
@@ -118,17 +141,17 @@ partial class ExamInstructionsControl
         var tile = Column();
         tile.Dock = DockStyle.Fill;
         tile.BackColor = UiStyle.Surface;
-        tile.Padding = new Padding(12, 8, 12, 4);
-        tile.Margin = new Padding(0, 0, 8, 0);
+        tile.Padding = new Padding(StudentLayout.Space12, StudentLayout.Space8, StudentLayout.Space12, StudentLayout.Space4);
+        tile.Margin = new Padding(0, 0, StudentLayout.Space8, 0);
         tile.RowCount = 2;
         tile.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        tile.RowStyles.Add(new RowStyle(SizeType.Absolute, 32));
-        var label = TextLabel(caption, 9);
+        tile.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        var label = TextLabel(caption, StudentLayout.SmallFontSize);
         label.ForeColor = UiStyle.TextMuted;
-        label.Margin = new Padding(0, 0, 0, 4);
+        label.Margin = new Padding(0, 0, 0, StudentLayout.Space4);
         value = new Label
         {
-            Text = "—", Dock = DockStyle.Fill, AutoEllipsis = true, UseMnemonic = false,
+            Text = "—", Dock = DockStyle.Fill, AutoSize = true, UseMnemonic = false,
             Font = UiStyle.TitleFont, Margin = Padding.Empty, TextAlign = ContentAlignment.MiddleLeft
         };
         tile.Controls.Add(label);
@@ -136,9 +159,9 @@ partial class ExamInstructionsControl
         return tile;
     }
 
-    private static Label TextLabel(string text, float size = 10, FontStyle style = FontStyle.Regular) => new()
+    private static Label TextLabel(string text, float size = StudentLayout.BodyFontSize, FontStyle style = FontStyle.Regular) => new()
     {
         Text = text, AutoSize = true, UseMnemonic = false, Font = StudentLayout.GetLabelFont(size, style),
-        Margin = new Padding(0, 0, 0, 8)
+        Margin = new Padding(0, 0, 0, StudentLayout.Space8)
     };
 }
