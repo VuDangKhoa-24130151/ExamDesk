@@ -262,6 +262,12 @@ public sealed class QuestionBankService
         }
         else
         {
+            // Bảo toàn đề thi: không cho phép sửa nội dung câu hỏi đã gắn vào đề.
+            if (_questionRepository.IsQuestionUsedInAnyPaper(question.Id))
+            {
+                throw new InvalidOperationException("Câu hỏi này đã được gắn vào đề thi, không thể chỉnh sửa để bảo toàn đề.");
+            }
+
             _questionRepository.UpdateQuestion(question);
         }
     }
