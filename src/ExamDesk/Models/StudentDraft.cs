@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ExamDesk.Models;
 
 // Không chứa đáp án đúng; snapshot nội dung để giữ bài khi ngân hàng thay đổi.
@@ -31,8 +33,12 @@ public sealed class StudentDraft
     public bool PendingSubmission { get; set; }
     public DateTimeOffset? LockedAtUtc { get; set; }
     public bool AutoSubmitted { get; set; }
+    [JsonIgnore]
     public int Revision { get; set; }
 }
+
+public class StudentDraftStartException(string message)
+    : InvalidOperationException(message);
 
 internal sealed class StudentDraftExpiredException()
     : InvalidOperationException("Đã hết giờ làm bài.");

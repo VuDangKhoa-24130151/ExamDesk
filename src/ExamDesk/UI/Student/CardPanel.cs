@@ -10,14 +10,14 @@ public sealed class CardPanel : Panel
         SetStyle(ControlStyles.SupportsTransparentBackColor | ControlStyles.ResizeRedraw, true);
         DoubleBuffered = true;
         BackColor = Color.Transparent;
-        Padding = new Padding(16);
+        Padding = new Padding(StudentLayout.Space16);
     }
 
     protected override void OnPaintBackground(PaintEventArgs e)
     {
         base.OnPaintBackground(e);
 
-        var borderWidth = Math.Max(1, StudentLayout.Scale(this, 1));
+        var borderWidth = Math.Max(1, StudentLayout.Scale(this, StudentLayout.Stroke1));
         var width = ClientSize.Width - borderWidth;
         var height = ClientSize.Height - borderWidth;
         if (width <= 0 || height <= 0)
@@ -27,7 +27,7 @@ public sealed class CardPanel : Panel
 
         // Thu bán kính khi thẻ quá nhỏ để các cung không chồng nhau.
         var inset = borderWidth / 2f;
-        var diameter = Math.Min(StudentLayout.Scale(this, 24), Math.Min(width, height));
+        var diameter = Math.Min(StudentLayout.Scale(this, StudentLayout.Space24), Math.Min(width, height));
         using var outline = new GraphicsPath();
         outline.AddArc(inset, inset, diameter, diameter, 180, 90);
         outline.AddArc(inset + width - diameter, inset, diameter, diameter, 270, 90);

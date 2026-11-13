@@ -8,7 +8,20 @@ namespace ExamDesk.UI.ExamManagement;
 public partial class SessionManagementControl : UserControl, IUnsavedChangesGuard
 {
     private readonly ExamSessionService _service = new();
-    public SessionManagementControl() => InitializeComponent();
+
+    public SessionManagementControl()
+    {
+        InitializeComponent();
+        _create.Click += (_, _) => CreateSession();
+        _edit.Click += (_, _) => EditSession();
+        _toggle.Click += (_, _) => ToggleSession();
+        _refresh.Click += (_, _) => Reload();
+        _grid.CurrentCellChanged += (_, _) => UpdateSelection();
+        _search.TextChanged += (_, _) => ApplyFilters(SelectedSession?.Id);
+        _stateFilter.SelectedIndexChanged += (_, _) => ApplyFilters(SelectedSession?.Id);
+        Load += (_, _) => Reload();
+    }
+
     private int? _defaultPaperId;
     private List<ExamSession> _sessions = [];
     private List<ExamPaper> _papers = [];
@@ -23,10 +36,6 @@ public partial class SessionManagementControl : UserControl, IUnsavedChangesGuar
         MessageBoxDefaultButton.Button2) == DialogResult.Yes;
 
     private ExamSession? SelectedSession => _grid.CurrentRow?.Tag as ExamSession;
-    private sealed record PaperChoice(int Id, string Label)
-    {
-        public override string ToString() => Label;
-    }
 
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
@@ -120,79 +129,7 @@ public partial class SessionManagementControl : UserControl, IUnsavedChangesGuar
     {
         if (SelectedSession is not { } session || !_edit.Enabled) return;
 
-        using var dialog = new Form
-        {
-            Text = $"Sửa ca {session.SessionCode}",
-            StartPosition = FormStartPosition.CenterParent, ShowInTaskbar = false,
-            ClientSize = new Size(560, 240), MinimumSize = new Size(400, 250),
-            AutoScaleDimensions = new SizeF(7F, 15F), AutoScaleMode = AutoScaleMode.Font,
-            Font = UiStyle.BodyFont, BackColor = UiStyle.Surface,
-            MinimizeBox = false, MaximizeBox = false, AutoScroll = true
-        };
-        var name = new TextBox { Text = session.SessionName, MaxLength = 200 };
-        var room = new TextBox { Text = session.RoomName, MaxLength = 100 };
-        var paper = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
-        foreach (var item in _papers)
-        {
-            var choice = new PaperChoice(item.Id, $"{item.PaperCode} — {item.Title}");
-            paper.Items.Add(choice);
-            if (choice.Id == session.PaperId) paper.SelectedItem = choice;
-        }
-
-        var editor = new TableLayoutPanel { AutoSize = true, Dock = DockStyle.Top, ColumnCount = 2, Padding = new Padding(16) };
-        editor.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        editor.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        string[] labels = ["Tên ca *", "Phòng thi *", "Đề thi *"];
-        Control[] fields = [name, room, paper];
-        for (int i = 0; i < fields.Length; i++)
-        {
-            editor.Controls.Add(new Label { Text = labels[i], AutoSize = true, Anchor = AnchorStyles.Left }, 0, i);
-            fields[i].AccessibleName = labels[i];
-            fields[i].Dock = DockStyle.Fill;
-            editor.Controls.Add(fields[i], 1, i);
-        }
-        var status = new Label { AutoSize = true, ForeColor = UiStyle.ErrorText, Margin = new Padding(0, 8, 0, 8) };
-        editor.Controls.Add(status, 0, 3);
-        editor.SetColumnSpan(status, 2);
-        editor.SizeChanged += (_, _) =>
-            status.MaximumSize = new Size(Math.Max(1, editor.ClientSize.Width - editor.Padding.Horizontal), 0);
-
-        var actions = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Top, WrapContents = true };
-        var save = new Button { Text = "Lưu thay đổi" };
-        var cancel = new Button { Text = "Hủy", DialogResult = DialogResult.Cancel };
-        UiStyle.StylePrimaryButton(save);
-        UiStyle.StyleSecondaryButton(cancel);
-        actions.Controls.AddRange([save, cancel]);
-        editor.Controls.Add(actions, 0, 4);
-        editor.SetColumnSpan(actions, 2);
-        dialog.Controls.Add(editor);
-        dialog.AcceptButton = save;
-        dialog.CancelButton = cancel;
-        dialog.Load += (_, _) => UiStyle.ClampToWorkingArea(dialog);
-
-        save.Click += (_, _) =>
-        {
-            try
-            {
-                _service.UpdateSession(session.Id, name.Text, room.Text, (paper.SelectedItem as PaperChoice)?.Id ?? 0);
-                dialog.DialogResult = DialogResult.OK;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Trace.WriteLine(ex);
-                status.Text = ex is ExamSessionInputException input ? input.Message
-                    : "Không lưu được thay đổi. Hãy kiểm tra thông tin và thử lại.";
-            }
-        };
-        dialog.FormClosing += (_, e) =>
-        {
-            if (dialog.DialogResult == DialogResult.OK ||
-                (name.Text == session.SessionName && room.Text == session.RoomName &&
-                 (paper.SelectedItem as PaperChoice)?.Id == session.PaperId)) return;
-            e.Cancel = MessageBox.Show(dialog, "Bỏ thay đổi chưa lưu của ca này?", "Hủy sửa ca",
-                MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) != DialogResult.Yes;
-        };
-
+        using var dialog = new SessionEditDialog(session, _papers, _service);
         if (dialog.ShowDialog(this) == DialogResult.OK)
             Reload(session.Id, $"Đã lưu thay đổi của ca {session.SessionCode}.");
     }
@@ -264,4 +201,9 @@ public partial class SessionManagementControl : UserControl, IUnsavedChangesGuar
         _status.ForeColor = UiStyle.ErrorText;
         _status.Text = message;
     }
+}
+
+internal sealed record PaperChoice(int Id, string Label)
+{
+    public override string ToString() => Label;
 }

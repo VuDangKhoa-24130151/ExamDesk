@@ -1,6 +1,7 @@
 using System.Text.Json;
 using ExamDesk.Data;
 using ExamDesk.Models;
+using Microsoft.Data.Sqlite;
 
 namespace ExamDesk.Repositories;
 
@@ -16,21 +17,10 @@ public sealed class StudentDraftRepository
         cmd.Transaction = tx;
         cmd.Parameters.AddWithValue("$session", sessionId);
         cmd.Parameters.AddWithValue("$student", student.StudentCode);
-        cmd.CommandText = "SELECT COUNT(*) FROM ExamAttempts WHERE SessionId=$session AND StudentCode=$student";
-        if (Convert.ToInt32(cmd.ExecuteScalar()) > 0)
-            throw new InvalidOperationException("Bạn đã nộp bài ca này.");
+        if (HasSubmitted(cmd))
+            throw new StudentDraftStartException("Bạn đã nộp bài ca này.");
 
-        cmd.CommandText = "SELECT Payload, Revision FROM StudentDrafts WHERE SessionId=$session AND StudentCode=$student";
-        StudentDraft? draft = null;
-        using (var reader = cmd.ExecuteReader())
-        {
-            if (reader.Read())
-            {
-                draft = JsonSerializer.Deserialize<StudentDraft>(reader.GetString(0))!;
-                draft.Revision = reader.GetInt32(1);
-            }
-        }
-
+        var draft = ReadDraft(cmd);
         // Bản nháp giữ nguyên đề và hạn nộp, kể cả khi ca đã đóng.
         if (draft is not null)
         {
@@ -48,7 +38,7 @@ public sealed class StudentDraftRepository
         using (var reader = cmd.ExecuteReader())
         {
             if (!reader.Read())
-                throw new InvalidOperationException("Ca đã đóng hoặc không có đề thi.");
+                throw new StudentDraftStartException("Ca đã đóng hoặc không có đề thi.");
             paperId = reader.GetInt32(0);
             title = reader.GetString(1);
             minutes = reader.GetInt32(2);
@@ -77,7 +67,7 @@ public sealed class StudentDraftRepository
         }
 
         if (count <= 0 || count != questions.Count)
-            throw new InvalidOperationException("Đề chưa có đủ câu hỏi.");
+            throw new StudentDraftStartException("Đề chưa có đủ câu hỏi.");
 
         var now = DateTimeOffset.UtcNow;
         draft = new StudentDraft
@@ -101,9 +91,6 @@ public sealed class StudentDraftRepository
         return draft;
     }
 
-    public StudentDraft LockForSubmission(StudentDraft draft)
-        => LockForSubmission(draft, () => DateTimeOffset.UtcNow);
-
     internal StudentDraft LockForSubmission(StudentDraft draft, Func<DateTimeOffset> readUtc)
     {
         using var connection = SqliteContext.CreateConnection();
@@ -113,15 +100,8 @@ public sealed class StudentDraftRepository
         cmd.Transaction = tx;
         cmd.Parameters.AddWithValue("$session", draft.SessionId);
         cmd.Parameters.AddWithValue("$student", draft.StudentCode);
-        cmd.CommandText = "SELECT Payload, Revision FROM StudentDrafts WHERE SessionId=$session AND StudentCode=$student";
-        StudentDraft saved;
-        using (var reader = cmd.ExecuteReader())
-        {
-            if (!reader.Read())
-                throw new InvalidOperationException("Không tìm thấy tiến độ của lượt thi.");
-            saved = JsonSerializer.Deserialize<StudentDraft>(reader.GetString(0))!;
-            saved.Revision = reader.GetInt32(1);
-        }
+        var saved = ReadDraft(cmd)
+            ?? throw new InvalidOperationException("Không tìm thấy tiến độ của lượt thi.");
 
         if (saved.StartedUtc != draft.StartedUtc)
             throw new StudentDraftConflictException();
@@ -156,17 +136,8 @@ public sealed class StudentDraftRepository
         using var cmd = connection.CreateCommand();
         cmd.Parameters.AddWithValue("$session", sessionId);
         cmd.Parameters.AddWithValue("$student", studentCode);
-        cmd.CommandText = "SELECT Payload, Revision FROM StudentDrafts WHERE SessionId=$session AND StudentCode=$student";
-        using var reader = cmd.ExecuteReader();
-        if (!reader.Read()) return null;
-
-        var draft = JsonSerializer.Deserialize<StudentDraft>(reader.GetString(0))!;
-        draft.Revision = reader.GetInt32(1);
-        return draft;
+        return ReadDraft(cmd);
     }
-
-    public void Save(StudentDraft draft)
-        => Save(draft, () => DateTimeOffset.UtcNow);
 
     internal void Save(StudentDraft draft, Func<DateTimeOffset> readUtc)
     {
@@ -177,18 +148,12 @@ public sealed class StudentDraftRepository
         cmd.Transaction = tx;
         cmd.Parameters.AddWithValue("$session", draft.SessionId);
         cmd.Parameters.AddWithValue("$student", draft.StudentCode);
-        cmd.CommandText = "SELECT Payload, Revision FROM StudentDrafts WHERE SessionId=$session AND StudentCode=$student";
+        var saved = ReadDraft(cmd)
+            ?? throw new InvalidOperationException("Không tìm thấy tiến độ của lượt thi.");
 
-        StudentDraft saved;
-        using (var reader = cmd.ExecuteReader())
-        {
-            if (!reader.Read())
-                throw new InvalidOperationException("Không tìm thấy tiến độ của lượt thi.");
-            // Revision cũ không được ghi đè lượt vừa thay đổi ở cửa sổ khác.
-            if (reader.GetInt32(1) != draft.Revision)
-                throw new StudentDraftConflictException();
-            saved = JsonSerializer.Deserialize<StudentDraft>(reader.GetString(0))!;
-        }
+        // Revision cũ không được ghi đè lượt vừa thay đổi ở cửa sổ khác.
+        if (saved.Revision != draft.Revision)
+            throw new StudentDraftConflictException();
 
         if (saved.StartedUtc != draft.StartedUtc)
             throw new StudentDraftConflictException();
@@ -197,8 +162,7 @@ public sealed class StudentDraftRepository
         if (readUtc() >= saved.DeadlineUtc)
             throw new StudentDraftExpiredException();
 
-        cmd.CommandText = "SELECT COUNT(*) FROM ExamAttempts WHERE SessionId=$session AND StudentCode=$student";
-        if (Convert.ToInt32(cmd.ExecuteScalar()) > 0)
+        if (HasSubmitted(cmd))
             throw new InvalidOperationException("Bài đã nộp, không thể sửa.");
 
         cmd.CommandText = """
@@ -212,5 +176,22 @@ public sealed class StudentDraftRepository
 
         tx.Commit();
         draft.Revision++;
+    }
+
+    private static StudentDraft? ReadDraft(SqliteCommand cmd)
+    {
+        cmd.CommandText = "SELECT Payload, Revision FROM StudentDrafts WHERE SessionId=$session AND StudentCode=$student";
+        using var reader = cmd.ExecuteReader();
+        if (!reader.Read()) return null;
+
+        var draft = JsonSerializer.Deserialize<StudentDraft>(reader.GetString(0))!;
+        draft.Revision = reader.GetInt32(1);
+        return draft;
+    }
+
+    private static bool HasSubmitted(SqliteCommand cmd)
+    {
+        cmd.CommandText = "SELECT COUNT(*) FROM ExamAttempts WHERE SessionId=$session AND StudentCode=$student";
+        return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
     }
 }
