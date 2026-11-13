@@ -8,8 +8,8 @@ internal sealed class StudentAttemptState
     private readonly StudentAttemptClock _clock;
 
 #if DEBUG
-    private readonly int?[] _demoAnswers = new int?[30];
-    private readonly bool[] _demoFlags = new bool[30];
+    private readonly int?[] _demoAnswers = new int?[40];
+    private readonly bool[] _demoFlags = new bool[40];
 
     public StudentAttemptState()
     {

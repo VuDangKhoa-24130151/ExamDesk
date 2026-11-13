@@ -1,198 +1,446 @@
 #nullable enable
 using ExamDesk.UI.Shared;
+
 namespace ExamDesk.UI.Student;
+
 partial class StudentExamControl
 {
-    private Label _question = null!, _questionNumber = null!, _clock = null!, _progress = null!,
-        _saveStatus = null!;
-    private Panel _questionViewport = null!, _gridViewport = null!, _progressTrack = null!;
+    private Label _title = null!, _identity = null!, _clock = null!, _progress = null!,
+        _questionNumber = null!, _deadlineBanner = null!;
+    private QuestionText _question = null!;
+    private SaveIndicator _saveStatus = null!;
+    private Panel _questionViewport = null!, _gridViewport = null!;
     private readonly OptionRow[] _options = new OptionRow[4];
-    private CheckBox _flag = null!;
+    private StudentButton _flag = null!, _previous = null!, _next = null!, _clearChoice = null!, _submit = null!;
+    private StudentButton _viewImage = null!;
     private PictureBox _image = null!;
-    private Button _previous = null!, _next = null!, _clearChoice = null!, _submit = null!, _viewImage = null!;
 
-    private TableLayoutPanel _layout = null!, _right = null!;
-    private FlowLayoutPanel _body = null!, _actions = null!;
-    private Label _section = null!, _title = null!, _identity = null!, _hint = null!, _advice = null!, _legend = null!;
+    private TableLayoutPanel _examShell = null!, _examHeader = null!, _layout = null!, _right = null!,
+        _questionHeading = null!, _actionBar = null!;
+    private FlowLayoutPanel _body = null!, _questionLegend = null!;
 
     private void InitializeComponent()
     {
         SuspendLayout();
-        AutoScaleDimensions = new SizeF(7, 17);
+        AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         Font = UiStyle.BodyFont;
         BackColor = UiStyle.Background;
         ForeColor = UiStyle.Text;
-        Padding = new Padding(24);
-        _layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 2 };
-        _layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));
-        _layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 300));
-        _layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        _layout.RowStyles.Add(new RowStyle(SizeType.Percent,100));
-        var header = new TableLayoutPanel
-        {
-            Dock = DockStyle.Top, AutoSize = true, ColumnCount = 2, RowCount = 2,
-            Margin = new Padding(0, 0, 16, 8),
-            ColumnStyles = { new ColumnStyle(SizeType.AutoSize), new ColumnStyle(SizeType.Percent, 100) },
-            RowStyles = { new RowStyle(SizeType.Absolute, StudentLayout.Scale(this, 24)),
-                new RowStyle(SizeType.Absolute, StudentLayout.Scale(this, 32)) }
-        };
-        _section = new Label
-        {
-            Text = "BÀI THI TRẮC NGHIỆM", AutoSize = true, Font = StudentLayout.GetLabelFont(9, FontStyle.Bold),
-            ForeColor = UiStyle.Primary, Anchor = AnchorStyles.Left, Margin = new Padding(0, 0, 12, 0)
-        };
-        _identity = new Label
-        {
-            Dock = DockStyle.Fill, AutoEllipsis = true, Font = UiStyle.SmallFont,
-            ForeColor = UiStyle.TextMuted, TextAlign = ContentAlignment.MiddleLeft, Margin = Padding.Empty,
-            UseMnemonic = false
-        };
+        Padding = Padding.Empty;
+
+        // 1. Header gọn: Tiêu đề đề thi, đồng hồ đếm ngược, thông tin sinh viên và nút Nộp bài
         _title = new Label
         {
-            Dock = DockStyle.Fill, AutoEllipsis = true, Font = UiStyle.TitleFont,
-            TextAlign = ContentAlignment.MiddleLeft, Margin = Padding.Empty, UseMnemonic = false
+            Dock = DockStyle.Fill,
+            AutoEllipsis = true,
+            Font = StudentLayout.GetLabelFont(StudentLayout.HeadingFontSize, FontStyle.Bold),
+            ForeColor = UiStyle.Text,
+            TextAlign = ContentAlignment.MiddleLeft,
+            Margin = new Padding(0, 0, StudentLayout.Space16, 0),
+            UseMnemonic = false
         };
-        header.Controls.Add(_section, 0, 0);
-        header.Controls.Add(_identity, 1, 0);
-        header.Controls.Add(_title, 0, 1);
-        header.SetColumnSpan(_title, 2);
-        _layout.Controls.Add(header, 0, 0);
 
-        var left = new TableLayoutPanel
+        _clock = new ClockPill
         {
-            Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, Margin = new Padding(0, 0, 16, 0),
-            RowStyles = { new RowStyle(SizeType.Percent, 100), new RowStyle(SizeType.AutoSize) }
+            Dock = DockStyle.Fill,
+            AutoSize = false,
+            TextAlign = ContentAlignment.MiddleCenter,
+            UseMnemonic = false,
+            Font = StudentLayout.GetLabelFont(StudentLayout.ClockFontSize, FontStyle.Bold),
+            Margin = new Padding(StudentLayout.Space8, 0, StudentLayout.Space8, 0)
         };
-        var questionCard = new CardPanel { Dock = DockStyle.Fill, Margin = Padding.Empty };
-        var cardLayout = new TableLayoutPanel
+
+        _identity = new Label
         {
-            Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2,
-            ColumnStyles = { new ColumnStyle(SizeType.Percent, 100) },
-            RowStyles = { new RowStyle(SizeType.AutoSize), new RowStyle(SizeType.Percent, 100) }
+            Dock = DockStyle.Fill,
+            AutoEllipsis = true,
+            Font = StudentLayout.GetLabelFont(StudentLayout.SmallFontSize, FontStyle.Regular),
+            ForeColor = UiStyle.TextMuted,
+            BackColor = UiStyle.Surface,
+            TextAlign = ContentAlignment.MiddleRight,
+            Margin = new Padding(StudentLayout.Space16, 0, StudentLayout.Space16, 0),
+            UseMnemonic = false
         };
-        _saveStatus = new Label
+
+        _submit = new StudentButton("&Nộp bài", StudentButtonKind.Primary)
         {
-            Dock = DockStyle.Fill, Font = UiStyle.SmallFont, AutoSize = true,
-            Padding = new Padding(8, 4, 8, 4), Margin = new Padding(0, 0, 0, 8),
-            TextAlign = ContentAlignment.MiddleLeft, UseMnemonic = false
+            AccessibleName = "Nộp bài",
+            AccessibleDescription = "Mở kiểm tra bài trước khi xác nhận nộp.",
+            Anchor = AnchorStyles.Right,
+            TabIndex = 0
         };
-        _questionViewport = new Panel
+
+        var identityActions = new TableLayoutPanel
         {
-            Name = "QuestionViewport", Dock = DockStyle.Fill, AutoScroll = true, Margin = Padding.Empty
+            Dock = DockStyle.Fill,
+            ColumnCount = 2,
+            RowCount = 1,
+            Margin = Padding.Empty,
+            TabIndex = 0,
+            TabStop = false,
+            ColumnStyles =
+            {
+                new ColumnStyle(SizeType.Percent, 100),
+                new ColumnStyle(SizeType.AutoSize)
+            },
+            RowStyles = { new RowStyle(SizeType.Percent, 100) }
         };
+        identityActions.Controls.Add(_identity, 0, 0);
+        identityActions.Controls.Add(_submit, 1, 0);
+
+        _examHeader = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 3,
+            RowCount = 1,
+            BackColor = UiStyle.Surface,
+            Margin = Padding.Empty,
+            TabIndex = 1,
+            TabStop = false,
+            Padding = new Padding(StudentLayout.Space24, StudentLayout.Space8, StudentLayout.Space24, StudentLayout.Space8),
+            ColumnStyles =
+            {
+                new ColumnStyle(SizeType.Percent, 50),
+                new ColumnStyle(SizeType.Absolute, StudentLayout.ClockWidth),
+                new ColumnStyle(SizeType.Percent, 50)
+            },
+            RowStyles = { new RowStyle(SizeType.Percent, 100) }
+        };
+        _examHeader.Paint += (_, e) => StudentLayout.DrawHeaderBorder(_examHeader, e.Graphics);
+        _examHeader.Controls.Add(_title, 0, 0);
+        _examHeader.Controls.Add(_clock, 1, 0);
+        _examHeader.Controls.Add(identityActions, 2, 0);
+
+        // 2. Card câu hỏi bên trái
+        _deadlineBanner = new Label
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            Visible = false,
+            Font = StudentLayout.GetLabelFont(StudentLayout.BodyFontSize, FontStyle.Bold),
+            BackColor = UiStyle.WarningBack,
+            ForeColor = UiStyle.WarningText,
+            Padding = new Padding(StudentLayout.Space12, StudentLayout.Space8, StudentLayout.Space12, StudentLayout.Space8),
+            Margin = new Padding(StudentLayout.Space24, StudentLayout.Space16, StudentLayout.Space24, 0),
+            TextAlign = ContentAlignment.MiddleLeft,
+            UseMnemonic = false,
+            TabIndex = 0
+        };
+
+        _questionNumber = new Label
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            Font = StudentLayout.GetLabelFont(StudentLayout.SmallFontSize, FontStyle.Regular),
+            ForeColor = UiStyle.TextMuted,
+            TextAlign = ContentAlignment.MiddleLeft,
+            Margin = Padding.Empty,
+            UseMnemonic = false
+        };
+
+        _saveStatus = new SaveIndicator
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = false,
+            Font = StudentLayout.GetLabelFont(StudentLayout.SmallFontSize, FontStyle.Regular),
+            BackColor = UiStyle.Surface,
+            UseMnemonic = false,
+            TabIndex = 0,
+            TabStop = true,
+            Margin = Padding.Empty,
+            AccessibleName = "Trạng thái lưu tiến độ"
+        };
+
+        _questionHeading = new TableLayoutPanel
+        {
+            ColumnCount = 2,
+            RowCount = 1,
+            Height = StudentLayout.HeadingHeight,
+            Margin = new Padding(0, 0, 0, StudentLayout.Space12),
+            TabIndex = 0,
+            TabStop = false,
+            ColumnStyles =
+            {
+                new ColumnStyle(SizeType.Percent, 50),
+                new ColumnStyle(SizeType.Percent, 50)
+            },
+            RowStyles = { new RowStyle(SizeType.Percent, 100) }
+        };
+        _questionHeading.Controls.Add(_questionNumber, 0, 0);
+        _questionHeading.Controls.Add(_saveStatus, 1, 0);
+
+        _question = new QuestionText
+        {
+            AutoSize = false,
+            UseMnemonic = false,
+            ForeColor = UiStyle.Text,
+            Font = StudentLayout.GetLabelFont(StudentLayout.HeadingFontSize, FontStyle.Regular),
+            Margin = new Padding(0, StudentLayout.Space4, 0, StudentLayout.Space24),
+            TabIndex = 1
+        };
+
+        _image = new PictureBox
+        {
+            SizeMode = PictureBoxSizeMode.Zoom,
+            Visible = false,
+            Margin = new Padding(0, 0, 0, StudentLayout.Space12),
+            Cursor = Cursors.Hand,
+            AccessibleName = "Ảnh minh họa câu hỏi",
+            TabIndex = 2
+        };
+
+        _viewImage = StudentLayout.CreateButton("Xem ảnh &lớn");
+        _viewImage.Visible = false;
+        _viewImage.TabIndex = 3;
+
         _body = new FlowLayoutPanel
         {
-            Dock = DockStyle.Top, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            FlowDirection = FlowDirection.TopDown, WrapContents = false, Margin = Padding.Empty
+            Dock = DockStyle.Top,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            FlowDirection = FlowDirection.TopDown,
+            WrapContents = false,
+            BackColor = UiStyle.Surface,
+            Margin = Padding.Empty
         };
-        _questionNumber = StudentLayout.Label("", 9, FontStyle.Bold);
-        _questionNumber.ForeColor = UiStyle.TextMuted;
-        _questionNumber.Margin = new Padding(0, 0, 0, 4);
-        _body.Controls.Add(_questionNumber);
-        _hint = StudentLayout.Label("Chọn một đáp án phù hợp nhất", 9);
-        _hint.ForeColor = UiStyle.TextMuted;
-        _hint.Margin = new Padding(0, 0, 0, 4);
-        _body.Controls.Add(_hint);
-        _question = StudentLayout.Label("", 11);
-        _question.Margin = new Padding(0, 4, 0, 12);
+        _body.Controls.Add(_questionHeading);
         _body.Controls.Add(_question);
-        _image = new PictureBox { SizeMode=PictureBoxSizeMode.Zoom, Visible=false, Margin=new Padding(0,0,0,12),
-            Cursor = Cursors.Hand, AccessibleName = "Ảnh minh họa câu hỏi" };
         _body.Controls.Add(_image);
-        _viewImage = StudentLayout.Button("Xem ảnh &lớn");
-        _viewImage.Visible = false;
         _body.Controls.Add(_viewImage);
         for (int i = 0; i < _options.Length; i++)
         {
-            var option = new OptionRow((char)('A' + i)) { TabIndex = i, TabStop = i == 0 };
+            var option = new OptionRow((char)('A' + i)) { TabIndex = 4 + i, TabStop = i == 0 };
+            option.Margin = new Padding(0, 0, 0, StudentLayout.Space8);
             _options[i] = option;
             _body.Controls.Add(option);
         }
-        _viewImage.TabIndex = _options.Length;
-        _advice = StudentLayout.Label("Dùng phím mũi tên trong nhóm đáp án để đổi lựa chọn. Bạn vẫn có thể xem lại bài trước khi xác nhận nộp bài.", 9);
-        _advice.ForeColor = UiStyle.TextMuted;
-        _advice.Margin = Padding.Empty;
-        _body.Controls.Add(_advice);
-        _questionViewport.Controls.Add(_body);
-        cardLayout.Controls.Add(_saveStatus, 0, 0);
-        cardLayout.Controls.Add(_questionViewport, 0, 1);
-        questionCard.Controls.Add(cardLayout);
-        left.Controls.Add(questionCard, 0, 0);
 
-        _actions = new FlowLayoutPanel
+        _questionViewport = new Panel
         {
-            AutoSize = true, Dock = DockStyle.Fill, WrapContents = true, Margin = new Padding(0, 8, 0, 0)
+            Name = "QuestionViewport",
+            Dock = DockStyle.Fill,
+            AutoScroll = true,
+            BackColor = UiStyle.Surface,
+            Margin = new Padding(StudentLayout.Space24, StudentLayout.Space24, StudentLayout.Space24, StudentLayout.Space16),
+            TabIndex = 1
         };
-        _previous = StudentLayout.Button("← &Trước");
-        _previous.AccessibleName = "Câu trước";
-        _next = StudentLayout.Button("T&iếp →");
-        _next.AccessibleName = "Câu tiếp";
-        _clearChoice = StudentLayout.Button("&Bỏ chọn");
-        _flag = new CheckBox { Appearance = Appearance.Button, Text = FlagText, AutoSize = true,
-            FlatStyle = FlatStyle.Flat, Padding = new Padding(8, 4, 8, 4),
-            BackColor = UiStyle.Surface, MinimumSize = new Size(0, StudentLayout.Scale(this, 38)) };
-        _flag.FlatAppearance.BorderColor = UiStyle.Border;
-        _flag.FlatAppearance.CheckedBackColor = UiStyle.Background;
-        // Giữ thứ tự Tab cũ khi đổi vị trí các nút.
-        _previous.TabIndex = 0;
-        _next.TabIndex = 1;
-        _flag.TabIndex = 2;
-        _clearChoice.TabIndex = 3;
-        _previous.Padding = _next.Padding = _clearChoice.Padding = new Padding(8, 4, 8, 4);
-        _previous.Margin = _clearChoice.Margin = _flag.Margin = new Padding(0, 0, 4, 4);
-        _next.Margin = new Padding(0, 0, 0, 4);
-        _actions.Controls.AddRange([_previous, _clearChoice, _flag, _next]);
-        left.Controls.Add(_actions, 0, 1);
-        _layout.Controls.Add(left, 0, 1);
+        _questionViewport.Controls.Add(_body);
+
+        // 4. Thanh nút thao tác Trước / Bỏ chọn / Đánh dấu / Tiếp
+        _previous = new StudentButton(PreviousText, StudentButtonKind.Secondary, StudentArrow.Left)
+        {
+            AccessibleName = "Câu trước",
+            Anchor = AnchorStyles.Left,
+            TabIndex = 0,
+            Margin = Padding.Empty
+        };
+
+        _clearChoice = new StudentButton(ClearChoiceText, StudentButtonKind.Ghost)
+        {
+            AccessibleName = "Bỏ chọn",
+            TabIndex = 0,
+            Margin = new Padding(0, 0, StudentLayout.Space8, 0)
+        };
+
+        _flag = new StudentButton(FlagText, StudentButtonKind.FlagToggle)
+        {
+            AccessibleName = "Đánh dấu xem lại",
+            TabIndex = 1,
+            Margin = Padding.Empty
+        };
+
+        _next = new StudentButton(NextText, StudentButtonKind.Secondary, StudentArrow.Right)
+        {
+            AccessibleName = "Câu tiếp",
+            Anchor = AnchorStyles.Right,
+            TabIndex = 2,
+            Margin = Padding.Empty
+        };
+
+        var centerActions = new FlowLayoutPanel
+        {
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            WrapContents = false,
+            FlowDirection = FlowDirection.LeftToRight,
+            Anchor = AnchorStyles.None,
+            Margin = Padding.Empty,
+            Padding = Padding.Empty,
+            BackColor = UiStyle.Surface,
+            TabIndex = 1,
+            TabStop = false
+        };
+        centerActions.Controls.AddRange([_clearChoice, _flag]);
+
+        _actionBar = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 3,
+            RowCount = 1,
+            Margin = Padding.Empty,
+            Padding = new Padding(StudentLayout.Space24, StudentLayout.Stroke1, StudentLayout.Space24, 0),
+            BackColor = Color.Transparent,
+            TabIndex = 2,
+            TabStop = false,
+            ColumnStyles =
+            {
+                new ColumnStyle(SizeType.AutoSize),
+                new ColumnStyle(SizeType.Percent, 100),
+                new ColumnStyle(SizeType.AutoSize)
+            },
+            RowStyles = { new RowStyle(SizeType.Percent, 100) }
+        };
+        _actionBar.Paint += (_, e) => StudentLayout.DrawTopBorder(_actionBar, e.Graphics);
+        _actionBar.Controls.Add(_previous, 0, 0);
+        _actionBar.Controls.Add(centerActions, 1, 0);
+        _actionBar.Controls.Add(_next, 2, 0);
+
+        var cardLayout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 3,
+            Margin = Padding.Empty,
+            BackColor = Color.Transparent,
+            TabIndex = 0,
+            TabStop = false,
+            ColumnStyles = { new ColumnStyle(SizeType.Percent, 100) },
+            RowStyles =
+            {
+                new RowStyle(SizeType.AutoSize),
+                new RowStyle(SizeType.Percent, 100),
+                new RowStyle(SizeType.Absolute, StudentLayout.BarHeight)
+            }
+        };
+        cardLayout.Controls.Add(_deadlineBanner, 0, 0);
+        cardLayout.Controls.Add(_questionViewport, 0, 1);
+        cardLayout.Controls.Add(_actionBar, 0, 2);
+
+        var questionCard = new QuestionCard
+        {
+            Dock = DockStyle.Fill,
+            Margin = new Padding(0, 0, StudentLayout.Space24, 0),
+            Padding = new Padding(StudentLayout.Stroke1),
+            TabIndex = 0,
+            TabStop = false
+        };
+        questionCard.Controls.Add(cardLayout);
+
+        // 5. Sidebar danh sách câu hỏi & chú giải bên phải
+        var progressTitle = StudentLayout.Label("Danh sách câu hỏi", StudentLayout.BodyFontSize, FontStyle.Bold);
+        progressTitle.Margin = new Padding(0, 0, 0, StudentLayout.Space4);
+        progressTitle.TabIndex = 0;
+
+        _progress = new Label
+        {
+            Dock = DockStyle.Top,
+            AutoSize = false,
+            AutoEllipsis = true,
+            Height = StudentLayout.HeadingHeight,
+            Font = StudentLayout.GetLabelFont(StudentLayout.SmallFontSize, FontStyle.Regular),
+            ForeColor = UiStyle.TextMuted,
+            Margin = new Padding(0, 0, 0, StudentLayout.Space12),
+            TabIndex = 1
+        };
+
+        _gridViewport = new Panel
+        {
+            Dock = DockStyle.Fill,
+            AutoScroll = true,
+            Margin = Padding.Empty,
+            TabIndex = 2
+        };
+
+        _questionLegend = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            WrapContents = true,
+            Margin = new Padding(0, StudentLayout.Space12, 0, 0),
+            BackColor = UiStyle.Surface,
+            TabIndex = 3,
+            TabStop = false
+        };
+        foreach (var (label, state) in new[]
+        {
+            ("Đã trả lời", QuestionTileState.Answered),
+            ("Đánh dấu", QuestionTileState.Flagged),
+            ("Đang xem", QuestionTileState.Current),
+            ("Chưa trả lời", QuestionTileState.Unanswered)
+        })
+        {
+            _questionLegend.Controls.Add(new LegendItem(label, state));
+        }
 
         _right = new TableLayoutPanel
         {
-            Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 7, GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 4,
+            GrowStyle = TableLayoutPanelGrowStyle.FixedSize,
+            BackColor = UiStyle.Surface,
             Margin = Padding.Empty,
+            TabIndex = 1,
+            ColumnStyles = { new ColumnStyle(SizeType.Percent, 100) },
             RowStyles =
             {
                 new RowStyle(SizeType.AutoSize),
                 new RowStyle(SizeType.AutoSize),
-                new RowStyle(SizeType.AutoSize),
-                new RowStyle(SizeType.AutoSize),
                 new RowStyle(SizeType.Percent, 100),
-                new RowStyle(SizeType.AutoSize),
                 new RowStyle(SizeType.AutoSize)
             }
         };
-        _right.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        _clock = new Label
+        _right.Controls.Add(progressTitle, 0, 0);
+        _right.Controls.Add(_progress, 0, 1);
+        _right.Controls.Add(_gridViewport, 0, 2);
+        _right.Controls.Add(_questionLegend, 0, 3);
+
+        var sidebar = new CardPanel
         {
-            Dock = DockStyle.Fill, AutoSize = true, Font = StudentLayout.GetLabelFont(18, FontStyle.Bold),
-            TextAlign = ContentAlignment.MiddleCenter, ForeColor = UiStyle.Primary, BackColor = UiStyle.Background,
-            Margin = new Padding(0, 0, 0, 8)
+            Dock = DockStyle.Fill,
+            Margin = Padding.Empty,
+            Padding = new Padding(StudentLayout.Space16),
+            TabIndex = 1
         };
-        _right.Controls.Add(_clock, 0, 0);
-        var progressTitle = StudentLayout.Label("Tiến độ làm bài", 10, FontStyle.Bold);
-        progressTitle.Margin = new Padding(0, 0, 0, 4);
-        _right.Controls.Add(progressTitle, 0, 1);
-        _progress = StudentLayout.Label("");
-        _progress.ForeColor = UiStyle.TextMuted;
-        _progress.Margin = new Padding(0, 0, 0, 8);
-        _right.Controls.Add(_progress, 0, 2);
-        _progressTrack = new Panel { Dock = DockStyle.Fill, Height = StudentLayout.Scale(this, 8), BackColor = UiStyle.Background, Margin = new Padding(0, 0, 0, 8) };
-        _right.Controls.Add(_progressTrack, 0, 3);
-        _gridViewport = new Panel { Dock = DockStyle.Fill, AutoScroll = true, Margin = Padding.Empty };
-        _right.Controls.Add(_gridViewport, 0, 4);
-        _legend = StudentLayout.Label("Chưa trả lời: viền mảnh   ✓ Đã trả lời\nĐang xem: viền đậm   ⚑ Đánh dấu", 9);
-        _legend.ForeColor = UiStyle.TextMuted;
-        _legend.Margin = new Padding(0, 8, 0, 8);
-        _right.Controls.Add(_legend, 0, 5);
-        _submit = StudentLayout.Button("Nộp bài", primary: true);
-        _submit.Dock = DockStyle.Fill;
-        _submit.Margin = Padding.Empty;
-        _right.Controls.Add(_submit, 0, 6);
-        var sidebar = new CardPanel { Dock = DockStyle.Fill, Margin = Padding.Empty };
         sidebar.Controls.Add(_right);
+
+        // 6. Bố cục 2 cột chính: Thẻ làm bài (trái) và Cột câu hỏi (phải)
+        _layout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 2,
+            RowCount = 1,
+            Margin = new Padding(StudentLayout.Space24),
+            TabIndex = 0,
+            ColumnStyles =
+            {
+                new ColumnStyle(SizeType.Percent, 100),
+                new ColumnStyle(SizeType.Absolute, StudentLayout.SidebarWidth)
+            },
+            RowStyles = { new RowStyle(SizeType.Percent, 100) }
+        };
+        _layout.Controls.Add(questionCard, 0, 0);
         _layout.Controls.Add(sidebar, 1, 0);
-        _layout.SetRowSpan(sidebar, 2);
-        Controls.Add(_layout);
+
+        // 6. Khung tổng thể 2 hàng: Header -> Bố cục làm bài
+        _examShell = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 1,
+            RowCount = 2,
+            Margin = Padding.Empty,
+            TabStop = false,
+            ColumnStyles = { new ColumnStyle(SizeType.Percent, 100) },
+            RowStyles =
+            {
+                new RowStyle(SizeType.Absolute, StudentLayout.BarHeight),
+                new RowStyle(SizeType.Percent, 100)
+            }
+        };
+        _examShell.Controls.Add(_examHeader, 0, 0);
+        _examShell.Controls.Add(_layout, 0, 1);
+        Controls.Add(_examShell);
 
         ResumeLayout(true);
     }

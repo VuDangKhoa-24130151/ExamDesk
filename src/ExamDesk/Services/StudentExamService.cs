@@ -20,7 +20,6 @@ public sealed class StudentExamService
     internal StudentResult? GetResult(int sessionId, string studentCode)
         => _repository.FindResult(sessionId, studentCode.Trim());
 
-    public List<ExamSession> GetOpenSessions() => _sessionService.GetSessions().Where(s => s.IsOpen).ToList();
     internal Dictionary<int, bool> GetSessionProgress(string studentCode)
         => _repository.FindSessionProgress(studentCode.Trim());
 

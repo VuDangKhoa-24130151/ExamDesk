@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Drawing.Drawing2D;
 using ExamDesk.UI.Shared;
 
 namespace ExamDesk.UI.Student;
@@ -21,7 +22,7 @@ internal sealed class OptionRow : Panel
         Font = UiStyle.BodyFont;
         BackColor = UiStyle.Surface;
         Cursor = Cursors.Hand;
-        Margin = new Padding(0, 0, 0, 8);
+        Margin = new Padding(0, 0, 0, ScalePixels(StudentLayout.Space8));
     }
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
@@ -39,10 +40,12 @@ internal sealed class OptionRow : Panel
 
     internal int MeasureHeight(int width)
     {
-        int textWidth = Math.Max(1, width - ScalePixels(80));
+        int textWidth = Math.Max(1, width - ScalePixels(StudentLayout.OptionTextReservedWidth));
         int textHeight = TextRenderer.MeasureText(Text, Font, new Size(textWidth, int.MaxValue),
             AnswerTextFlags).Height;
-        return Math.Max(ScalePixels(40), textHeight + ScalePixels(16));
+        // Chừa 4 px mỗi phía cho focus ring, phần thẻ bên trong cao ít nhất 52 px.
+        return Math.Max(ScalePixels(StudentLayout.OptionMinHeight),
+            textHeight + ScalePixels(StudentLayout.OptionVerticalPadding));
     }
 
     protected override bool IsInputKey(Keys keyData) =>
@@ -57,7 +60,7 @@ internal sealed class OptionRow : Panel
 
     protected override void OnClick(EventArgs e)
     {
-        if (e is not MouseEventArgs mouse || mouse.Button == MouseButtons.Left) base.OnClick(e);
+        if (Enabled && (e is not MouseEventArgs mouse || mouse.Button == MouseButtons.Left)) base.OnClick(e);
     }
 
     protected override void OnMouseEnter(EventArgs e)
@@ -104,44 +107,56 @@ internal sealed class OptionRow : Panel
     protected override void OnPaint(PaintEventArgs e)
     {
         base.OnPaint(e);
-        if (ClientSize.Width <= 1 || ClientSize.Height <= 1) return;
+        if (ClientSize.Width <= ScalePixels(StudentLayout.Space12)
+            || ClientSize.Height <= ScalePixels(StudentLayout.Space12)) return;
 
-        if (Checked || (Enabled && _hovered))
-        {
-            using var fill = new SolidBrush(UiStyle.Background);
-            e.Graphics.FillRectangle(fill, ClientRectangle);
-        }
+        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+        e.Graphics.Clear(Parent?.BackColor ?? UiStyle.Surface);
+        var bounds = Rectangle.Inflate(ClientRectangle,
+            -ScalePixels(StudentLayout.OptionFocusInset),
+            -ScalePixels(StudentLayout.OptionFocusInset));
+        using var outline = StudentLayout.RoundedRectangle(this, bounds, StudentLayout.CardRadius);
+        using var fill = new SolidBrush(Checked ? StudentLayout.SelectionBack
+            : Enabled && _hovered ? UiStyle.Background : UiStyle.Surface);
+        e.Graphics.FillPath(fill, outline);
+        using var border = new Pen(Checked ? UiStyle.Primary
+            : Enabled && _hovered ? StudentLayout.OptionHoverBorder : UiStyle.Border,
+            ScalePixels(Checked ? StudentLayout.Stroke2 : StudentLayout.Stroke1));
+        e.Graphics.DrawPath(border, outline);
 
-        using var border = new Pen(Checked ? UiStyle.Primary : UiStyle.Border);
-        e.Graphics.DrawRectangle(border, 0, 0, ClientSize.Width - 1, ClientSize.Height - 1);
-
-        int inset = ScalePixels(8);
-        int tileSize = ScalePixels(24);
-        var tile = new Rectangle(inset, inset, tileSize, tileSize);
-        using var tileFill = new SolidBrush(Checked ? UiStyle.Primary : UiStyle.Background);
-        e.Graphics.FillRectangle(tileFill, tile);
+        int inset = ScalePixels(StudentLayout.OptionBadgeLeft);
+        int tileSize = ScalePixels(StudentLayout.OptionBadgeSize);
+        var tile = new Rectangle(inset, (Height - tileSize) / 2, tileSize, tileSize);
+        StudentLayout.DrawDot(e.Graphics, tile, Checked ? UiStyle.Primary : UiStyle.Background);
         TextRenderer.DrawText(e.Graphics, _letter, Font, tile, Checked ? UiStyle.Surface : UiStyle.TextMuted,
             TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
 
-        int textLeft = ScalePixels(48);
+        int textLeft = ScalePixels(StudentLayout.OptionTextLeft);
         // Chừa riêng chỗ cho dấu chọn để không đè lên đáp án dài khi xem lại.
-        var textBounds = new Rectangle(textLeft, inset, Math.Max(1, Width - ScalePixels(80)),
-            Math.Max(1, Height - inset * 2));
-        TextRenderer.DrawText(e.Graphics, Text, Font, textBounds, Enabled ? UiStyle.Text : UiStyle.TextMuted,
+        int textWidth = Math.Max(1, Width - ScalePixels(StudentLayout.OptionTextReservedWidth));
+        int textHeight = TextRenderer.MeasureText(Text, Font, new Size(textWidth, int.MaxValue), AnswerTextFlags).Height;
+        int verticalInset = ScalePixels(StudentLayout.Space16);
+        var textBounds = new Rectangle(textLeft, Math.Max(verticalInset, (Height - textHeight) / 2),
+            textWidth, Math.Max(1, Height - ScalePixels(StudentLayout.OptionVerticalPadding)));
+        TextRenderer.DrawText(e.Graphics, Text, Font, textBounds, UiStyle.Text,
             AnswerTextFlags);
 
         if (Checked)
         {
-            var checkBounds = new Rectangle(Width - inset - tileSize, inset, tileSize, tileSize);
-            TextRenderer.DrawText(e.Graphics, "✓", Font, checkBounds, UiStyle.Primary,
-                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+            StudentLayout.DrawCheck(e.Graphics, this,
+                new Point(Width - ScalePixels(StudentLayout.OptionCheckRightInset), Height / 2), UiStyle.Primary);
         }
 
-        if (Focused && ShowFocusCues)
+        if (Enabled && Focused)
         {
-            var focusBounds = Rectangle.Inflate(ClientRectangle, -2, -2);
-            if (focusBounds.Width > 0 && focusBounds.Height > 0)
-                ControlPaint.DrawFocusRectangle(e.Graphics, focusBounds);
+            // Viền ngoài độc lập, cách viền chọn 2 px; không thay màu để giả focus.
+            using var focusPath = StudentLayout.RoundedRectangle(this,
+                Rectangle.Inflate(ClientRectangle,
+                    -ScalePixels(StudentLayout.Stroke1),
+                    -ScalePixels(StudentLayout.Stroke1)),
+                StudentLayout.FocusRadius);
+            using var focusPen = new Pen(UiStyle.Primary, ScalePixels(StudentLayout.Stroke2));
+            e.Graphics.DrawPath(focusPen, focusPath);
         }
     }
 

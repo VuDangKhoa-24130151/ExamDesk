@@ -1,5 +1,3 @@
-using ExamDesk.UI.Shared;
-
 namespace ExamDesk.UI.Student;
 
 // Bạn 3: Form độc lập. Thêm các UserControl/Dialog của phân hệ trong cùng thư mục.
@@ -9,14 +7,29 @@ public partial class StudentExamForm : Form
     private ExamDesk.Models.User? _student;
     private bool _submitting;
     private bool _submitAfterSave;
+    private bool _handlingExpiredAttempt;
     private readonly System.Windows.Forms.Timer _deadlineTimer = new() { Interval = 1000 };
     public StudentExamForm()
     {
         InitializeComponent();
+        ApplyCompactHeader();
+        DpiChanged += (_, _) => ApplyCompactHeader();
+        if (_examLabel.Parent is Control header)
+            header.Paint += (_, e) => StudentLayout.DrawHeaderBorder(header, e.Graphics);
         ShowIdentity();
         FormClosing += ConfirmClose;
         FormClosed += (_, _) => _deadlineTimer.Dispose();
         _deadlineTimer.Tick += (_, _) => TrySubmitExpiredAttempt();
+    }
+
+    private void ApplyCompactHeader()
+    {
+        int S(int value) => StudentLayout.Scale(this, value);
+        if (_examLabel.Parent is not Control header) return;
+        header.Height = S(StudentLayout.BarHeight);
+        header.Padding = new Padding(S(StudentLayout.Space24), S(StudentLayout.Space8),
+            S(StudentLayout.Space24), S(StudentLayout.Space8));
+        _examLabel.Margin = new Padding(0, 0, S(StudentLayout.Space16), 0);
     }
 
     private void ShowIdentity()
@@ -25,8 +38,6 @@ public partial class StudentExamForm : Form
         var screen = new StudentIdentityControl();
         _examLabel.Text = "UNIEXAM — SINH VIÊN";
         _studentLabel.Text = "Nhận diện bằng MSSV";
-        _studentLabel.BackColor = UiStyle.Background;
-        _studentLabel.ForeColor = UiStyle.TextMuted;
         screen.CloseRequested += (_, _) => Close();
         screen.StudentIdentified += student => ShowRealSessions(student);
         ShowScreen(screen, "Nhận diện sinh viên");
@@ -39,8 +50,6 @@ public partial class StudentExamForm : Form
         screen.SessionSelected+=(session,paper)=>ShowRealInstructions(student,session,paper);
         screen.ResultSelected += ShowResult;
         _studentLabel.Text=$"{student.FullName} · {student.StudentCode}";
-        _studentLabel.BackColor = UiStyle.SuccessBack;
-        _studentLabel.ForeColor = UiStyle.SuccessText;
         _examLabel.Text="UNIEXAM — CHỌN CA THI";
         ShowScreen(screen,"Chọn ca thi");
     }
@@ -86,6 +95,7 @@ public partial class StudentExamForm : Form
 
     private bool TrySubmitExpiredAttempt(bool expiredDuringSave = false)
     {
+        if (_handlingExpiredAttempt) return true;
         if (_submitting || _attempt is not { Submitted: false } attempt) return false;
         var exam = _studentContent.Controls.OfType<StudentExamControl>().FirstOrDefault();
         if (!_submitAfterSave && !expiredDuringSave && !(exam?.IsDeadlineReached ?? attempt.IsExpired))
@@ -98,8 +108,20 @@ public partial class StudentExamForm : Form
             return true;
         }
 
-        foreach (Form dialog in OwnedForms) dialog.Close();
-        SubmitAttempt();
+        // MessageBox vẫn xử lý sự kiện UI; chặn timer/sự kiện lưu báo hết giờ lần nữa.
+        _handlingExpiredAttempt = true;
+        _deadlineTimer.Stop();
+        try
+        {
+            MessageBox.Show(this, "Đã hết giờ. Hệ thống sẽ tự động nộp bài. Vui lòng chờ trạng thái xử lý.",
+                "Hết giờ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            foreach (Form dialog in OwnedForms) dialog.Close();
+            SubmitAttempt();
+        }
+        finally
+        {
+            _handlingExpiredAttempt = false;
+        }
         return true;
     }
 
@@ -198,11 +220,11 @@ public partial class StudentExamForm : Form
 #endif
         if (_student is { } student)
         {
-            screen.AddAction(StudentLayout.Button("← Quay lại chọn ca", (_, _) =>
+            screen.AddAction(StudentLayout.CreateButton("Quay lại chọn ca", (_, _) =>
             {
                 _attempt = null;
                 ShowRealSessions(student);
-            }, true));
+            }, StudentButtonKind.Primary, StudentArrow.Left));
         }
         screen.CloseRequested += (_, _) => Close();
         screen.SetBusy(busy);
@@ -231,6 +253,9 @@ public partial class StudentExamForm : Form
             _studentContent.Controls[0].Dispose();
 
         screen.Dock = DockStyle.Fill;
+        // Màn thi đã có tên ca và sinh viên; thu gọn thanh chung để dành chỗ cho câu hỏi.
+        bool takingExam = screen is StudentExamControl;
+        if (_examLabel.Parent is Control header) header.Visible = !takingExam;
         _studentContent.Controls.Add(screen);
         Text = "UniExam — " + title;
         if (screen is StudentExamControl exam) exam.FocusInitialControl();
