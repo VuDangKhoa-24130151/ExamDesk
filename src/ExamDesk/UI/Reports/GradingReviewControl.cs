@@ -87,10 +87,17 @@ public partial class GradingReviewControl : UserControl
             return;
         }
 
-        // Tạm thời: (hộp thoại chi tiết từng câu) sẽ thay chỗ này ở bước sau
-        MessageBox.Show(this,
-            $"{item.Mssv} - {item.HoTen}\nĐiểm: {item.Diem:0.00} ({item.CauDung}/{item.SoCau} câu đúng)",
-            "Chi tiết bài thi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            private void ShowSelectedDetail()
+    {
+        if (_dgvResults.CurrentRow?.DataBoundItem is not AttemptResultItem item)
+        {
+            MessageBox.Show(this, "Hãy chọn một bài thi trong bảng.", "Chưa chọn bài",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+
+        using var dialog = new AttemptDetailDialog(item);
+        dialog.ShowDialog(this);
     }
 
 }   
