@@ -20,3 +20,7 @@ database/exports/
 [Dd][Ee][Ss][Ii][Gg][Nn]*.md
 [Rr][Ee][Aa][Dd][Mm][Ee]*
 /repomix-output.xml
+
+# Generated build and diagnostic output
+/artifacts/
+/TestResults/

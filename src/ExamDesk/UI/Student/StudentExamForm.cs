@@ -74,7 +74,7 @@ public partial class StudentExamForm : Form
         screen.SessionSelected+=(session,paper)=>ShowRealInstructions(student,session,paper);
         screen.ResultSelected += ShowResult;
         _studentLabel.Text=$"{student.FullName} · {student.StudentCode}";
-        _examLabel.Text="UNIEXAM — CHỌN CA THI";
+        _examLabel.Text="UniExam";
         ShowScreen(screen,"Chọn ca thi");
     }
 
