@@ -19,3 +19,4 @@ database/exports/
 [Cc][Oo][Nn][Tt][Ee][Xx][Tt]*.md
 [Dd][Ee][Ss][Ii][Gg][Nn]*.md
 [Rr][Ee][Aa][Dd][Mm][Ee]*
+/repomix-output.xml

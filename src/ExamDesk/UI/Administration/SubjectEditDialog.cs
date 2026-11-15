@@ -1,13 +1,15 @@
 using System.Text.RegularExpressions;
 using ExamDesk.Models;
+using ExamDesk.Services;
 using ExamDesk.UI.Shared;
 
 namespace ExamDesk.UI.Administration;
 
-// GV-02 • Bạn 1 phụ trách: Hộp thoại thêm / sửa môn học (mốc UI, dữ liệu minh họa).
+// GV-02 • Bạn 1 phụ trách: Hộp thoại thêm / sửa môn học (kết nối SQLite qua QuestionBankService).
 public partial class SubjectEditDialog : Form
 {
     private static readonly Regex ValidCodeRegex = new("^[A-Z0-9]{2,10}$", RegexOptions.Compiled);
+    private readonly QuestionBankService _service;
 
     private int _editingId;
     private string _initialCode = string.Empty;
@@ -17,8 +19,13 @@ public partial class SubjectEditDialog : Form
 
     public Subject? Result { get; private set; }
 
-    public SubjectEditDialog()
+    public SubjectEditDialog() : this(new QuestionBankService())
     {
+    }
+
+    public SubjectEditDialog(QuestionBankService service)
+    {
+        _service = service ?? throw new ArgumentNullException(nameof(service));
         InitializeComponent();
         CaptureInitialSnapshot();
     }
@@ -180,9 +187,7 @@ public partial class SubjectEditDialog : Form
             _lblCodeError.Visible = true;
             firstInvalidControl ??= _txtCode;
         }
-        else if (AdminPreviewData.Subjects.Any(s =>
-                     s.Id != _editingId &&
-                     string.Equals(s.Code, code, StringComparison.OrdinalIgnoreCase)))
+        else if (_service.IsSubjectCodeExists(code, _editingId))
         {
             _lblCodeError.Text = $"Mã môn \"{code}\" đã tồn tại. Vui lòng nhập mã khác.";
             _lblCodeError.Visible = true;
@@ -210,16 +215,32 @@ public partial class SubjectEditDialog : Form
             return;
         }
 
-        Result = new Subject
+        try
         {
-            Id = _editingId,
-            Code = code,
-            Name = name
-        };
+            var subject = new Subject
+            {
+                Id = _editingId,
+                Code = code,
+                Name = name
+            };
 
-        _allowCloseWithoutPrompt = true;
-        DialogResult = DialogResult.OK;
-        Close();
+            _service.SaveSubject(subject);
+            Result = subject;
+
+            _allowCloseWithoutPrompt = true;
+            DialogResult = DialogResult.OK;
+            Close();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                ex.Message,
+                "Lỗi lưu môn học",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+            firstInvalidControl?.Focus();
+        }
     }
 
     private void EnsureHeightFitsContent()

@@ -3,7 +3,7 @@ using ExamDesk.UI.Shared;
 
 namespace ExamDesk.UI.Administration;
 
-// GV-06 • Bạn 1 phụ trách: Hộp thoại xem trước câu hỏi (chỉ đọc, mốc UI).
+// GV-06 • Bạn 1 phụ trách: Hộp thoại xem trước câu hỏi (nhận dữ liệu câu hỏi từ SQLite).
 public partial class QuestionPreviewDialog : Form
 {
     private static readonly Font BoldOptionFont = new("Segoe UI", 10F, FontStyle.Bold);
@@ -37,13 +37,13 @@ public partial class QuestionPreviewDialog : Form
         _question = q;
 
         var displaySubject = string.IsNullOrWhiteSpace(subjectName)
-            ? AdminPreviewData.FormatSubjectCode(q.SubjectId)
+            ? $"Môn #{q.SubjectId}"
             : subjectName.Trim();
 
         var displayChapter = q.Chapter > 0 ? $"Chương {q.Chapter}" : "Chưa chọn chương";
         var displayDifficulty = string.IsNullOrWhiteSpace(q.Difficulty)
             ? "Chưa chọn độ khó"
-            : AdminPreviewData.FormatDifficulty(q.Difficulty);
+            : FormatDifficulty(q.Difficulty);
 
         _lblMetaInfo.Text = $"{displaySubject} · {displayChapter} · {displayDifficulty}";
 
@@ -64,6 +64,14 @@ public partial class QuestionPreviewDialog : Form
 
         UpdateCorrectAnswerHighlight();
     }
+
+    private static string FormatDifficulty(string? difficulty) => difficulty switch
+    {
+        "Easy" => "Dễ",
+        "Medium" => "Trung bình",
+        "Hard" => "Khó",
+        _ => difficulty ?? string.Empty
+    };
 
     private void OnShowCorrectCheckedChanged(object? sender, EventArgs e)
     {

@@ -1,11 +1,13 @@
 using ExamDesk.Models;
+using ExamDesk.Services;
 using ExamDesk.UI.Shared;
 
 namespace ExamDesk.UI.Administration;
 
-// GV-05 • Bạn 1 phụ trách: Hộp thoại thêm / sửa câu hỏi (mốc UI, dữ liệu minh họa).
+// GV-05 • Bạn 1 phụ trách: Hộp thoại thêm / sửa câu hỏi (kết nối SQLite qua QuestionBankService).
 public partial class QuestionEditorDialog : Form
 {
+    private readonly QuestionBankService _service;
     private int _editingId;
     private string _editingImagePath = string.Empty;
     private QuestionSnapshot _initialSnapshot;
@@ -14,8 +16,13 @@ public partial class QuestionEditorDialog : Form
 
     public Question? Result { get; private set; }
 
-    public QuestionEditorDialog()
+    public QuestionEditorDialog() : this(new QuestionBankService())
     {
+    }
+
+    public QuestionEditorDialog(QuestionBankService service)
+    {
+        _service = service ?? throw new ArgumentNullException(nameof(service));
         InitializeComponent();
         PopulateSubjects();
         CaptureInitialSnapshot();
@@ -121,15 +128,30 @@ public partial class QuestionEditorDialog : Form
     {
         _suppressDirtyTracking = true;
         _cboSubject.Items.Clear();
-        foreach (var subject in AdminPreviewData.Subjects)
+
+        try
         {
-            _cboSubject.Items.Add(new SubjectOption(subject.Id, $"{subject.Code} – {subject.Name}"));
+            var subjects = _service.GetSubjects();
+            foreach (var subject in subjects)
+            {
+                _cboSubject.Items.Add(new SubjectOption(subject.Id, $"{subject.Code} – {subject.Name}"));
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                $"Lỗi khi tải danh sách môn học: {ex.Message}",
+                "Lỗi cơ sở dữ liệu",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
         }
 
         if (_cboSubject.Items.Count > 0)
         {
             _cboSubject.SelectedIndex = 0;
         }
+
         _suppressDirtyTracking = false;
     }
 
@@ -410,24 +432,43 @@ public partial class QuestionEditorDialog : Form
             return;
         }
 
-        Result = new Question
+        try
         {
-            Id = _editingId,
-            SubjectId = selectedSubject!.Id,
-            Chapter = chapter,
-            Difficulty = difficulty,
-            Content = content,
-            OptionA = optA,
-            OptionB = optB,
-            OptionC = optC,
-            OptionD = optD,
-            CorrectOption = correctOption,
-            ImagePath = _editingImagePath
-        };
+            var question = new Question
+            {
+                Id = _editingId,
+                SubjectId = selectedSubject!.Id,
+                Chapter = chapter,
+                Difficulty = difficulty,
+                Content = content,
+                OptionA = optA,
+                OptionB = optB,
+                OptionC = optC,
+                OptionD = optD,
+                CorrectOption = correctOption,
+                ImagePath = _editingImagePath
+            };
 
-        _allowCloseWithoutPrompt = true;
-        DialogResult = DialogResult.OK;
-        Close();
+            _service.SaveQuestion(question);
+            Result = question;
+
+            _allowCloseWithoutPrompt = true;
+            DialogResult = DialogResult.OK;
+            Close();
+        }
+        catch (Exception ex)
+        {
+            _lblContentError.Text = ex.Message;
+            _lblContentError.Visible = true;
+            _scrollPanel.ScrollControlIntoView(_lblContentError);
+            MessageBox.Show(
+                this,
+                ex.Message,
+                "Lỗi lưu câu hỏi",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+            firstInvalidControl?.Focus();
+        }
     }
 
     private sealed record SubjectOption(int Id, string DisplayText)
