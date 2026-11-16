@@ -60,7 +60,8 @@ public partial class ExamInstructionsControl : UserControl
         }
 
         _sessionTitle.Text = session.SessionName;
-        _studentInfo.Text = $"{student.FullName} · {student.StudentCode} · Lớp {student.ClassName}";
+        _studentInfo.Text = $"{student.FullName} · {student.StudentCode}";
+        _classInfo.Text = student.ClassName;
         _paperInfo.Text = paper.Title;
         _questionCount.Text = $"{paper.TotalQuestions}";
         _duration.Text = $"{paper.DurationMinutes} phút";
@@ -76,13 +77,57 @@ public partial class ExamInstructionsControl : UserControl
     {
         int maxWidth = StudentLayout.Scale(this, StudentLayout.InstructionsMaxWidth);
         int side = Math.Max(0, (Width - maxWidth) / 2);
-        var padding = new Padding(side, 0, side, 0);
-        if (Padding != padding) Padding = padding;
+        // Chỉ căn nội dung; nền footer vẫn chạy hết chiều rộng màn hình.
+        int inset = side + StudentLayout.Scale(this, StudentLayout.Space24);
+        var pagePadding = new Padding(inset, _page.Padding.Top, inset, _page.Padding.Bottom);
+        if (_page.Padding != pagePadding) _page.Padding = pagePadding;
+        var footerPadding = new Padding(inset, _footer.Padding.Top, inset, _footer.Padding.Bottom);
+        if (_footer.Padding != footerPadding) _footer.Padding = footerPadding;
     }
 
     private void GoBack(object? sender, EventArgs e)
     {
         BackRequested?.Invoke(this, EventArgs.Empty);
+    }
+
+    // Cắt cả nền và nội dung theo góc bo; dựng lại khi đổi kích thước/DPI.
+    private static void RoundCard(Control card, Color border)
+    {
+        static System.Drawing.Drawing2D.GraphicsPath Outline(RectangleF bounds, float radius)
+        {
+            var path = new System.Drawing.Drawing2D.GraphicsPath();
+            float diameter = Math.Min(radius * 2, Math.Min(bounds.Width, bounds.Height));
+            path.AddArc(bounds.Left, bounds.Top, diameter, diameter, 180, 90);
+            path.AddArc(bounds.Right - diameter, bounds.Top, diameter, diameter, 270, 90);
+            path.AddArc(bounds.Right - diameter, bounds.Bottom - diameter, diameter, diameter, 0, 90);
+            path.AddArc(bounds.Left, bounds.Bottom - diameter, diameter, diameter, 90, 90);
+            path.CloseFigure();
+            return path;
+        }
+
+        void UpdateRegion()
+        {
+            if (card.Width < 2 || card.Height < 2) return;
+            using var path = Outline(new RectangleF(0, 0, card.Width, card.Height), StudentLayout.Scale(card, 8));
+            var previous = card.Region;
+            card.Region = new Region(path);
+            previous?.Dispose();
+            card.Invalidate();
+        }
+
+        card.SizeChanged += (_, _) => UpdateRegion();
+        card.DpiChangedAfterParent += (_, _) => UpdateRegion();
+        card.Paint += (_, e) =>
+        {
+            if (card.Width < 2 || card.Height < 2) return;
+            var state = e.Graphics.Save();
+            e.Graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            using var path = Outline(new RectangleF(.5f, .5f, card.Width - 1, card.Height - 1), StudentLayout.Scale(card, 8));
+            using var pen = new Pen(border);
+            e.Graphics.DrawPath(pen, path);
+            e.Graphics.Restore(state);
+        };
+        UpdateRegion();
     }
 
     // Nhãn dài tự xuống dòng theo bề ngang của khung chứa nó.
