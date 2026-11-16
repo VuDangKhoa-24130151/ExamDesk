@@ -15,7 +15,8 @@ internal sealed class SessionCard : Panel
     private readonly Button _action;
     private readonly ToolTip _tooltip = new();
     private bool _hovered;
-    private bool _arranging;
+    private int _measuredWidth;
+    private int _measuredDpi;
 
     private const TextFormatFlags WrapFlags = TextFormatFlags.NoPrefix
         | TextFormatFlags.NoPadding | TextFormatFlags.WordBreak;
@@ -37,7 +38,7 @@ internal sealed class SessionCard : Panel
         SetStyle(ControlStyles.ResizeRedraw, true);
         BackColor = StateColors(state).Back;
         Margin = new Padding(0, 0, 0, S(StudentLayout.Space8));
-        Dock = DockStyle.Top;
+        Dock = DockStyle.None;
         TabStop = false;
         AccessibleRole = AccessibleRole.Grouping;
         AccessibleName = $"{title} · {state}";
@@ -142,15 +143,14 @@ internal sealed class SessionCard : Panel
 
     private void ApplyLayout()
     {
-        if (_action is null || _arranging || ClientSize.Width <= 0) return;
-        _arranging = true;
-        try
-        {
-            var m = Measure(ClientSize.Width);
-            if (_action.Bounds != m.Action) _action.Bounds = m.Action;
-            if (Height != m.Height) Height = m.Height;
-        }
-        finally { _arranging = false; }
+        if (_action is null || ClientSize.Width <= 0
+            || (_measuredWidth == ClientSize.Width && _measuredDpi == DeviceDpi)) return;
+        // Cache first: nested Layout/Resize sees the completed measurement.
+        _measuredWidth = ClientSize.Width;
+        _measuredDpi = DeviceDpi;
+        var m = Measure(_measuredWidth);
+        if (_action.Bounds != m.Action) _action.Bounds = m.Action;
+        if (Height != m.Height) Height = m.Height;
         Invalidate();
     }
 
@@ -162,12 +162,6 @@ internal sealed class SessionCard : Panel
         return new Size(width, Measure(Math.Max(1, width)).Height);
     }
 
-    protected override void OnLayout(LayoutEventArgs levent)
-    {
-        base.OnLayout(levent);
-        ApplyLayout();
-    }
-
     protected override void OnResize(EventArgs e)
     {
         base.OnResize(e);
@@ -176,7 +170,7 @@ internal sealed class SessionCard : Panel
 
     protected override void OnPaintBackground(PaintEventArgs e)
     {
-        // Không vẽ nền mặc định; OnPaint tự vẽ để tránh nháy.
+        e.Graphics.Clear(UiStyle.Background);
     }
 
     protected override void OnPaint(PaintEventArgs e)
@@ -237,6 +231,7 @@ internal sealed class SessionCard : Panel
     {
         base.OnDpiChangedAfterParent(e);
         Margin = new Padding(0, 0, 0, S(StudentLayout.Space8));
+        (_action as StudentButton)?.FitSize();
         ApplyLayout();
     }
 

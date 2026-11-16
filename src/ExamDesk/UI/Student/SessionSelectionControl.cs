@@ -14,20 +14,27 @@ public partial class SessionSelectionControl : UserControl
     private bool _reloading;
     private bool _selecting;
     private bool _shellBuilt;
-    private bool _sizingList;
-    private readonly HashSet<Control> _collapsedRows = new();
+    private bool _initialLoadDone;
+    private bool _layingOut;
     private bool? _submittedExpanded;
-    private BufferedStudentTable _headerContent = null!;
-    private BufferedStudentPanel _listHost = null!;
     private BufferedStudentTable _header = null!;
-    private BufferedStudentPanel _viewport = null!;
-    private BufferedStudentPanel _list = null!;
+    private SessionList _list = null!;
     private Label _summary = null!;
     private ProgressBar _loading = null!;
     private Label _status = null!;
     private BufferedStudentTable _notice = null!;
     private Button _reload = null!;
     private Button _retry = null!;
+
+    private sealed class SessionList : FlowLayoutPanel
+    {
+        internal SessionList() => DoubleBuffered = true;
+
+        protected override Point ScrollToControl(Control activeControl) =>
+            ClientSize.Height <= 0 || !activeControl.Visible || activeControl.Width <= 0 || activeControl.Height <= 0
+                ? AutoScrollPosition
+                : base.ScrollToControl(activeControl);
+    }
 
     // Chỉ mô tả giao diện; điều kiện vào ca giữ nguyên từ dịch vụ hiện có.
     private sealed record SessionEntry(ExamSession Session, ExamPaper? Paper,
@@ -51,21 +58,52 @@ public partial class SessionSelectionControl : UserControl
     protected override void OnHandleCreated(EventArgs e)
     {
         base.OnHandleCreated(e);
+#if DEBUG
+        DumpState(nameof(OnHandleCreated));
+#endif
         if (_shellBuilt) return;
         // S() đã dùng DPI thật; đặt mốc hiện tại để lần autoscale đầu không nhân lần nữa.
         AutoScaleDimensions = CurrentAutoScaleDimensions;
-        _shellBuilt = true;
         BuildShell();
+        _shellBuilt = true;
 #if DEBUG
         if (_student is null) BuildPreviewPage();
 #endif
+        UpdateLayout();
     }
 
     protected override void OnLoad(EventArgs e)
     {
         base.OnLoad(e);
+#if DEBUG
+        DumpState(nameof(OnLoad));
+#endif
+        if (_initialLoadDone) return;
+        _initialLoadDone = true;
         if (_student is not null) _ = Reload();
     }
+
+    protected override void OnDpiChangedAfterParent(EventArgs e)
+    {
+        base.OnDpiChangedAfterParent(e);
+        UpdateLayout();
+    }
+
+#if DEBUG
+    private void DumpState(string tag)
+    {
+        System.Diagnostics.Debug.WriteLine(
+            $"[SessionSelectionControl:{tag}] Controls.Count={_list?.Controls.Count}, " +
+            $"ClientSize={_list?.ClientSize}, DisplayRectangle={_list?.DisplayRectangle}, " +
+            $"AutoScrollMinSize={_list?.AutoScrollMinSize}, AutoScrollPosition={_list?.AutoScrollPosition}, " +
+            $"VerticalScroll.Visible={_list?.VerticalScroll.Visible}, DeviceDpi={DeviceDpi}");
+        if (_list is not null)
+            foreach (Control row in _list.Controls)
+                System.Diagnostics.Debug.WriteLine(
+                    $"  row={row.TabIndex}:{row.GetType().Name}, Bounds={row.Bounds}, " +
+                    $"Visible={row.Visible}, Height={row.Height}");
+    }
+#endif
 
     private string ClassCaption
     {
@@ -84,8 +122,6 @@ public partial class SessionSelectionControl : UserControl
     {
         SuspendLayout();
         _header = Table();
-        _headerContent = Table();
-        AddRow(_header, _headerContent);
         _header.TabIndex = 0;
 
         var toolbar = Table(2);
@@ -104,13 +140,13 @@ public partial class SessionSelectionControl : UserControl
         _reload.Margin = new Padding(S(StudentLayout.Space12), 0, S(StudentLayout.Space12), 0);
         toolbar.Controls.Add(back, 0, 0);
         toolbar.Controls.Add(_reload, 1, 0);
-        AddRow(_headerContent, toolbar);
+        AddRow(_header, toolbar);
         var title = TextLabel("Chọn ca thi", StudentLayout.PageTitleFontSize, FontStyle.Bold);
         title.Margin = new Padding(0, S(StudentLayout.Space12), 0, S(StudentLayout.Space8));
-        AddRow(_headerContent, title);
-        AddRow(_headerContent, TextLabel("Chọn ca đang mở để bắt đầu làm bài."));
+        AddRow(_header, title);
+        AddRow(_header, TextLabel("Chọn ca đang mở để bắt đầu làm bài."));
         _summary = TextLabel($"{ClassCaption} · Đang chuẩn bị danh sách");
-        AddRow(_headerContent, _summary);
+        AddRow(_header, _summary);
 
         _notice = Table();
         _notice.Padding = new Padding(S(StudentLayout.Space12));
@@ -130,53 +166,31 @@ public partial class SessionSelectionControl : UserControl
         AddRow(_notice, _loading);
         AddRow(_notice, _retry);
         _notice.Visible = false;
-        AddRow(_headerContent, _notice);
+        AddRow(_header, _notice);
         var help = TextLabel("Cần hỗ trợ? Hãy hỏi giám thị coi thi.");
         help.ForeColor = UiStyle.TextMuted;
-        AddRow(_headerContent, help);
+        AddRow(_header, help);
 
-        _viewport = new BufferedStudentPanel
+        _list = new SessionList
         {
             Dock = DockStyle.Fill,
+            FlowDirection = FlowDirection.TopDown,
+            WrapContents = false,
             AutoScroll = true,
             TabIndex = 1,
             TabStop = false,
             Margin = Padding.Empty
         };
-        _listHost = new BufferedStudentPanel
-        {
-            Dock = DockStyle.Top,
-            AutoSize = false,
-            Margin = Padding.Empty,
-            TabStop = false
-        };
-        _list = new BufferedStudentPanel
-        {
-            AutoSize = false, TabStop = false, Margin = Padding.Empty
-        };
-        _listHost.Controls.Add(_list);
-        _viewport.Controls.Add(_listHost);
-        Controls.Add(_viewport);
+        Controls.Add(_list);
         Controls.Add(_header);
-        Resize += (_, _) => CenterContent();
-        DpiChangedAfterParent += (_, _) => CenterContent();
-        _viewport.ClientSizeChanged += (_, _) => CenterContent();
-        _headerContent.SizeChanged += (_, _) =>
-        {
-            WrapLabels(_headerContent);
-            WrapLabels(_notice);
-        };
+        SizeChanged += (_, _) => UpdateLayout();
+        _list.SizeChanged += (_, _) => UpdateLayout();
+#if DEBUG
+        _list.Scroll += (_, _) => DumpState("list.Scroll");
+#endif
         Load += (_, _) => SelectNextControl(null, true, true, true, false);
-        CenterContent();
+        UpdateLayout();
         ResumeLayout(true);
-    }
-
-    protected override void OnVisibleChanged(EventArgs e)
-    {
-        base.OnVisibleChanged(e);
-        if (!Visible || !_shellBuilt || _list is null) return;
-        CenterContent();
-        FitListHost();
     }
 
     private async Task Reload()
@@ -239,18 +253,29 @@ public partial class SessionSelectionControl : UserControl
         _status.ForeColor = error ? UiStyle.ErrorText : UiStyle.TextMuted;
         _retry.Visible = retry;
         _notice.Visible = true;
-        WrapLabels(_notice);
+        UpdateLayout();
         AccessibilityNotifyClients(AccessibleEvents.DescriptionChange, -1);
     }
 
     private void ClearRows()
     {
         while (_list.Controls.Count > 0) _list.Controls[0].Dispose();
-        _collapsedRows.Clear();
-        _viewport.AutoScrollPosition = Point.Empty;
+        _list.AutoScrollPosition = Point.Empty;
     }
 
     private void RenderSessions(IReadOnlyList<SessionEntry> entries)
+    {
+        _summary.Text = ClassCaption;
+        _notice.Visible = false;
+        RenderSessionRows(entries);
+        if (entries.Count == 0)
+            ShowNotice("Chưa có ca thi trong danh sách…\nHãy hỏi giám thị coi thi để được hỗ trợ.", false, true);
+#if DEBUG
+        DumpState("RenderSessions.End");
+#endif
+    }
+
+    private void RenderSessionRows(IReadOnlyList<SessionEntry> entries)
     {
         _list.SuspendLayout();
         try
@@ -259,18 +284,14 @@ public partial class SessionSelectionControl : UserControl
             var todo = entries.Where(e => e.CanEnter && !e.Submitted).ToList();
             var submitted = entries.Where(e => e.Submitted).ToList();
             var unavailable = entries.Where(e => !e.CanEnter && !e.Submitted).ToList();
-            _summary.Text = ClassCaption;
-            _notice.Visible = false;
             AddGroup("CẦN LÀM", todo);
             AddGroup("ĐÃ NỘP BÀI", submitted, canCollapse: true);
             AddGroup("CHƯA THỂ VÀO", unavailable);
-            if (entries.Count == 0)
-                ShowNotice("Chưa có ca thi trong danh sách…\nHãy hỏi giám thị coi thi để được hỗ trợ.", false, true);
         }
         finally
         {
             _list.ResumeLayout(true);
-            FitListHost();
+            UpdateLayout();
         }
     }
 
@@ -278,7 +299,6 @@ public partial class SessionSelectionControl : UserControl
     {
         if (entries.Count == 0) return;
         var heading = Table(2);
-        heading.Dock = DockStyle.None;
         heading.ColumnStyles.Clear();
         heading.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         heading.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
@@ -288,6 +308,7 @@ public partial class SessionSelectionControl : UserControl
         heading.Controls.Add(label, 0, 0);
         heading.Padding = new Padding(0, S(StudentLayout.Space12), 0, S(StudentLayout.Space8));
         heading.TabIndex = _list.Controls.Count;
+        heading.Dock = DockStyle.None;
         _list.Controls.Add(heading);
         var cards = new List<Control>();
         foreach (var entry in entries)
@@ -303,12 +324,12 @@ public partial class SessionSelectionControl : UserControl
             bool expanded = _submittedExpanded ?? entries.Count <= 3;
             void SetExpanded()
             {
-                foreach (var card in cards)
+                _list.SuspendLayout();
+                try
                 {
-                    if (expanded) _collapsedRows.Remove(card);
-                    else _collapsedRows.Add(card);
-                    card.Visible = expanded;
+                    foreach (var card in cards) card.Visible = expanded;
                 }
+                finally { _list.ResumeLayout(true); }
             }
             SetExpanded();
             var toggle = StudentLayout.CreateButton(expanded ? "Thu &gọn" : "&Mở rộng");
@@ -321,7 +342,7 @@ public partial class SessionSelectionControl : UserControl
                 SetExpanded();
                 toggle.Text = expanded ? "Thu &gọn" : "&Mở rộng";
                 toggle.AccessibleName = $"{(expanded ? "Thu gọn" : "Mở rộng")} {entries.Count} ca đã nộp bài";
-                FitListHost();
+                UpdateLayout();
             };
             heading.Controls.Add(toggle, 1, 0);
         }
@@ -429,56 +450,74 @@ public partial class SessionSelectionControl : UserControl
 
     private int S(int value) => StudentLayout.Scale(this, value);
 
-    private void CenterContent()
+    private void UpdateLayout()
     {
-        if (!_shellBuilt || _viewport is null) return;
-        // Chỉ container nội dung có lề; viewport luôn chạm mép phải.
-        int width = _viewport.ClientSize.Width;
-        int side = Math.Max(0, (width - S(StudentLayout.SessionPageMaxWidth)) / 2)
-            + S(StudentLayout.Space24);
-        int scrollbar = Math.Max(0, ClientSize.Width - width);
-        var headerPadding = new Padding(side, S(StudentLayout.Space16),
-            side + scrollbar, S(StudentLayout.Space8));
-        var listPadding = new Padding(side, 0, side, S(StudentLayout.Space16));
-        if (_header.Padding != headerPadding) _header.Padding = headerPadding;
-        if (_listHost.Padding != listPadding) _listHost.Padding = listPadding;
-        FitListHost();
-    }
+        if (_layingOut || !_shellBuilt || _list is null || _header is null || IsDisposed || Disposing) return;
+        // Không tính lại bố cục/wrap chữ khi cửa sổ đang thu nhỏ về 0x0.
+        if (ClientSize.Width <= 0 || ClientSize.Height <= 0) return;
 
-    private void FitListHost()
-    {
-        if (_sizingList || _list is null || _listHost is null || IsDisposed || Disposing) return;
-        _sizingList = true;
-        _list.SuspendLayout();
+        _layingOut = true;
         try
         {
-            // Một danh sách phẳng: không suy ra chiều cao từ chuỗi AutoSize/Dock.Top.
-            // Không dùng Visible để đo vì nó trả false khi cửa sổ cha đang bị ẩn.
-            for (int pass = 0; pass < 3; pass++)
+            // Giữ bề rộng cố định theo phần chừa thanh cuộn để tránh nhảy chiều ngang.
+            int available = Math.Max(1, ClientSize.Width - SystemInformation.VerticalScrollBarWidth);
+            int side = Math.Max(0, (available - S(StudentLayout.SessionPageMaxWidth)) / 2)
+                + S(StudentLayout.Space24);
+            int contentWidth = Math.Max(1, available - side * 2);
+            int wrapWidth = Math.Max(S(StudentLayout.SessionTitleMinWidth), contentWidth);
+
+            var headerPadding = new Padding(side, S(StudentLayout.Space16),
+                Math.Max(0, ClientSize.Width - available) + side, S(StudentLayout.Space8));
+            bool headerChanged = false;
+            _header.SuspendLayout();
+            try
             {
-                int width = Math.Max(S(StudentLayout.Space24),
-                    _viewport.ClientSize.Width - _listHost.Padding.Horizontal);
-                int y = 0;
-                foreach (Control row in _list.Controls)
+                if (_header.Padding != headerPadding)
                 {
-                    if (_collapsedRows.Contains(row)) continue;
-                    int rowWidth = Math.Max(1, width - row.Margin.Horizontal);
-                    row.Width = rowWidth;
-                    int height = row.GetPreferredSize(new Size(rowWidth, 0)).Height;
-                    row.SetBounds(row.Margin.Left, y + row.Margin.Top, rowWidth, height);
-                    y += height + row.Margin.Vertical;
+                    _header.Padding = headerPadding;
+                    headerChanged = true;
                 }
-                _list.SetBounds(_listHost.Padding.Left, _listHost.Padding.Top, width, y);
-                _listHost.Height = y + _listHost.Padding.Vertical;
-                if (width == Math.Max(S(StudentLayout.Space24),
-                    _viewport.ClientSize.Width - _listHost.Padding.Horizontal)) break;
+                if (WrapLabels(_header, wrapWidth)) headerChanged = true;
+                if (_notice.Visible)
+                {
+                    int noticeWidth = Math.Max(S(StudentLayout.SessionTitleMinWidth),
+                        contentWidth - _notice.Padding.Horizontal);
+                    if (WrapLabels(_notice, noticeWidth)) headerChanged = true;
+                }
             }
+            finally { _header.ResumeLayout(headerChanged); }
+            if (headerChanged)
+            {
+                _header.PerformLayout();
+                PerformLayout();
+            }
+
+            var padding = new Padding(side, 0, side, S(StudentLayout.Space16));
+            _list.SuspendLayout();
+            try
+            {
+                if (_list.Padding != padding) _list.Padding = padding;
+                foreach (Control item in _list.Controls)
+                {
+                    int width = Math.Max(1, contentWidth - item.Margin.Horizontal);
+                    // Group headings keep natural height with a fixed wrapping width.
+                    if (item is not SessionCard)
+                    {
+                        var constraint = new Size(width, 0);
+                        if (item.MinimumSize != constraint) item.MinimumSize = constraint;
+                        if (item.MaximumSize != constraint) item.MaximumSize = constraint;
+                    }
+                    if (item.Width != width) item.Width = width;
+                }
+            }
+            finally { _list.ResumeLayout(true); }
+            // Flow layout has now placed the rows; update the scroll extent from those bounds.
+            _list.PerformLayout();
+#if DEBUG
+            DumpState("UpdateLayout.End");
+#endif
         }
-        finally
-        {
-            _list.ResumeLayout(false);
-            _sizingList = false;
-        }
+        finally { _layingOut = false; }
     }
 
     private static BufferedStudentTable Table(int columns = 1)
@@ -516,12 +555,22 @@ public partial class SessionSelectionControl : UserControl
             Margin = new Padding(0, 0, 0, S(StudentLayout.Space8))
         };
 
-    private static void WrapLabels(Control panel)
+    private static bool WrapLabels(Control panel, int maxWidth)
     {
-        int width = panel.ClientSize.Width - panel.Padding.Horizontal;
-        if (width <= 0) return;
+        if (maxWidth <= 0) return false;
+        bool changed = false;
         foreach (var label in panel.Controls.OfType<Label>())
-            label.MaximumSize = new Size(Math.Max(1, width - label.Margin.Horizontal), 0);
+        {
+            var target = label.AutoSize
+                ? new Size(Math.Max(1, maxWidth - label.Margin.Horizontal), 0)
+                : Size.Empty;
+            if (label.MaximumSize != target)
+            {
+                label.MaximumSize = target;
+                changed = true;
+            }
+        }
+        return changed;
     }
 
 #if DEBUG

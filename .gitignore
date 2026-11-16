@@ -16,8 +16,7 @@ database/attachments/
 database/exports/
 
 # Local documentation (including copies, at any directory depth)
-[Cc][Oo][Nn][Tt][Ee][Xx][Tt]*.md
-[Dd][Ee][Ss][Ii][Gg][Nn]*.md
+*.[Mm][Dd]
 [Rr][Ee][Aa][Dd][Mm][Ee]*
 /repomix-output.xml
 
