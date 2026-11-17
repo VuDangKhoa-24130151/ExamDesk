@@ -16,8 +16,9 @@ public sealed class StudentResultControl : UserControl
         Font = UiStyle.BodyFont;
         BackColor = UiStyle.Background;
         ForeColor = UiStyle.Text;
+        DoubleBuffered = true;
         AutoScroll = true;
-        var page = new TableLayoutPanel
+        var page = new BufferedStudentTable
         {
             Dock = DockStyle.Top, AutoSize = true, ColumnCount = 1, Padding = new Padding(StudentLayout.Space24)
         };
@@ -27,7 +28,7 @@ public sealed class StudentResultControl : UserControl
         page.Controls.Add(StudentLayout.Label($"Ca thi: {result.SessionName}"));
         page.Controls.Add(StudentLayout.Label($"Đề thi: {result.PaperTitle}"));
 
-        var metrics = new TableLayoutPanel
+        var metrics = new BufferedStudentTable
         {
             Dock = DockStyle.Top, AutoSize = true, ColumnCount = 4, RowCount = 1,
             Margin = new Padding(0, StudentLayout.Space8, 0, StudentLayout.Space12)
@@ -44,7 +45,7 @@ public sealed class StudentResultControl : UserControl
 
         page.Controls.Add(StudentLayout.Label($"Thời điểm nộp bài: {result.SubmittedAt.ToLocalTime():dd/MM/yyyy HH:mm:ss}"));
         page.Controls.Add(StudentLayout.Label($"Lý do: {(result.IsAutoSubmitted ? "Hết giờ" : "Nộp bài chủ động")}"));
-        var actions = new FlowLayoutPanel { Dock = DockStyle.Top, AutoSize = true, WrapContents = true };
+        var actions = new BufferedStudentFlow { Dock = DockStyle.Top, AutoSize = true, WrapContents = true };
         actions.Controls.Add(StudentLayout.CreateButton("&Quay lại chọn ca",
             (_, _) => BackRequested?.Invoke(this, EventArgs.Empty),
             StudentButtonKind.Secondary, StudentArrow.Left));
@@ -62,7 +63,7 @@ public sealed class StudentResultControl : UserControl
 
     private static TableLayoutPanel Metric(string title, string value, bool isScore = false)
     {
-        var tile = new TableLayoutPanel
+        var tile = new BufferedStudentTable
         {
             AutoSize = true, Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2,
             BackColor = UiStyle.Surface,
