@@ -3,6 +3,21 @@ namespace ExamDesk.UI.Student;
 // Bạn 3: Form độc lập. Thêm các UserControl/Dialog của phân hệ trong cùng thư mục.
 public partial class StudentExamForm : Form
 {
+    private const int WsExComposited = 0x02000000;
+    private static readonly bool UseCompositedPainting =
+        Environment.GetEnvironmentVariable("UNIEXAM_STUDENT_COMPOSITED") == "1";
+
+    protected override CreateParams CreateParams
+    {
+        get
+        {
+            var parameters = base.CreateParams;
+            // Bật riêng khi so sánh vẽ lại của TextBox và thanh marquee.
+            if (UseCompositedPainting) parameters.ExStyle |= WsExComposited;
+            return parameters;
+        }
+    }
+
     private StudentAttemptState? _attempt;
     private ExamDesk.Models.User? _student;
     private bool _submitting;
@@ -11,6 +26,7 @@ public partial class StudentExamForm : Form
     private readonly System.Windows.Forms.Timer _deadlineTimer = new() { Interval = 1000 };
     public StudentExamForm()
     {
+        DoubleBuffered = true;
         InitializeComponent();
         ApplyCompactHeader();
         DpiChanged += (_, _) => ApplyCompactHeader();
@@ -36,12 +52,20 @@ public partial class StudentExamForm : Form
     {
         _student = null;
         var screen = new StudentIdentityControl();
-        _examLabel.Text = "UNIEXAM — SINH VIÊN";
-        _studentLabel.Text = "Nhận diện bằng MSSV";
+        _examLabel.Text = "UniExam";
+        _studentLabel.Text = string.Empty;
         screen.CloseRequested += (_, _) => Close();
-        screen.StudentIdentified += student => ShowRealSessions(student);
-        ShowScreen(screen, "Nhận diện sinh viên");
+        screen.StudentIdentified += ShowProfileConfirmation;
+        ShowScreen(screen, "Nhập mã sinh viên");
     }
+    private void ShowProfileConfirmation(ExamDesk.Models.User student)
+    {
+        var screen = new StudentProfileConfirmationControl(student);
+        screen.Confirmed += (_, _) => ShowRealSessions(student);
+        screen.RetryRequested += (_, _) => ShowIdentity();
+        ShowScreen(screen, "Xác nhận hồ sơ sinh viên");
+    }
+
     private void ShowRealSessions(ExamDesk.Models.User student)
     {
         _student = student;
@@ -50,7 +74,7 @@ public partial class StudentExamForm : Form
         screen.SessionSelected+=(session,paper)=>ShowRealInstructions(student,session,paper);
         screen.ResultSelected += ShowResult;
         _studentLabel.Text=$"{student.FullName} · {student.StudentCode}";
-        _examLabel.Text="UNIEXAM — CHỌN CA THI";
+        _examLabel.Text="UniExam";
         ShowScreen(screen,"Chọn ca thi");
     }
 
@@ -246,17 +270,32 @@ public partial class StudentExamForm : Form
             MessageBoxDefaultButton.Button2) != DialogResult.Yes;
     }
 
-    // Chỉ thay phần nội dung, thanh tên kỳ thi và sinh viên vẫn giữ nguyên.
     private void ShowScreen(UserControl screen, string title)
     {
-        while (_studentContent.Controls.Count > 0)
-            _studentContent.Controls[0].Dispose();
-
+        var previous = _studentContent.Controls.OfType<UserControl>().SingleOrDefault();
+        screen.Visible = false;
+        screen.Size = _studentContent.ClientSize;
         screen.Dock = DockStyle.Fill;
-        // Màn thi đã có tên ca và sinh viên; thu gọn thanh chung để dành chỗ cho câu hỏi.
-        bool takingExam = screen is StudentExamControl;
-        if (_examLabel.Parent is Control header) header.Visible = !takingExam;
-        _studentContent.Controls.Add(screen);
+        // Đổi nội dung và chiều cao vùng Dock.Fill trong cùng lượt layout.
+        SuspendLayout();
+        _studentContent.SuspendLayout();
+        try
+        {
+            bool showHeader = screen is not StudentExamControl;
+            if (_examLabel.Parent is Control header)
+                header.Visible = showHeader;
+            _studentContent.Controls.Add(screen);
+            screen.BringToFront();
+        }
+        finally
+        {
+            ResumeLayout(true);
+            _studentContent.ResumeLayout(true);
+        }
+        // Load và bố cục ban đầu hoàn tất trước khi bỏ màn cũ phía sau.
+        screen.Visible = true;
+        screen.PerformLayout();
+        previous?.Dispose();
         Text = "UniExam — " + title;
         if (screen is StudentExamControl exam) exam.FocusInitialControl();
         else screen.SelectNextControl(null, true, true, true, false);

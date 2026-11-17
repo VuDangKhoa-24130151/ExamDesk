@@ -8,6 +8,7 @@ public partial class SubmissionStatusControl : UserControl
 
     public SubmissionStatusControl()
     {
+        DoubleBuffered = true;
         InitializeComponent();
         Resize += (_, _) => CenterCard();
         CenterCard();
@@ -44,7 +45,8 @@ public partial class SubmissionStatusControl : UserControl
     {
         int side = Math.Max(StudentLayout.Space24,
             (ClientSize.Width - StudentLayout.Scale(this, StudentLayout.StatusCardMaxWidth)) / 2);
-        _cardHost.Padding = new Padding(side, StudentLayout.Space16, side, StudentLayout.Space24);
+        var padding = new Padding(side, StudentLayout.Space16, side, StudentLayout.Space24);
+        if (_cardHost.Padding != padding) _cardHost.Padding = padding;
     }
 
 }

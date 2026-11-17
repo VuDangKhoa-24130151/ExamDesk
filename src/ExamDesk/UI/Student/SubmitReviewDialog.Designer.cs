@@ -67,7 +67,7 @@ partial class SubmitReviewDialog
             Margin = Padding.Empty
         };
 
-        _headerBar = new TableLayoutPanel
+        _headerBar = new BufferedStudentTable
         {
             Dock = DockStyle.Fill,
             ColumnCount = 2,
@@ -98,7 +98,7 @@ partial class SubmitReviewDialog
             UseMnemonic = false,
             ForeColor = UiStyle.Text
         };
-        _unansweredGroup = new FlowLayoutPanel
+        _unansweredGroup = new BufferedStudentFlow
         {
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
@@ -116,7 +116,7 @@ partial class SubmitReviewDialog
             UseMnemonic = false,
             ForeColor = UiStyle.Text
         };
-        _flaggedGroup = new FlowLayoutPanel
+        _flaggedGroup = new BufferedStudentFlow
         {
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
@@ -127,7 +127,7 @@ partial class SubmitReviewDialog
             TabStop = false
         };
 
-        _scrollContent = new TableLayoutPanel
+        _scrollContent = new BufferedStudentTable
         {
             Dock = DockStyle.Top,
             AutoSize = true,
@@ -150,7 +150,7 @@ partial class SubmitReviewDialog
         _scrollContent.Controls.Add(_flaggedTitle, 0, 2);
         _scrollContent.Controls.Add(_flaggedGroup, 0, 3);
 
-        _scrollViewport = new Panel
+        _scrollViewport = new BufferedStudentPanel
         {
             Dock = DockStyle.Fill,
             AutoScroll = true,
@@ -188,7 +188,7 @@ partial class SubmitReviewDialog
             Close();
         };
 
-        _footerBar = new TableLayoutPanel
+        _footerBar = new BufferedStudentTable
         {
             Dock = DockStyle.Fill,
             ColumnCount = 3,
@@ -209,7 +209,7 @@ partial class SubmitReviewDialog
         _footerBar.Controls.Add(_continueButton, 0, 0);
         _footerBar.Controls.Add(_confirmButton, 2, 0);
 
-        _shell = new TableLayoutPanel
+        _shell = new BufferedStudentTable
         {
             Dock = DockStyle.Fill,
             ColumnCount = 1,

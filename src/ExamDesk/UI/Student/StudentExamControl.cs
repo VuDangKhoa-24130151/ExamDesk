@@ -18,6 +18,7 @@ public partial class StudentExamControl : UserControl
     private int _questionGridColumns = StudentLayout.GridColumnsWide;
     private TableLayoutPanel _questionGrid = null!;
     private bool _fittingGrid;
+    private (int Columns, int Step, int Gap, int TileSize) _gridMetrics;
     private const string PreviousText = "&Trước";
     private const string NextText = "T&iếp";
     private const string ReviewSubmitText = "Xem lại và &nộp";
@@ -26,6 +27,7 @@ public partial class StudentExamControl : UserControl
     private readonly System.Windows.Forms.Timer _timer = new() { Interval = 1000 };
     private QuestionTile[] _numbers = [];
     private bool _fittingContent;
+    private bool _fitPending;
     private readonly StudentAttemptState _attempt = null!;
     private int _imageQuestion = -1;
     private bool _imageLoadFailed;
@@ -111,12 +113,12 @@ public partial class StudentExamControl : UserControl
 
         BuildQuestionGrid();
 
-        _layout.SizeChanged += (_, _) => FitColumns();
-        _questionViewport.SizeChanged += (_, _) => FitContent();
-        _right.SizeChanged += (_, _) => FitContent();
-        _gridViewport.SizeChanged += (_, _) => FitQuestionGrid();
+        _layout.SizeChanged += (_, _) => QueueFit();
+        _questionViewport.SizeChanged += (_, _) => QueueFit();
+        _right.SizeChanged += (_, _) => QueueFit();
+        _gridViewport.SizeChanged += (_, _) => QueueFit();
         Load += (_, _) => FitColumns();
-        DpiChangedAfterParent += (_, _) => { ApplyExamLayout(); FitColumns(); };
+        DpiChangedAfterParent += (_, _) => { ApplyExamLayout(); QueueFit(); };
         if (!_attempt.Submitted)
         {
             _timer.Tick += Tick;
@@ -210,6 +212,18 @@ public partial class StudentExamControl : UserControl
         foreach (var option in _options) option.Margin = new Padding(0, 0, 0, S(StudentLayout.Space8));
     }
 
+    private void QueueFit()
+    {
+        if (_fitPending || !IsHandleCreated || IsDisposed || Disposing) return;
+        _fitPending = true;
+        // Gom các SizeChanged của panel cha/con trước khi đo lại nội dung.
+        BeginInvoke((Action)(() =>
+        {
+            _fitPending = false;
+            if (!IsDisposed && !Disposing) FitColumns();
+        }));
+    }
+
     private void FitContent()
     {
         if (_fittingContent) return;
@@ -237,9 +251,13 @@ public partial class StudentExamControl : UserControl
                     _image.Width * StudentLayout.ImageMaxHeight / StudentLayout.ImageMaxWidth);
             }
             finally { _body.ResumeLayout(true); }
-            FitQuestionGrid();
             int sideWidth = Math.Max(1, _right.ClientSize.Width);
-            _progress.MaximumSize = _questionLegend.MaximumSize = new Size(sideWidth, 0);
+            _right.SuspendLayout();
+            try
+            {
+                _progress.MaximumSize = _questionLegend.MaximumSize = new Size(sideWidth, 0);
+            }
+            finally { _right.ResumeLayout(true); }
         }
         finally { _fittingContent = false; }
     }
@@ -251,16 +269,18 @@ public partial class StudentExamControl : UserControl
         if (_layout.ColumnStyles[1].Width != sideWidth)
             _layout.ColumnStyles[1].Width = sideWidth;
         FitContent();
+        FitQuestionGrid();
     }
 
     private void BuildQuestionGrid()
     {
         while (_gridViewport.Controls.Count > 0) _gridViewport.Controls[0].Dispose();
-        _questionGrid = new TableLayoutPanel
+        _questionGrid = new BufferedStudentTable
         {
             Dock = DockStyle.Top, AutoSize = false, Margin = Padding.Empty, Padding = Padding.Empty,
             BackColor = UiStyle.Surface, TabIndex = 0, TabStop = false
         };
+        _gridMetrics = default;
         _numbers = new QuestionTile[_attempt.Answers.Length];
         for (int i = 0; i < _numbers.Length; i++)
         {
@@ -282,30 +302,37 @@ public partial class StudentExamControl : UserControl
     private void FitQuestionGrid()
     {
         if (_questionGrid is null || _fittingGrid) return;
+        int step = StudentLayout.Scale(this, StudentLayout.TileStep);
+        int gap = StudentLayout.Scale(this, StudentLayout.TileGap);
+        int tileSize = StudentLayout.Scale(this, StudentLayout.TileSize);
+        int available = Math.Max(1, _gridViewport.ClientSize.Width - SystemInformation.VerticalScrollBarWidth);
+        int columns = available >= StudentLayout.GridColumnsWide * step - gap
+            ? StudentLayout.GridColumnsWide
+            : StudentLayout.GridColumnsNarrow;
+        var metrics = (columns, step, gap, tileSize);
+        if (_gridMetrics == metrics) return;
+
         _fittingGrid = true;
+        _questionGrid.SuspendLayout();
         try
         {
-            int S(int value) => StudentLayout.Scale(this, value);
-            int step = S(StudentLayout.TileStep);
-            int gap = S(StudentLayout.TileGap);
-            int tileSize = S(StudentLayout.TileSize);
-            int available = Math.Max(1, _gridViewport.ClientSize.Width - SystemInformation.VerticalScrollBarWidth);
-            int columns = available >= StudentLayout.GridColumnsWide * step - gap
-                ? StudentLayout.GridColumnsWide
-                : StudentLayout.GridColumnsNarrow;
             int rows = (_numbers.Length + columns - 1) / columns;
-            var focused = _numbers.FirstOrDefault(number => number.Focused);
-            _questionGrid.SuspendLayout();
             if (_questionGrid.ColumnCount != columns || _questionGrid.RowCount != rows)
             {
-                _questionGrid.Controls.Clear();
                 _questionGrid.ColumnStyles.Clear();
                 _questionGrid.RowStyles.Clear();
                 _questionGrid.ColumnCount = columns;
                 _questionGrid.RowCount = rows;
                 for (int i = 0; i < columns; i++) _questionGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, step));
                 for (int i = 0; i < rows; i++) _questionGrid.RowStyles.Add(new RowStyle(SizeType.Absolute, step));
-                for (int i = 0; i < _numbers.Length; i++) _questionGrid.Controls.Add(_numbers[i], i % columns, i / columns);
+                // Đổi ô tại chỗ để giữ handle, thứ tự Tab và focus khi resize.
+                for (int i = 0; i < _numbers.Length; i++)
+                {
+                    if (_numbers[i].Parent is null)
+                        _questionGrid.Controls.Add(_numbers[i], i % columns, i / columns);
+                    else
+                        _questionGrid.SetCellPosition(_numbers[i], new TableLayoutPanelCellPosition(i % columns, i / columns));
+                }
             }
             _questionGridColumns = columns;
             foreach (ColumnStyle column in _questionGrid.ColumnStyles) column.Width = step;
@@ -316,10 +343,13 @@ public partial class StudentExamControl : UserControl
                 number.Size = new Size(tileSize, tileSize);
             }
             _questionGrid.Height = Math.Max(0, rows * step - gap);
-            _questionGrid.ResumeLayout(true);
-            if (focused?.CanFocus == true) focused.Focus();
+            _gridMetrics = metrics;
         }
-        finally { _fittingGrid = false; }
+        finally
+        {
+            _fittingGrid = false;
+            _questionGrid.ResumeLayout(true);
+        }
     }
 
     private void RenderQuestion()
@@ -423,11 +453,11 @@ public partial class StudentExamControl : UserControl
             ShowInTaskbar = false,
             BackColor = UiStyle.Surface
         };
-        var viewport = new Panel { Dock = DockStyle.Fill, AutoScroll = true };
+        var viewport = new BufferedStudentPanel { Dock = DockStyle.Fill, AutoScroll = true };
         var preview = new PictureBox { Image = image, Size = image.Size, SizeMode = PictureBoxSizeMode.Zoom };
         viewport.Controls.Add(preview);
 
-        var actions = new FlowLayoutPanel { Dock = DockStyle.Bottom, AutoSize = true, FlowDirection = FlowDirection.RightToLeft };
+        var actions = new BufferedStudentFlow { Dock = DockStyle.Bottom, AutoSize = true, FlowDirection = FlowDirection.RightToLeft };
         var close = StudentLayout.Button("&Đóng", primary: true);
         close.DialogResult = DialogResult.Cancel;
         actions.Controls.Add(close);
