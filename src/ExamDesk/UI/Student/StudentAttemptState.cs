@@ -35,6 +35,8 @@ internal sealed class StudentAttemptState
     public string Title => Draft!.Title;
 #endif
     public int Current { get; set; }
+    // Bộ đếm trong cửa sổ thi hiện tại; chưa có cột lưu vi phạm trong hợp đồng bản nháp.
+    public int ViolationCount { get; set; }
     public bool IsExpired => _clock.IsExpired;
     public TimeSpan TimeRemaining => _clock.Remaining;
     public bool Submitted { get; private set; }
@@ -77,13 +79,13 @@ internal sealed class StudentAttemptState
         {
             try
             {
-                Draft = _service.LockForSubmission(Draft, _clock.ReadUtc);
+                Draft = _service.LockForSubmission(Draft, _clock.ReadUtc, ViolationCount >= 3);
             }
             catch (ExamDesk.Models.StudentDraftConflictException)
             {
                 // Chỉ thử khóa lại một lần với bản mới nhất.
                 if (!ReloadDraft()) throw;
-                Draft = _service.LockForSubmission(Draft!, _clock.ReadUtc);
+                Draft = _service.LockForSubmission(Draft!, _clock.ReadUtc, ViolationCount >= 3);
             }
             // Chỉ đánh dấu đã nộp sau khi bộ chấm lưu xong.
             _service.SendForGrading(Draft);
