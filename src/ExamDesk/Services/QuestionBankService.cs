@@ -179,6 +179,9 @@ public sealed class QuestionBankService
     public List<int> GetDistinctChapters(int? subjectId = null)
         => _questionRepository.GetDistinctChapters(subjectId);
 
+    public bool IsQuestionUsedInAnyPaper(int questionId)
+        => _questionRepository.IsQuestionUsedInAnyPaper(questionId);
+
     public void ValidateQuestion(Question q)
     {
         ArgumentNullException.ThrowIfNull(q);

@@ -438,6 +438,30 @@ public partial class QuestionBankControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
+        try
+        {
+            if (_service.IsQuestionUsedInAnyPaper(selected.Id))
+            {
+                MessageBox.Show(
+                    this,
+                    "Câu hỏi này đã được gắn vào đề thi, không thể chỉnh sửa để bảo toàn đề thi.",
+                    "Không thể sửa câu hỏi",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                $"Lỗi khi kiểm tra trạng thái câu hỏi: {ex.Message}",
+                "Lỗi cơ sở dữ liệu",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+            return;
+        }
+
         using var dialog = new QuestionEditorDialog(_service);
         dialog.LoadQuestion(selected);
         var owner = FindForm();

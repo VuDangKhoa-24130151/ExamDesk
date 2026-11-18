@@ -6,6 +6,11 @@ namespace ExamDesk.UI.ExamManagement;
 
 public partial class ExamPaperPreviewDialog : Form
 {
+    private static readonly Font PaperTitleFont = new("Segoe UI", 13F, FontStyle.Bold);
+    private static readonly Font CardHeaderFont = new(UiStyle.SmallFont, FontStyle.Bold);
+    private static readonly Font CardContentFont = new(UiStyle.BodyFont, FontStyle.Bold);
+    private static readonly Font CorrectOptionFont = new(UiStyle.BodyFont, FontStyle.Bold);
+
     private readonly ExamPaperService _examPaperService;
     private readonly ExamPaperSummary _summary;
     private List<ExamPaperQuestionDetail> _questions = [];
@@ -40,7 +45,7 @@ public partial class ExamPaperPreviewDialog : Form
         _headerCard.BackColor = UiStyle.Surface;
         _headerCard.BorderStyle = BorderStyle.FixedSingle;
 
-        _lblPaperTitle.Font = new Font("Segoe UI", 13F, FontStyle.Bold);
+        _lblPaperTitle.Font = PaperTitleFont;
         _lblPaperTitle.ForeColor = UiStyle.Text;
 
         _lblMetaInfo.Font = UiStyle.BodyFont;
@@ -112,6 +117,7 @@ public partial class ExamPaperPreviewDialog : Form
         _questionsPanel.SuspendLayout();
         try
         {
+            DisposeQuestionPanelControls();
             _questionsPanel.Controls.Clear();
 
             if (_questions.Count == 0)
@@ -172,7 +178,7 @@ public partial class ExamPaperPreviewDialog : Form
         {
             AutoSize = true,
             MaximumSize = new Size(textMaxWidth, 0),
-            Font = new Font(UiStyle.SmallFont, FontStyle.Bold),
+            Font = CardHeaderFont,
             ForeColor = UiStyle.Primary,
             Text = $"Câu {q.OrderIndex}  •  {FormatDifficulty(q.Difficulty)}  •  Chương {q.Chapter}",
             Margin = new Padding(0, 0, 0, 6)
@@ -182,7 +188,7 @@ public partial class ExamPaperPreviewDialog : Form
         {
             AutoSize = true,
             MaximumSize = new Size(textMaxWidth, 0),
-            Font = new Font(UiStyle.BodyFont, FontStyle.Bold),
+            Font = CardContentFont,
             ForeColor = UiStyle.Text,
             Text = q.Content,
             Margin = new Padding(0, 0, 0, 8)
@@ -215,7 +221,7 @@ public partial class ExamPaperPreviewDialog : Form
             MaximumSize = new Size(maxWidth, 0),
             Padding = new Padding(8, 5, 8, 5),
             Margin = new Padding(0, 2, 0, 2),
-            Font = isCorrect ? new Font(UiStyle.BodyFont, FontStyle.Bold) : UiStyle.BodyFont,
+            Font = isCorrect ? CorrectOptionFont : UiStyle.BodyFont,
             BackColor = isCorrect ? UiStyle.SuccessBack : UiStyle.Surface,
             ForeColor = isCorrect ? UiStyle.SuccessText : UiStyle.Text,
             Text = isCorrect
@@ -224,6 +230,21 @@ public partial class ExamPaperPreviewDialog : Form
         };
 
         return label;
+    }
+
+    private void DisposeQuestionPanelControls()
+    {
+        if (_questionsPanel.Controls.Count == 0)
+        {
+            return;
+        }
+
+        // Giải phóng toàn bộ control con và handle GDI trước khi xóa khỏi panel.
+        var oldControls = _questionsPanel.Controls.Cast<Control>().ToArray();
+        foreach (var ctrl in oldControls)
+        {
+            ctrl.Dispose();
+        }
     }
 
     private int GetTargetCardWidth()

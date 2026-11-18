@@ -6,6 +6,11 @@ namespace ExamDesk.UI.ExamManagement;
 
 public partial class ExamPaperEditorDialog : Form
 {
+    private const int DefaultDurationMinutes = 45;
+    private const int DefaultEasyCount = 10;
+    private const int DefaultMediumCount = 15;
+    private const int DefaultHardCount = 5;
+
     private readonly ExamPaperService _examPaperService;
     private readonly QuestionBankService _questionBankService;
     private readonly int? _initialSubjectId;
@@ -13,6 +18,7 @@ public partial class ExamPaperEditorDialog : Form
     private ExamPaperDifficultyCounts _availableCounts = new();
     private bool _hasSubjects;
     private bool _savedSuccessfully;
+    private bool _suppressEvents;
 
     public int CreatedPaperId { get; private set; }
 
@@ -117,14 +123,44 @@ public partial class ExamPaperEditorDialog : Form
 
     private void WireEvents()
     {
-        _cboSubject.SelectedIndexChanged += (_, _) => OnSubjectChanged();
-        _numEasy.ValueChanged += (_, _) => UpdateCountsAndValidation();
-        _numMedium.ValueChanged += (_, _) => UpdateCountsAndValidation();
-        _numHard.ValueChanged += (_, _) => UpdateCountsAndValidation();
+        _cboSubject.SelectedIndexChanged += (_, _) =>
+        {
+            if (!_suppressEvents)
+            {
+                OnSubjectChanged();
+            }
+        };
+        _numEasy.ValueChanged += (_, _) =>
+        {
+            if (!_suppressEvents)
+            {
+                UpdateCountsAndValidation();
+            }
+        };
+        _numMedium.ValueChanged += (_, _) =>
+        {
+            if (!_suppressEvents)
+            {
+                UpdateCountsAndValidation();
+            }
+        };
+        _numHard.ValueChanged += (_, _) =>
+        {
+            if (!_suppressEvents)
+            {
+                UpdateCountsAndValidation();
+            }
+        };
 
         _txtPaperCode.TextChanged += (_, _) => ClearFormError();
         _txtTitle.TextChanged += (_, _) => ClearFormError();
-        _numDuration.ValueChanged += (_, _) => ClearFormError();
+        _numDuration.ValueChanged += (_, _) =>
+        {
+            if (!_suppressEvents)
+            {
+                ClearFormError();
+            }
+        };
 
         _btnSave.Click += (_, _) => SaveExamPaper();
         _btnCancel.Click += (_, _) =>
@@ -136,29 +172,60 @@ public partial class ExamPaperEditorDialog : Form
 
     private void LoadSubjects()
     {
-        var subjects = _questionBankService.GetSubjects()
-            .Select(s => new SubjectOption(s.Id, $"{s.Code} - {s.Name}"))
-            .ToList();
-        _cboSubject.DisplayMember = nameof(SubjectOption.DisplayName);
-        _cboSubject.ValueMember = nameof(SubjectOption.Id);
-        _cboSubject.DataSource = subjects;
+        List<SubjectOption> subjects;
+        string? loadError = null;
+        try
+        {
+            subjects = _questionBankService.GetSubjects()
+                .Select(s => new SubjectOption(s.Id, $"{s.Code} - {s.Name}"))
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            subjects = [];
+            loadError = ex.Message;
+        }
 
-        _hasSubjects = subjects.Count > 0;
+        _suppressEvents = true;
+        try
+        {
+            _cboSubject.DisplayMember = nameof(SubjectOption.DisplayName);
+            _cboSubject.ValueMember = nameof(SubjectOption.Id);
+            _cboSubject.DataSource = subjects;
+
+            _hasSubjects = subjects.Count > 0;
+            if (_hasSubjects)
+            {
+                if (_initialSubjectId.HasValue && subjects.Any(s => s.Id == _initialSubjectId.Value))
+                {
+                    _cboSubject.SelectedValue = _initialSubjectId.Value;
+                }
+                else
+                {
+                    _cboSubject.SelectedIndex = 0;
+                }
+            }
+
+            // Gán cấu hình mặc định (45 phút; 10 Dễ, 15 Trung bình, 5 Khó) khi khởi tạo để tránh kích hoạt validate lặp lại.
+            _numDuration.Value = DefaultDurationMinutes;
+            _numEasy.Value = DefaultEasyCount;
+            _numMedium.Value = DefaultMediumCount;
+            _numHard.Value = DefaultHardCount;
+        }
+        finally
+        {
+            _suppressEvents = false;
+        }
+
         if (!_hasSubjects)
         {
             _availableCounts = new ExamPaperDifficultyCounts();
-            ShowFormError("Chưa có môn học nào trong hệ thống. Vui lòng tạo môn học và câu hỏi trước khi tạo đề thi.");
+            _lblEasyAvailable.Text = "Có sẵn: 0 câu";
+            _lblMediumAvailable.Text = "Có sẵn: 0 câu";
+            _lblHardAvailable.Text = "Có sẵn: 0 câu";
             UpdateCountsAndValidation();
+            ShowFormError(loadError ?? "Chưa có môn học nào trong hệ thống. Vui lòng tạo môn học và câu hỏi trước khi tạo đề thi.");
             return;
-        }
-
-        if (_initialSubjectId.HasValue && subjects.Any(s => s.Id == _initialSubjectId.Value))
-        {
-            _cboSubject.SelectedValue = _initialSubjectId.Value;
-        }
-        else
-        {
-            _cboSubject.SelectedIndex = 0;
         }
 
         OnSubjectChanged();
@@ -174,6 +241,7 @@ public partial class ExamPaperEditorDialog : Form
             return;
         }
 
+        string? loadError = null;
         try
         {
             _availableCounts = _examPaperService.GetAvailableCounts(subject.Id);
@@ -181,7 +249,7 @@ public partial class ExamPaperEditorDialog : Form
         catch (Exception ex)
         {
             _availableCounts = new ExamPaperDifficultyCounts();
-            ShowFormError(ex.Message);
+            loadError = ex.Message;
         }
 
         _lblEasyAvailable.Text = $"Có sẵn: {_availableCounts.EasyCount} câu";
@@ -189,6 +257,11 @@ public partial class ExamPaperEditorDialog : Form
         _lblHardAvailable.Text = $"Có sẵn: {_availableCounts.HardCount} câu";
 
         UpdateCountsAndValidation();
+
+        if (!string.IsNullOrEmpty(loadError))
+        {
+            ShowFormError(loadError);
+        }
     }
 
     private void UpdateCountsAndValidation()
@@ -200,7 +273,7 @@ public partial class ExamPaperEditorDialog : Form
         var hard = (int)_numHard.Value;
         var total = easy + medium + hard;
 
-        _lblTotalSummary.Text = $"Tổng số câu: {total}";
+        _lblTotalSummary.Text = $"Tổng số câu: {total} (Hệ thống sẽ rút ngẫu nhiên)";
 
         var hasShortage = false;
         hasShortage |= UpdateDifficultyError(_lblEasyError, easy, _availableCounts.EasyCount);
@@ -285,9 +358,10 @@ public partial class ExamPaperEditorDialog : Form
     {
         return !string.IsNullOrWhiteSpace(_txtPaperCode.Text)
             || !string.IsNullOrWhiteSpace(_txtTitle.Text)
-            || _numEasy.Value > 0
-            || _numMedium.Value > 0
-            || _numHard.Value > 0;
+            || _numDuration.Value != DefaultDurationMinutes
+            || _numEasy.Value != DefaultEasyCount
+            || _numMedium.Value != DefaultMediumCount
+            || _numHard.Value != DefaultHardCount;
     }
 
     private sealed record SubjectOption(int Id, string DisplayName);
