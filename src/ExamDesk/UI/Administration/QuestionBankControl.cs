@@ -282,22 +282,30 @@ public partial class QuestionBankControl : UserControl, IUnsavedChangesGuard
         {
             var subjectCode = FormatSubjectCode(question.SubjectId);
             var difficultyText = FormatDifficulty(question.Difficulty);
+            var hasImage = !string.IsNullOrWhiteSpace(question.ImagePath);
+            var shortContent = ShortenContent(question.Content);
+            var displayContent = hasImage ? $"[🖼 Ảnh] {shortContent}" : shortContent;
 
             var rowIndex = _dgvQuestions.Rows.Add(
                 $"#{question.Id}",
                 subjectCode,
                 $"Chương {question.Chapter}",
                 difficultyText,
-                ShortenContent(question.Content),
+                displayContent,
                 question.CorrectOption);
 
             var row = _dgvQuestions.Rows[rowIndex];
             row.Tag = question;
 
+            var imageLine = hasImage
+                ? $"\nẢnh minh họa: {Path.GetFileName(question.ImagePath)}\n"
+                : string.Empty;
+
             var fullTooltip =
                 $"[#{question.Id}] {subjectCode} • Chương {question.Chapter} • {difficultyText}\n\n" +
-                $"{question.Content}\n\n" +
-                $"A. {question.OptionA}\n" +
+                $"{question.Content}\n" +
+                imageLine +
+                $"\nA. {question.OptionA}\n" +
                 $"B. {question.OptionB}\n" +
                 $"C. {question.OptionC}\n" +
                 $"D. {question.OptionD}\n\n" +

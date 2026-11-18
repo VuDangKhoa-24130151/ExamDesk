@@ -8,6 +8,7 @@ namespace ExamDesk.UI.Administration;
 public partial class QuestionEditorDialog : Form
 {
     private readonly QuestionBankService _service;
+    private readonly HashSet<string> _pendingImportedImages = new(StringComparer.OrdinalIgnoreCase);
     private int _editingId;
     private string _editingImagePath = string.Empty;
     private QuestionSnapshot _initialSnapshot;
@@ -25,6 +26,7 @@ public partial class QuestionEditorDialog : Form
         _service = service ?? throw new ArgumentNullException(nameof(service));
         InitializeComponent();
         PopulateSubjects();
+        SetQuestionImagePreview(string.Empty);
         CaptureInitialSnapshot();
     }
 
@@ -41,7 +43,7 @@ public partial class QuestionEditorDialog : Form
         _suppressDirtyTracking = true;
 
         _editingId = q.Id;
-        _editingImagePath = q.ImagePath;
+        SetQuestionImagePreview(q.ImagePath);
 
         var titleText = $"Sửa câu hỏi #{q.Id}";
         Text = titleText;
@@ -124,6 +126,24 @@ public partial class QuestionEditorDialog : Form
         base.OnFormClosing(e);
     }
 
+    protected override void OnFormClosed(FormClosedEventArgs e)
+    {
+        ReleasePictureBoxImage();
+
+        // Dọn các tệp ảnh tạm vừa nạp trong hộp thoại nếu người dùng hủy hoặc đã đổi sang ảnh khác.
+        foreach (var path in _pendingImportedImages)
+        {
+            if (DialogResult != DialogResult.OK ||
+                !string.Equals(path, _editingImagePath, StringComparison.OrdinalIgnoreCase))
+            {
+                TryDeleteImportedFile(path);
+            }
+        }
+
+        _pendingImportedImages.Clear();
+        base.OnFormClosed(e);
+    }
+
     private void PopulateSubjects()
     {
         _suppressDirtyTracking = true;
@@ -169,7 +189,8 @@ public partial class QuestionEditorDialog : Form
         OptionB: _txtOptionB.Text,
         OptionC: _txtOptionC.Text,
         OptionD: _txtOptionD.Text,
-        CorrectOption: GetSelectedCorrectOption());
+        CorrectOption: GetSelectedCorrectOption(),
+        ImagePath: _editingImagePath);
 
     private bool HasUnsavedChanges() => !_suppressDirtyTracking && !Equals(_initialSnapshot, GetCurrentSnapshot());
 
@@ -225,6 +246,117 @@ public partial class QuestionEditorDialog : Form
         else if (ReferenceEquals(sender, _txtOptionB)) _lblOptionBError.Visible = false;
         else if (ReferenceEquals(sender, _txtOptionC)) _lblOptionCError.Visible = false;
         else if (ReferenceEquals(sender, _txtOptionD)) _lblOptionDError.Visible = false;
+    }
+
+    private void OnChooseImageClick(object? sender, EventArgs e)
+    {
+        using var dialog = new OpenFileDialog
+        {
+            Title = "Chọn hình ảnh minh họa cho câu hỏi",
+            Filter = "Tệp hình ảnh (*.png;*.jpg;*.jpeg;*.bmp;*.gif)|*.png;*.jpg;*.jpeg;*.bmp;*.gif",
+            Multiselect = false,
+            CheckFileExists = true
+        };
+
+        if (dialog.ShowDialog(this) != DialogResult.OK)
+        {
+            return;
+        }
+
+        try
+        {
+            var importedPath = _service.ImportQuestionImage(dialog.FileName);
+            var loaded = QuestionBankService.LoadImageUnlocked(importedPath);
+            if (loaded is null)
+            {
+                TryDeleteImportedFile(importedPath);
+                MessageBox.Show(
+                    this,
+                    "Không thể đọc nội dung tệp ảnh đã chọn. Vui lòng chọn một tệp ảnh hợp lệ.",
+                    "Lỗi tải ảnh",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+
+            _pendingImportedImages.Add(importedPath);
+            ApplyLoadedImage(importedPath, loaded);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                ex.Message,
+                "Không thể đính kèm ảnh",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+        }
+    }
+
+    private void OnRemoveImageClick(object? sender, EventArgs e)
+    {
+        SetQuestionImagePreview(string.Empty);
+    }
+
+    private void SetQuestionImagePreview(string? imagePath)
+    {
+        ReleasePictureBoxImage();
+        _editingImagePath = imagePath?.Trim() ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(_editingImagePath))
+        {
+            _picQuestionImage.Visible = false;
+            _btnRemoveImage.Enabled = false;
+            _lblImageFileName.Text = "Chưa đính kèm ảnh";
+            _lblImageFileName.ForeColor = UiStyle.TextMuted;
+            return;
+        }
+
+        var loaded = QuestionBankService.LoadImageUnlocked(_editingImagePath);
+        if (loaded is not null)
+        {
+            ApplyLoadedImage(_editingImagePath, loaded);
+            return;
+        }
+
+        _picQuestionImage.Visible = false;
+        _btnRemoveImage.Enabled = true;
+        _lblImageFileName.Text = $"⚠ Không tìm thấy tệp ảnh ({Path.GetFileName(_editingImagePath)})";
+        _lblImageFileName.ForeColor = UiStyle.WarningText;
+    }
+
+    private void ApplyLoadedImage(string imagePath, Image loadedImage)
+    {
+        ReleasePictureBoxImage();
+        _editingImagePath = imagePath;
+        _picQuestionImage.Image = loadedImage;
+        _picQuestionImage.Visible = true;
+        _btnRemoveImage.Enabled = true;
+        _lblImageFileName.Text = Path.GetFileName(imagePath);
+        _lblImageFileName.ForeColor = UiStyle.Text;
+    }
+
+    private void ReleasePictureBoxImage()
+    {
+        var oldImage = _picQuestionImage.Image;
+        _picQuestionImage.Image = null;
+        oldImage?.Dispose();
+    }
+
+    private static void TryDeleteImportedFile(string imagePath)
+    {
+        try
+        {
+            var resolved = QuestionBankService.ResolveImageFilePath(imagePath);
+            if (resolved is not null && File.Exists(resolved))
+            {
+                File.Delete(resolved);
+            }
+        }
+        catch
+        {
+            // Bỏ qua nếu không thể xóa tệp tạm
+        }
     }
 
     private void OnCorrectOptionCheckedChanged(object? sender, EventArgs e)
@@ -485,5 +617,6 @@ public partial class QuestionEditorDialog : Form
         string OptionB,
         string OptionC,
         string OptionD,
-        string CorrectOption);
+        string CorrectOption,
+        string ImagePath);
 }

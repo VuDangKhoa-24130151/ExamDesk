@@ -1,4 +1,7 @@
+using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using ExamDesk.Data;
 using ExamDesk.Models;
 using ExamDesk.Repositories;
 
@@ -7,7 +10,13 @@ namespace ExamDesk.Services;
 // Bạn 1 phụ trách: Dịch vụ nghiệp vụ quản lý môn học, chương và ngân hàng câu hỏi.
 public sealed class QuestionBankService
 {
+    private const long MaxQuestionImageBytes = 5L * 1024 * 1024;
     private static readonly Regex ValidCodeRegex = new("^[A-Z0-9]{2,10}$", RegexOptions.Compiled);
+    private static readonly HashSet<string> AllowedImageExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".png", ".jpg", ".jpeg", ".bmp", ".gif"
+    };
+
     private readonly QuestionRepository _questionRepository;
 
     public QuestionBankService() : this(new QuestionRepository())
@@ -251,6 +260,100 @@ public sealed class QuestionBankService
             throw new ArgumentException("Đáp án đúng phải là một trong các phương án: A, B, C hoặc D.");
         }
         q.CorrectOption = correct;
+        q.ImagePath = q.ImagePath?.Trim() ?? string.Empty;
+    }
+
+    public static string QuestionImagesDirectory => Path.Combine(
+        Path.GetDirectoryName(SqliteContext.DatabaseFilePath)!,
+        "images");
+
+    public string ImportQuestionImage(string sourceFilePath)
+    {
+        if (string.IsNullOrWhiteSpace(sourceFilePath) || !File.Exists(sourceFilePath))
+        {
+            throw new FileNotFoundException("Không tìm thấy tệp hình ảnh đã chọn.", sourceFilePath);
+        }
+
+        var extension = Path.GetExtension(sourceFilePath);
+        if (string.IsNullOrWhiteSpace(extension) || !AllowedImageExtensions.Contains(extension))
+        {
+            throw new ArgumentException("Chỉ hỗ trợ tệp hình ảnh có định dạng .png, .jpg, .jpeg, .bmp hoặc .gif.");
+        }
+
+        var fileInfo = new FileInfo(sourceFilePath);
+        if (fileInfo.Length == 0)
+        {
+            throw new ArgumentException("Tệp hình ảnh bị rỗng, vui lòng chọn tệp hợp lệ.");
+        }
+
+        if (fileInfo.Length > MaxQuestionImageBytes)
+        {
+            throw new ArgumentException("Kích thước tệp ảnh không được vượt quá 5 MB.");
+        }
+
+        var imagesDir = QuestionImagesDirectory;
+        Directory.CreateDirectory(imagesDir);
+
+        var fileName = $"q_{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
+        var destinationPath = Path.Combine(imagesDir, fileName);
+        File.Copy(sourceFilePath, destinationPath, overwrite: false);
+
+        return fileName;
+    }
+
+    public static string? ResolveImageFilePath(string? imagePath)
+    {
+        if (string.IsNullOrWhiteSpace(imagePath))
+        {
+            return null;
+        }
+
+        var trimmed = imagePath.Trim();
+        if (Path.IsPathRooted(trimmed))
+        {
+            return File.Exists(trimmed) ? trimmed : null;
+        }
+
+        var candidateInImages = Path.Combine(QuestionImagesDirectory, trimmed);
+        if (File.Exists(candidateInImages))
+        {
+            return candidateInImages;
+        }
+
+        var normalized = trimmed.Replace('/', Path.DirectorySeparatorChar).Replace('\\', Path.DirectorySeparatorChar);
+        if (normalized.StartsWith($"images{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+        {
+            var databaseDir = Path.GetDirectoryName(SqliteContext.DatabaseFilePath)!;
+            var candidateRelativeToDb = Path.Combine(databaseDir, normalized);
+            if (File.Exists(candidateRelativeToDb))
+            {
+                return candidateRelativeToDb;
+            }
+        }
+
+        return null;
+    }
+
+    public static Image? LoadImageUnlocked(string? imagePath)
+    {
+        var fullPath = ResolveImageFilePath(imagePath);
+        if (fullPath is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            // Đọc qua byte[] + MemoryStream và sao chép sang Bitmap mới để không giữ khóa tệp ảnh trên đĩa.
+            var bytes = File.ReadAllBytes(fullPath);
+            using var ms = new MemoryStream(bytes);
+            using var img = Image.FromStream(ms);
+            return new Bitmap(img);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or OutOfMemoryException or ExternalException)
+        {
+            return null;
+        }
     }
 
     public void SaveQuestion(Question question)

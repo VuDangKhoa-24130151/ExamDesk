@@ -36,6 +36,13 @@ public partial class ExamPaperPreviewDialog : Form
         AdjustCardWidths();
     }
 
+    protected override void OnFormClosed(FormClosedEventArgs e)
+    {
+        DisposeQuestionPanelControls();
+        _questionsPanel.Controls.Clear();
+        base.OnFormClosed(e);
+    }
+
     private void ApplyUiStyle()
     {
         BackColor = UiStyle.Background;
@@ -197,6 +204,47 @@ public partial class ExamPaperPreviewDialog : Form
         inner.Controls.Add(headerLabel);
         inner.Controls.Add(contentLabel);
 
+        if (!string.IsNullOrWhiteSpace(q.ImagePath))
+        {
+            var questionImage = QuestionBankService.LoadImageUnlocked(q.ImagePath);
+            if (questionImage is not null)
+            {
+                var pictureBox = new PictureBox
+                {
+                    SizeMode = PictureBoxSizeMode.Zoom,
+                    Width = textMaxWidth,
+                    Height = 160,
+                    BackColor = UiStyle.Background,
+                    BorderStyle = BorderStyle.FixedSingle,
+                    Margin = new Padding(0, 0, 0, 8),
+                    Image = questionImage,
+                    TabStop = false
+                };
+                pictureBox.Disposed += (_, _) =>
+                {
+                    var img = pictureBox.Image;
+                    pictureBox.Image = null;
+                    img?.Dispose();
+                };
+                inner.Controls.Add(pictureBox);
+            }
+            else
+            {
+                var missingLabel = new Label
+                {
+                    AutoSize = true,
+                    MaximumSize = new Size(textMaxWidth, 0),
+                    Font = UiStyle.SmallFont,
+                    ForeColor = UiStyle.WarningText,
+                    BackColor = UiStyle.WarningBack,
+                    Padding = new Padding(8, 4, 8, 4),
+                    Margin = new Padding(0, 0, 0, 8),
+                    Text = "⚠ Không tìm thấy tệp ảnh đính kèm"
+                };
+                inner.Controls.Add(missingLabel);
+            }
+        }
+
         inner.Controls.Add(BuildOptionLabel("A", q.OptionA, q.CorrectOption, showAnswer, textMaxWidth));
         inner.Controls.Add(BuildOptionLabel("B", q.OptionB, q.CorrectOption, showAnswer, textMaxWidth));
         inner.Controls.Add(BuildOptionLabel("C", q.OptionC, q.CorrectOption, showAnswer, textMaxWidth));
@@ -239,11 +287,27 @@ public partial class ExamPaperPreviewDialog : Form
             return;
         }
 
-        // Giải phóng toàn bộ control con và handle GDI trước khi xóa khỏi panel.
+        // Giải phóng ảnh và toàn bộ control con cùng handle GDI trước khi xóa khỏi panel.
         var oldControls = _questionsPanel.Controls.Cast<Control>().ToArray();
         foreach (var ctrl in oldControls)
         {
+            DisposeControlImages(ctrl);
             ctrl.Dispose();
+        }
+    }
+
+    private static void DisposeControlImages(Control root)
+    {
+        if (root is PictureBox pictureBox)
+        {
+            var img = pictureBox.Image;
+            pictureBox.Image = null;
+            img?.Dispose();
+        }
+
+        foreach (Control child in root.Controls)
+        {
+            DisposeControlImages(child);
         }
     }
 
@@ -283,6 +347,10 @@ public partial class ExamPaperPreviewDialog : Form
                             if (child is Label lbl)
                             {
                                 lbl.MaximumSize = new Size(textMaxWidth, 0);
+                            }
+                            else if (child is PictureBox pic)
+                            {
+                                pic.Width = textMaxWidth;
                             }
                         }
                     }
