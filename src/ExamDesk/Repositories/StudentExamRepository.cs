@@ -22,6 +22,46 @@ public sealed class StudentExamRepository
         return student;
     }
 
+    // Một câu SELECT giữ ca, đề và tiến độ trong cùng một snapshot SQLite.
+    internal (ExamSession Session, ExamPaper Paper) FindSelectedSession(int sessionId, string studentCode)
+    {
+        using var connection = SqliteContext.CreateConnection();
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            SELECT s.Id, s.SessionCode, s.SessionName, s.PaperId, s.RoomName, s.IsOpen,
+                p.Id, p.PaperCode, p.Title, p.SubjectId, p.DurationMinutes,
+                p.EasyCount, p.MediumCount, p.HardCount,
+                EXISTS(SELECT 1 FROM StudentDrafts d WHERE d.SessionId=s.Id AND d.StudentCode=$student),
+                EXISTS(SELECT 1 FROM ExamAttempts a WHERE a.SessionId=s.Id AND a.StudentCode=$student)
+            FROM ExamSessions s LEFT JOIN ExamPapers p ON p.Id=s.PaperId
+            WHERE s.Id=$session
+            """;
+        command.Parameters.AddWithValue("$session", sessionId);
+        command.Parameters.AddWithValue("$student", studentCode);
+        using var reader = command.ExecuteReader();
+        if (!reader.Read())
+            throw new ExamDesk.Services.StudentExamInputException("Ca thi không còn tồn tại. Hãy tải lại danh sách.");
+        if (reader.GetBoolean(15))
+            throw new ExamDesk.Services.StudentExamInputException("Bạn đã nộp bài ở ca này. Hãy tải lại danh sách ca.");
+        if (!reader.GetBoolean(5) && !reader.GetBoolean(14))
+            throw new ExamDesk.Services.StudentExamInputException("Ca thi đã đóng và bạn chưa bắt đầu lượt thi. Hãy chọn ca đang mở hoặc hỏi giám thị coi thi.");
+        if (reader.IsDBNull(6))
+            throw new ExamDesk.Services.StudentExamInputException("Ca thi chưa có đề. Hãy tải lại danh sách hoặc hỏi giám thị coi thi.");
+        var session = new ExamSession
+        {
+            Id = reader.GetInt32(0), SessionCode = reader.GetString(1), SessionName = reader.GetString(2),
+            PaperId = reader.GetInt32(3), RoomName = reader.GetString(4), IsOpen = reader.GetBoolean(5)
+        };
+        var paper = new ExamPaper
+        {
+            Id = reader.GetInt32(6), PaperCode = reader.GetString(7), Title = reader.GetString(8),
+            SubjectId = reader.GetInt32(9), DurationMinutes = reader.GetInt32(10),
+            EasyCount = reader.GetInt32(11), MediumCount = reader.GetInt32(12), HardCount = reader.GetInt32(13)
+        };
+        return (session, paper);
+    }
+
     // Có khóa nghĩa là đã bắt đầu, giá trị true nghĩa là đã lưu bài nộp.
     internal Dictionary<int, bool> FindSessionProgress(string studentCode)
     {
