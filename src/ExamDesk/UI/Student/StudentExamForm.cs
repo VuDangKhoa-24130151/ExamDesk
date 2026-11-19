@@ -341,9 +341,9 @@ public partial class StudentExamForm : Form
         _studentContent.SuspendLayout();
         try
         {
-            bool showHeader = screen is not StudentExamControl;
+            _examLabel.Text = "UniExam";
             if (_examLabel.Parent is Control header)
-                header.Visible = showHeader;
+                header.Visible = true;
             _studentContent.Controls.Add(screen);
             screen.BringToFront();
         }

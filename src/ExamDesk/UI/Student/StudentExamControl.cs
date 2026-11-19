@@ -188,24 +188,34 @@ public partial class StudentExamControl : UserControl
             content.RowStyles[2].Height = S(StudentLayout.BarHeight);
             if (content.Parent is Control card) card.Padding = new Padding(S(StudentLayout.Stroke1));
         }
+        _deadlineBanner.Padding = new Padding(S(StudentLayout.Space12), S(StudentLayout.Space8), S(StudentLayout.Space12), S(StudentLayout.Space8));
         _deadlineBanner.Margin = new Padding(S(StudentLayout.Space24), S(StudentLayout.Space16), S(StudentLayout.Space24), 0);
-        _questionViewport.Margin = new Padding(S(StudentLayout.Space24), S(StudentLayout.Space24), S(StudentLayout.Space24), S(StudentLayout.Space16));
+        _questionViewport.Margin = new Padding(S(StudentLayout.Space24), S(StudentLayout.Space24), S(StudentLayout.Space24), S(StudentLayout.Space24));
         _actionBar.Padding = new Padding(S(StudentLayout.Space24), S(StudentLayout.Stroke1), S(StudentLayout.Space24), 0);
         if (_right.Parent is Control sidebar) sidebar.Padding = new Padding(S(StudentLayout.Space16));
         if (_layout.GetControlFromPosition(0, 0) is Control left) left.Margin = new Padding(0, 0, S(StudentLayout.Space24), 0);
         _examShell.RowStyles[0].Height = S(StudentLayout.BarHeight);
         _examHeader.Padding = new Padding(S(StudentLayout.Space24), S(StudentLayout.Space8), S(StudentLayout.Space24), S(StudentLayout.Space8));
         _examHeader.ColumnStyles[1].Width = S(StudentLayout.ClockWidth);
-        _title.Margin = new Padding(0, 0, S(StudentLayout.Space16), 0);
+        _titleGroup.ColumnStyles[0].Width = S(StudentLayout.ExamBadgeSize);
+        _title.Margin = new Padding(S(StudentLayout.Space12), 0, S(StudentLayout.Space16), 0);
         _identity.Margin = new Padding(S(StudentLayout.Space16), 0, S(StudentLayout.Space16), 0);
         _questionHeading.Height = S(StudentLayout.HeadingHeight);
         _questionHeading.Margin = new Padding(0, 0, 0, S(StudentLayout.Space12));
         _question.Margin = new Padding(0, S(StudentLayout.Space4), 0, S(StudentLayout.Space24));
         _clock.Margin = new Padding(S(StudentLayout.Space8), 0, S(StudentLayout.Space8), 0);
+        _right.RowStyles[1].SizeType = SizeType.Absolute;
+        _right.RowStyles[1].Height = S(StudentLayout.HeadingHeight + StudentLayout.Space12);
         _progress.Height = S(StudentLayout.HeadingHeight);
         _progress.Margin = new Padding(0, 0, 0, S(StudentLayout.Space12));
         _questionLegend.Margin = new Padding(0, S(StudentLayout.Space12), 0, 0);
         foreach (LegendItem item in _questionLegend.Controls) item.FitSize();
+        _image.Padding = new Padding(S(StudentLayout.Space4));
+        _viewImage.Margin = new Padding(0, 0, 0, S(StudentLayout.Space24));
+        _viewImage.FitSize();
+        _submit.Margin = Padding.Empty;
+        if (_right.GetControlFromPosition(0, 0) is Control progressTitle)
+            progressTitle.Margin = new Padding(0, 0, 0, S(StudentLayout.Space4));
         _clearChoice.Margin = new Padding(0, 0, S(StudentLayout.Space8), 0);
         foreach (var button in new[] { _previous, _clearChoice, _flag, _next, _submit })
             button.FitSize();
@@ -246,9 +256,35 @@ public partial class StudentExamControl : UserControl
                 _question.Size = new Size(width, ((QuestionText)_question).MeasureHeight(width));
                 foreach (var option in _options)
                     option.Size = new Size(width, option.MeasureHeight(width));
-                _image.Width = Math.Min(width, StudentLayout.Scale(this, StudentLayout.ImageMaxWidth));
-                _image.Height = Math.Min(StudentLayout.Scale(this, StudentLayout.ImageMaxHeight),
-                    _image.Width * StudentLayout.ImageMaxHeight / StudentLayout.ImageMaxWidth);
+                int S(int value) => StudentLayout.Scale(this, value);
+                // Reserve answer space before sizing the image; long content remains scrollable.
+                int reservedHeight = _questionHeading.Height + _questionHeading.Margin.Vertical
+                    + _question.Height + _question.Margin.Vertical
+                    + _options.Sum(option => option.Height + option.Margin.Vertical)
+                    + _viewImage.Height + _viewImage.Margin.Vertical + S(StudentLayout.Space12);
+                // On short windows keep all answers above the optional illustration.
+                bool imageFitsBeforeAnswers = _questionViewport.ClientSize.Height - reservedHeight
+                    >= S(StudentLayout.ExamImageMinHeight);
+                if (imageFitsBeforeAnswers)
+                {
+                    _body.Controls.SetChildIndex(_image, 2);
+                    _body.Controls.SetChildIndex(_viewImage, 3);
+                }
+                else
+                {
+                    _body.Controls.SetChildIndex(_image, _body.Controls.Count - 1);
+                    _body.Controls.SetChildIndex(_viewImage, _body.Controls.Count - 1);
+                }
+                int imageBudget = Math.Max(S(StudentLayout.ExamImageMinHeight),
+                    _questionViewport.ClientSize.Height - reservedHeight);
+                _image.Height = Math.Min(imageBudget, Math.Min(S(StudentLayout.ImageMaxHeight),
+                    width * StudentLayout.ImageMaxHeight / StudentLayout.ImageMaxWidth));
+                _image.Width = Math.Min(width, Math.Min(S(StudentLayout.ImageMaxWidth),
+                    _image.Height * StudentLayout.ImageMaxWidth / StudentLayout.ImageMaxHeight));
+                int imageLeft = Math.Max(0, (width - _image.Width) / 2);
+                _image.Margin = new Padding(imageLeft, 0, width - _image.Width - imageLeft, S(StudentLayout.Space12));
+                int buttonLeft = Math.Max(0, (width - _viewImage.Width) / 2);
+                _viewImage.Margin = new Padding(buttonLeft, 0, 0, S(StudentLayout.Space24));
             }
             finally { _body.ResumeLayout(true); }
             int sideWidth = Math.Max(1, _right.ClientSize.Width);
@@ -415,7 +451,7 @@ public partial class StudentExamControl : UserControl
         _next.Enabled = canSubmitOnLast ? !locked : !isLastQuestion;
         _flag.Enabled = !_attempt.Submitted && !locked;
         bool canClearChoice = !_attempt.Submitted && !locked && selected.HasValue;
-        _clearChoice.Visible = canClearChoice;
+        _clearChoice.Visible = true;
         _clearChoice.Enabled = canClearChoice;
         _submit.Enabled = !IsSaving;
         _progress.Text = $"Đã trả lời {_attempt.Answered}/{_attempt.Answers.Length} · Đánh dấu {_attempt.Flags.Count(flag => flag)}";
@@ -838,7 +874,7 @@ public partial class StudentExamControl : UserControl
         internal ClockPill() => SetStyle(ControlStyles.UserPaint | ControlStyles.OptimizedDoubleBuffer
             | ControlStyles.ResizeRedraw, true);
 
-        protected override void OnPaintBackground(PaintEventArgs e) => e.Graphics.Clear(UiStyle.Surface);
+        protected override void OnPaintBackground(PaintEventArgs e) => e.Graphics.Clear(Parent?.BackColor ?? UiStyle.Background);
 
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -873,7 +909,7 @@ public partial class StudentExamControl : UserControl
             int S(int value) => StudentLayout.Scale(this, value);
             Size = new Size(TextRenderer.MeasureText(Text, Font).Width + S(StudentLayout.LegendTextLeft),
                 Math.Max(Font.Height, S(StudentLayout.LegendRowHeight)));
-            Margin = new Padding(0, 0, S(StudentLayout.Space12), S(StudentLayout.Space8));
+            Margin = new Padding(0, 0, S(StudentLayout.Space8), S(StudentLayout.Space8));
         }
 
         protected override void OnPaint(PaintEventArgs e)
