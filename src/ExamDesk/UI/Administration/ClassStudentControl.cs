@@ -1,11 +1,14 @@
 using ExamDesk.Models;
+using ExamDesk.Services;
 using ExamDesk.UI.Shared;
 
 namespace ExamDesk.UI.Administration;
 
-// GV-03 • Bạn 1 phụ trách: Quản lý lớp và sinh viên (mốc UI, dữ liệu minh họa).
+// GV-03 • Bạn 1 phụ trách: Quản lý lớp và sinh viên (kết nối SQLite qua AdministrationService).
 public partial class ClassStudentControl : UserControl, IUnsavedChangesGuard
 {
+    private readonly AdministrationService _service;
+    private List<ClassInfo> _classes = [];
     private bool _suppressSelectionEvents;
 
     // Thêm/sửa lớp và sinh viên thực hiện qua hộp thoại modal ClassEditDialog / StudentEditDialog.
@@ -13,9 +16,18 @@ public partial class ClassStudentControl : UserControl, IUnsavedChangesGuard
 
     public bool ConfirmLeave() => true;
 
-    public ClassStudentControl()
+    public ClassStudentControl() : this(new AdministrationService())
     {
+    }
+
+    public ClassStudentControl(AdministrationService service)
+    {
+        _service = service ?? throw new ArgumentNullException(nameof(service));
         InitializeComponent();
+
+        // Đã kết nối SQLite thật: ẩn nhãn dữ liệu minh họa
+        _lblDemoBadge.Visible = false;
+
         RefreshClassesGrid();
     }
 
@@ -67,32 +79,45 @@ public partial class ClassStudentControl : UserControl, IUnsavedChangesGuard
     private void RefreshClassesGrid(int? preferredClassId = null, int? preferredStudentId = null)
     {
         var targetClassId = preferredClassId ?? GetSelectedClass()?.Id;
-        var classes = AdminPreviewData.Classes;
 
-        _lblClassCount.Text = $"{classes.Count} lớp";
+        try
+        {
+            _classes = _service.GetClasses();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                $"Lỗi khi tải danh sách lớp học: {ex.Message}",
+                "Lỗi cơ sở dữ liệu",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+            _classes = [];
+        }
+
+        _lblClassCount.Text = $"{_classes.Count} lớp";
 
         _suppressSelectionEvents = true;
         _dgvClasses.SuspendLayout();
         _dgvClasses.Rows.Clear();
 
-        foreach (var cls in classes)
+        foreach (var cls in _classes)
         {
-            var studentCount = AdminPreviewData.CountStudentsByClass(cls.Code);
             var rowIndex = _dgvClasses.Rows.Add(
                 cls.Code,
                 cls.Name,
                 cls.SchoolYear,
-                studentCount);
+                cls.StudentCount);
 
             var row = _dgvClasses.Rows[rowIndex];
             row.Tag = cls;
             row.Cells[_colClassName.Index].ToolTipText =
-                $"{cls.Code} – {cls.Name}\nNiên khóa: {cls.SchoolYear} • Sĩ số: {studentCount} sinh viên";
+                $"{cls.Code} – {cls.Name}\nNiên khóa: {cls.SchoolYear} • Sĩ số: {cls.StudentCount} sinh viên";
         }
 
         _dgvClasses.ResumeLayout();
 
-        var isEmpty = classes.Count == 0;
+        var isEmpty = _classes.Count == 0;
         _lblClassEmptyState.Visible = isEmpty;
         _dgvClasses.Visible = !isEmpty;
 
@@ -103,7 +128,7 @@ public partial class ClassStudentControl : UserControl, IUnsavedChangesGuard
             {
                 for (var i = 0; i < _dgvClasses.Rows.Count; i++)
                 {
-                    if (_dgvClasses.Rows[i].Tag is ClassPreview c && c.Id == targetClassId.Value)
+                    if (_dgvClasses.Rows[i].Tag is ClassInfo c && c.Id == targetClassId.Value)
                     {
                         targetRowIndex = i;
                         break;
@@ -145,22 +170,25 @@ public partial class ClassStudentControl : UserControl, IUnsavedChangesGuard
             _lblStudentSectionTitle,
             $"{selectedClass.Code} – {selectedClass.Name} ({selectedClass.SchoolYear})");
 
-        var classStudents = AdminPreviewData.Students
-            .Where(s => string.Equals(s.ClassName, selectedClass.Code, StringComparison.OrdinalIgnoreCase))
-            .OrderBy(s => s.StudentCode, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
         var keyword = _txtSearchStudent.Text.Trim();
-        IEnumerable<User> filteredQuery = classStudents;
-        if (!string.IsNullOrEmpty(keyword))
+        List<User> filtered;
+        try
         {
-            filteredQuery = filteredQuery.Where(s =>
-                s.StudentCode.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
-                s.FullName.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+            filtered = _service.GetStudentsByClass(selectedClass.Code, keyword);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                $"Lỗi khi tải danh sách sinh viên: {ex.Message}",
+                "Lỗi cơ sở dữ liệu",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+            filtered = [];
         }
 
-        var filtered = filteredQuery.ToList();
-        _lblStudentCount.Text = $"Hiển thị {filtered.Count} / {classStudents.Count} sinh viên";
+        var totalInClass = string.IsNullOrEmpty(keyword) ? filtered.Count : selectedClass.StudentCount;
+        _lblStudentCount.Text = $"Hiển thị {filtered.Count} / {totalInClass} sinh viên";
 
         _suppressSelectionEvents = true;
         _dgvStudents.SuspendLayout();
@@ -182,7 +210,7 @@ public partial class ClassStudentControl : UserControl, IUnsavedChangesGuard
         _dgvStudents.ResumeLayout();
 
         var isEmpty = filtered.Count == 0;
-        _lblStudentEmptyState.Text = classStudents.Count == 0
+        _lblStudentEmptyState.Text = totalInClass == 0
             ? $"Lớp {selectedClass.Code} chưa có sinh viên nào.\nBấm \"Thêm sinh viên\" để tạo mới."
             : "Không có sinh viên phù hợp. Thử đổi từ khóa tìm kiếm.";
         _lblStudentEmptyState.Visible = isEmpty;
@@ -212,14 +240,14 @@ public partial class ClassStudentControl : UserControl, IUnsavedChangesGuard
         UpdateActionButtonsState();
     }
 
-    private ClassPreview? GetSelectedClass()
+    private ClassInfo? GetSelectedClass()
     {
         if (!_dgvClasses.Visible || _dgvClasses.SelectedRows.Count == 0)
         {
             return null;
         }
 
-        return _dgvClasses.SelectedRows[0].Tag as ClassPreview;
+        return _dgvClasses.SelectedRows[0].Tag as ClassInfo;
     }
 
     private User? GetSelectedStudent()
@@ -259,7 +287,7 @@ public partial class ClassStudentControl : UserControl, IUnsavedChangesGuard
         _btnDeleteClass.Enabled = hasClass;
         _btnDeleteClass.ForeColor = hasClass ? UiStyle.ErrorText : UiStyle.TextMuted;
 
-        var hasAnyClass = AdminPreviewData.Classes.Count > 0;
+        var hasAnyClass = _classes.Count > 0;
         _btnAddStudent.Enabled = hasAnyClass;
         _txtSearchStudent.Enabled = hasClass;
         _btnClearStudentSearch.Enabled = hasClass;
@@ -310,7 +338,7 @@ public partial class ClassStudentControl : UserControl, IUnsavedChangesGuard
 
     private void OnAddClassClick(object? sender, EventArgs e)
     {
-        using var dialog = new ClassEditDialog();
+        using var dialog = new ClassEditDialog(_service);
         var owner = FindForm();
         var result = owner is not null ? dialog.ShowDialog(owner) : dialog.ShowDialog();
         if (result != DialogResult.OK || dialog.Result is null)
@@ -318,18 +346,11 @@ public partial class ClassStudentControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
-        var nextId = AdminPreviewData.Classes.Count > 0
-            ? AdminPreviewData.Classes.Max(c => c.Id) + 1
-            : 1;
-
-        dialog.Result.Id = nextId;
-        AdminPreviewData.Classes.Add(dialog.Result);
-
-        RefreshClassesGrid(preferredClassId: nextId);
+        RefreshClassesGrid(preferredClassId: dialog.Result.Id);
 
         MessageBox.Show(
             this,
-            "Đã lưu lớp học (minh họa – chưa lưu CSDL)",
+            "Lưu lớp học thành công.",
             "Lưu lớp học",
             MessageBoxButtons.OK,
             MessageBoxIcon.Information);
@@ -343,9 +364,7 @@ public partial class ClassStudentControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
-        var oldCode = selected.Code;
-
-        using var dialog = new ClassEditDialog();
+        using var dialog = new ClassEditDialog(_service);
         dialog.LoadClass(selected);
         var owner = FindForm();
         var result = owner is not null ? dialog.ShowDialog(owner) : dialog.ShowDialog();
@@ -354,27 +373,12 @@ public partial class ClassStudentControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
-        var newCode = dialog.Result.Code;
-        selected.Code = newCode;
-        selected.Name = dialog.Result.Name;
-        selected.SchoolYear = dialog.Result.SchoolYear;
-
-        // Nếu đổi mã lớp, đồng bộ ClassName của các sinh viên thuộc lớp đó.
-        if (!string.Equals(oldCode, newCode, StringComparison.OrdinalIgnoreCase))
-        {
-            foreach (var student in AdminPreviewData.Students.Where(s =>
-                         string.Equals(s.ClassName, oldCode, StringComparison.OrdinalIgnoreCase)))
-            {
-                student.ClassName = newCode;
-            }
-        }
-
         var currentStudentId = GetSelectedStudent()?.Id;
-        RefreshClassesGrid(preferredClassId: selected.Id, preferredStudentId: currentStudentId);
+        RefreshClassesGrid(preferredClassId: dialog.Result.Id, preferredStudentId: currentStudentId);
 
         MessageBox.Show(
             this,
-            "Đã lưu lớp học (minh họa – chưa lưu CSDL)",
+            "Lưu lớp học thành công.",
             "Lưu lớp học",
             MessageBoxButtons.OK,
             MessageBoxIcon.Information);
@@ -393,7 +397,7 @@ public partial class ClassStudentControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
-        var studentCount = AdminPreviewData.CountStudentsByClass(selected.Code);
+        var studentCount = _service.CountStudentsByClass(selected.Code);
         if (studentCount > 0)
         {
             MessageBox.Show(
@@ -419,27 +423,39 @@ public partial class ClassStudentControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
-        AdminPreviewData.Classes.Remove(selected);
-        RefreshClassesGrid();
+        try
+        {
+            _service.DeleteClass(selected.Id);
+            RefreshClassesGrid();
 
-        MessageBox.Show(
-            this,
-            "Đã xóa lớp học (minh họa – chưa lưu CSDL)",
-            "Xóa lớp học",
-            MessageBoxButtons.OK,
-            MessageBoxIcon.Information);
+            MessageBox.Show(
+                this,
+                "Đã xóa lớp học thành công.",
+                "Xóa lớp học",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                ex.Message,
+                "Không thể xóa lớp học",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+        }
     }
 
     private void OnAddStudentClick(object? sender, EventArgs e)
     {
-        if (AdminPreviewData.Classes.Count == 0)
+        if (_classes.Count == 0)
         {
             return;
         }
 
         var selectedClass = GetSelectedClass();
 
-        using var dialog = new StudentEditDialog();
+        using var dialog = new StudentEditDialog(_service);
         dialog.InitializeForAdd(selectedClass?.Code);
         var owner = FindForm();
         var result = owner is not null ? dialog.ShowDialog(owner) : dialog.ShowDialog();
@@ -448,24 +464,17 @@ public partial class ClassStudentControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
-        var nextId = AdminPreviewData.Students.Count > 0
-            ? AdminPreviewData.Students.Max(s => s.Id) + 1
-            : 1;
-
-        dialog.Result.Id = nextId;
-        AdminPreviewData.Students.Add(dialog.Result);
-
-        var targetClass = AdminPreviewData.Classes.FirstOrDefault(c =>
+        var targetClass = _classes.FirstOrDefault(c =>
             string.Equals(c.Code, dialog.Result.ClassName, StringComparison.OrdinalIgnoreCase));
 
         EnsureStudentVisibleInSearch(dialog.Result);
         RefreshClassesGrid(
             preferredClassId: targetClass?.Id ?? selectedClass?.Id,
-            preferredStudentId: nextId);
+            preferredStudentId: dialog.Result.Id);
 
         MessageBox.Show(
             this,
-            "Đã lưu sinh viên (minh họa – chưa lưu CSDL)",
+            "Lưu sinh viên thành công.",
             "Lưu sinh viên",
             MessageBoxButtons.OK,
             MessageBoxIcon.Information);
@@ -479,7 +488,7 @@ public partial class ClassStudentControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
-        using var dialog = new StudentEditDialog();
+        using var dialog = new StudentEditDialog(_service);
         dialog.LoadStudent(selectedStudent);
         var owner = FindForm();
         var result = owner is not null ? dialog.ShowDialog(owner) : dialog.ShowDialog();
@@ -488,22 +497,17 @@ public partial class ClassStudentControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
-        selectedStudent.StudentCode = dialog.Result.StudentCode;
-        selectedStudent.Username = dialog.Result.StudentCode;
-        selectedStudent.FullName = dialog.Result.FullName;
-        selectedStudent.ClassName = dialog.Result.ClassName;
+        var targetClass = _classes.FirstOrDefault(c =>
+            string.Equals(c.Code, dialog.Result.ClassName, StringComparison.OrdinalIgnoreCase));
 
-        var targetClass = AdminPreviewData.Classes.FirstOrDefault(c =>
-            string.Equals(c.Code, selectedStudent.ClassName, StringComparison.OrdinalIgnoreCase));
-
-        EnsureStudentVisibleInSearch(selectedStudent);
+        EnsureStudentVisibleInSearch(dialog.Result);
         RefreshClassesGrid(
             preferredClassId: targetClass?.Id,
-            preferredStudentId: selectedStudent.Id);
+            preferredStudentId: dialog.Result.Id);
 
         MessageBox.Show(
             this,
-            "Đã lưu sinh viên (minh họa – chưa lưu CSDL)",
+            "Lưu sinh viên thành công.",
             "Lưu sinh viên",
             MessageBoxButtons.OK,
             MessageBoxIcon.Information);
@@ -547,14 +551,26 @@ public partial class ClassStudentControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
-        AdminPreviewData.Students.Remove(selectedStudent);
-        RefreshClassesGrid(preferredClassId: selectedClass?.Id);
+        try
+        {
+            _service.DeleteStudent(selectedStudent.Id);
+            RefreshClassesGrid(preferredClassId: selectedClass?.Id);
 
-        MessageBox.Show(
-            this,
-            "Đã xóa sinh viên (minh họa – chưa lưu CSDL)",
-            "Xóa sinh viên",
-            MessageBoxButtons.OK,
-            MessageBoxIcon.Information);
+            MessageBox.Show(
+                this,
+                "Đã xóa sinh viên thành công.",
+                "Xóa sinh viên",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                ex.Message,
+                "Không thể xóa sinh viên",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+        }
     }
 }
