@@ -149,7 +149,7 @@ public sealed class MainForm : Form
             ForeColor = SidebarMutedTextColor,
             BackColor = UiStyle.Sidebar,
             Margin = new Padding(4, 0, 4, 6),
-            Text = "Chưa đăng nhập – chế độ xem UI"
+            Text = "Chưa đăng nhập giảng viên"
         };
 
         _btnLogout = new Button
@@ -384,16 +384,16 @@ public sealed class MainForm : Form
             _lblLoginStatus.Font = ActiveMenuFont;
             _btnLogout.Visible = true;
             _lblBottomNote.Text =
-                $"CHẾ ĐỘ DỰNG UI • Đang đăng nhập minh họa: GV {_loggedInUsername} (chưa kết nối SQLite).";
+                $"Đã kết nối cơ sở dữ liệu SQLite cục bộ • Đang đăng nhập: {_loggedInUsername}";
         }
         else
         {
-            _lblLoginStatus.Text = "Chưa đăng nhập – chế độ xem UI";
+            _lblLoginStatus.Text = "Chưa đăng nhập giảng viên";
             _lblLoginStatus.ForeColor = SidebarMutedTextColor;
             _lblLoginStatus.Font = UiStyle.SmallFont;
             _btnLogout.Visible = false;
             _lblBottomNote.Text =
-                "CHẾ ĐỘ DỰNG UI • Chưa đăng nhập – chế độ xem UI (các màn hình mở tự do để dựng giao diện, chưa kết nối SQLite).";
+                "Đã kết nối cơ sở dữ liệu SQLite cục bộ • Chưa đăng nhập giảng viên (chọn vai trò hoặc mở trực tiếp chức năng trên menu).";
         }
     }
 
