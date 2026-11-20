@@ -38,7 +38,7 @@ public partial class SubmissionStatusControl : UserControl
         if (hasError) _status.Text += $"\n{error}";
         _summary.Text=$"Sinh viên: {draft.StudentName} · {draft.StudentCode}\nLớp: {draft.ClassName}\n\n{attempt.Title}\nĐã trả lời: {attempt.Answered}/{attempt.Answers.Length} câu";
         if (draft.PendingSubmission)
-            _summary.Text += $"\nLý do: {(draft.AutoSubmitted ? "Hết giờ" : "Nộp bài chủ động")}";
+            _summary.Text += $"\nLý do: {(attempt.ViolationCount >= 3 ? "Tự động nộp do vi phạm lần thứ 3" : draft.AutoSubmitted ? "Nộp bài tự động" : "Nộp bài chủ động")}";
     }
 
     private void CenterCard()

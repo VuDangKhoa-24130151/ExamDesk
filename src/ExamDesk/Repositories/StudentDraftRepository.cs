@@ -91,7 +91,7 @@ public sealed class StudentDraftRepository
         return draft;
     }
 
-    internal StudentDraft LockForSubmission(StudentDraft draft, Func<DateTimeOffset> readUtc)
+    internal StudentDraft LockForSubmission(StudentDraft draft, Func<DateTimeOffset> readUtc, bool forceAutoSubmit = false)
     {
         using var connection = SqliteContext.CreateConnection();
         connection.Open();
@@ -120,7 +120,7 @@ public sealed class StudentDraftRepository
         // Khóa và lưu lý do nộp trước khi chuyển bản nháp cho bộ chấm.
         saved.PendingSubmission = true;
         saved.LockedAtUtc = now;
-        saved.AutoSubmitted = now >= saved.DeadlineUtc;
+        saved.AutoSubmitted = forceAutoSubmit || now >= saved.DeadlineUtc;
         cmd.CommandText = "UPDATE StudentDrafts SET Payload=$payload, Revision=Revision+1 WHERE SessionId=$session AND StudentCode=$student";
         cmd.Parameters.AddWithValue("$payload", JsonSerializer.Serialize(saved));
         cmd.ExecuteNonQuery();

@@ -45,7 +45,7 @@ public sealed class StudentDraftService
         return next;
     }
 
-    internal StudentDraft LockForSubmission(StudentDraft draft, Func<DateTimeOffset> readUtc)
-        => _repository.LockForSubmission(draft, readUtc);
+    internal StudentDraft LockForSubmission(StudentDraft draft, Func<DateTimeOffset> readUtc, bool forceAutoSubmit = false)
+        => _repository.LockForSubmission(draft, readUtc, forceAutoSubmit);
     public void SendForGrading(StudentDraft lockedDraft) => _grader.GradeAndSave(lockedDraft);
 }
