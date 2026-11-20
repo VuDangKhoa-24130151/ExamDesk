@@ -133,14 +133,7 @@ public partial class StudentExamForm : Form
             return;
         if (TrySubmitExpiredAttempt()) return;
         attempt.ViolationCount++;
-        if (attempt.ViolationCount >= 3)
-        {
-            _violationSubmitPending = true;
-            exam.Enabled = false;
-            foreach (Form dialog in OwnedForms) dialog.Close();
-            SubmitForViolation();
-            return;
-        }
+        _violationSubmitPending = attempt.ViolationCount >= 3;
 
         // Không dùng MessageBox: giữ timer chạy và có thể đóng cảnh cáo khi hết giờ.
         exam.Enabled = false;
@@ -150,7 +143,9 @@ public partial class StudentExamForm : Form
         warning.FormClosed += (_, _) =>
         {
             _violationDialog = null;
-            if (!exam.IsDisposed && !_violationSubmitPending && !_submitting)
+            if (_violationSubmitPending && warning.Acknowledged)
+                SubmitForViolation();
+            else if (!exam.IsDisposed && !_violationSubmitPending && !_submitting)
                 exam.Enabled = true;
         };
         warning.Show(this);
@@ -158,6 +153,8 @@ public partial class StudentExamForm : Form
 
     private void SubmitForViolation()
     {
+        // Lần 3 phải chờ bấm xác nhận; lưu xong hoặc timer tick cũng không được bỏ qua màn này.
+        if (_violationDialog is not null) return;
         if (_studentContent.Controls.OfType<StudentExamControl>().Any(exam => exam.IsSaving)) return;
         SubmitAttempt();
     }
@@ -212,6 +209,7 @@ public partial class StudentExamForm : Form
 
     private async void SubmitAttempt()
     {
+        if (_violationSubmitPending && _violationDialog is not null) return;
         if (_submitting || _attempt is not { } attempt) return;
         _submitting = true;
         StopViolationMonitoring();
