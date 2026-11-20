@@ -118,6 +118,7 @@ public partial class ExamPaperEditorDialog : Form
         _lblFormError.BackColor = UiStyle.ErrorBack;
 
         UiStyle.StylePrimaryButton(_btnSave);
+        _btnSave.AutoSize = true;
         UiStyle.StyleSecondaryButton(_btnCancel);
     }
 
@@ -273,10 +274,9 @@ public partial class ExamPaperEditorDialog : Form
         var hard = (int)_numHard.Value;
         var total = easy + medium + hard;
 
-        _lblTotalSummary.Text = total == 0
-            ? "Tổng số câu: 0 (Cần chọn ít nhất 1 câu hỏi)"
-            : $"Tổng số câu: {total} (Hệ thống sẽ rút ngẫu nhiên)";
-        _lblTotalSummary.ForeColor = total == 0 ? UiStyle.ErrorText : UiStyle.Text;
+        _lblTotalSummary.Text =
+            $"Cơ cấu cố định: {easy} Dễ – {medium} Trung bình – {hard} Khó (Tổng {total} câu, hệ thống tự rút ngẫu nhiên)";
+        _lblTotalSummary.ForeColor = UiStyle.Text;
 
         var hasShortage = false;
         hasShortage |= UpdateDifficultyError(_lblEasyError, easy, _availableCounts.EasyCount);
