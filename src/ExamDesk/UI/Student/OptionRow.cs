@@ -43,7 +43,7 @@ internal sealed class OptionRow : Panel
         int textWidth = Math.Max(1, width - ScalePixels(StudentLayout.OptionTextReservedWidth));
         int textHeight = TextRenderer.MeasureText(Text, Font, new Size(textWidth, int.MaxValue),
             AnswerTextFlags).Height;
-        // Chừa 4 px mỗi phía cho focus ring, phần thẻ bên trong cao ít nhất 52 px.
+        // Giữ khoảng đệm quanh thẻ và chiều cao đáp án ổn định.
         return Math.Max(ScalePixels(StudentLayout.OptionMinHeight),
             textHeight + ScalePixels(StudentLayout.OptionVerticalPadding));
     }
@@ -120,7 +120,7 @@ internal sealed class OptionRow : Panel
             : Enabled && _hovered ? UiStyle.Background : UiStyle.Surface);
         e.Graphics.FillPath(fill, outline);
         using var border = new Pen(Checked ? UiStyle.Primary
-            : Enabled && _hovered ? StudentLayout.OptionHoverBorder : UiStyle.Border,
+            : Enabled && _hovered ? StudentLayout.OptionHoverBorder : StudentLayout.ExamBorder,
             ScalePixels(Checked ? StudentLayout.Stroke2 : StudentLayout.Stroke1));
         e.Graphics.DrawPath(border, outline);
 
@@ -128,8 +128,20 @@ internal sealed class OptionRow : Panel
         int tileSize = ScalePixels(StudentLayout.OptionBadgeSize);
         var tile = new Rectangle(inset, (Height - tileSize) / 2, tileSize, tileSize);
         StudentLayout.DrawDot(e.Graphics, tile, Checked ? UiStyle.Primary : UiStyle.Background);
-        TextRenderer.DrawText(e.Graphics, _letter, Font, tile, Checked ? UiStyle.Surface : UiStyle.TextMuted,
-            TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix);
+        // Center the visible glyph, excluding the font's asymmetric side bearings.
+        using (var glyph = new GraphicsPath())
+        {
+            glyph.AddString(_letter, Font.FontFamily, (int)Font.Style,
+                Font.SizeInPoints * e.Graphics.DpiY / 72f, PointF.Empty,
+                StringFormat.GenericTypographic);
+            var ink = glyph.GetBounds();
+            using var position = new Matrix();
+            position.Translate(tile.Left + (tile.Width - ink.Width) / 2f - ink.Left,
+                tile.Top + (tile.Height - ink.Height) / 2f - ink.Top);
+            glyph.Transform(position);
+            using var letterBrush = new SolidBrush(Checked ? UiStyle.Surface : StudentLayout.ExamMutedText);
+            e.Graphics.FillPath(letterBrush, glyph);
+        }
 
         int textLeft = ScalePixels(StudentLayout.OptionTextLeft);
         // Chừa riêng chỗ cho dấu chọn để không đè lên đáp án dài khi xem lại.
@@ -147,17 +159,23 @@ internal sealed class OptionRow : Panel
                 new Point(Width - ScalePixels(StudentLayout.OptionCheckRightInset), Height / 2), UiStyle.Primary);
         }
 
-        if (Enabled && Focused)
+        if (Enabled && Focused && ShowFocusCues)
         {
-            // Viền ngoài độc lập, cách viền chọn 2 px; không thay màu để giả focus.
-            using var focusPath = StudentLayout.RoundedRectangle(this,
-                Rectangle.Inflate(ClientRectangle,
-                    -ScalePixels(StudentLayout.Stroke1),
-                    -ScalePixels(StudentLayout.Stroke1)),
-                StudentLayout.FocusRadius);
-            using var focusPen = new Pen(UiStyle.Primary, ScalePixels(StudentLayout.Stroke2));
-            e.Graphics.DrawPath(focusPen, focusPath);
+            // Focus bàn phím nằm quanh huy hiệu, tách biệt với viền đáp án đã chọn.
+            var focusBounds = Rectangle.Inflate(tile,
+                ScalePixels(StudentLayout.Stroke2), ScalePixels(StudentLayout.Stroke2));
+            using var focusPen = new Pen(UiStyle.Primary, ScalePixels(StudentLayout.Stroke1))
+            {
+                DashStyle = DashStyle.Dot
+            };
+            e.Graphics.DrawEllipse(focusPen, focusBounds);
         }
+    }
+
+    protected override void OnChangeUICues(UICuesEventArgs e)
+    {
+        base.OnChangeUICues(e);
+        Invalidate();
     }
 
     private int ScalePixels(int pixels) => StudentLayout.Scale(this, pixels);

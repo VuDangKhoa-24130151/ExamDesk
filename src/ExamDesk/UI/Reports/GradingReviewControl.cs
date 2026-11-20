@@ -72,8 +72,9 @@ public partial class GradingReviewControl : UserControl
 
         _btnViewDetail.Click += (_, _) => ShowSelectedDetail();
         _dgvResults.CellDoubleClick += (_, e) => { if (e.RowIndex >= 0) ShowSelectedDetail(); };
-        _btnStatistics.Click += (_, _) => MessageBox.Show(this,"Màn hình phổ điểm (GV-14) đang được dựng.", "Thông báo",
-            MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+        //GV-14
+        _btnStatistics.Click += (_, _) => ShowStatistics();
     }
 
     private void ShowSelectedDetail()
@@ -85,10 +86,17 @@ public partial class GradingReviewControl : UserControl
             return;
         }
 
-        // Tạm thời: (hộp thoại chi tiết từng câu) sẽ thay chỗ này ở bước sau
-        MessageBox.Show(this,
-            $"{item.Mssv} - {item.HoTen}\nĐiểm: {item.Diem:0.00} ({item.CauDung}/{item.SoCau} câu đúng)",
-            "Chi tiết bài thi", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        using var dialog = new AttemptDetailDialog(item);
+        dialog.ShowDialog(this);
+    }
+        private void ShowStatistics()
+    {
+        var currentList = _dgvResults.DataSource as List<AttemptResultItem> ?? _allAttempts;
+        string sessionText = _cboSession.SelectedItem as string ?? "Tất cả ca thi";
+        string classText = _cboClass.SelectedItem as string ?? "Tất cả lớp";
+
+        using var dialog = new ScoreDistributionDialog(currentList, $"{sessionText} • {classText}");
+        dialog.ShowDialog(this);
     }
 
 }   

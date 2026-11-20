@@ -8,6 +8,7 @@ public partial class SubmissionStatusControl : UserControl
 
     public SubmissionStatusControl()
     {
+        DoubleBuffered = true;
         InitializeComponent();
         Resize += (_, _) => CenterCard();
         CenterCard();
@@ -37,14 +38,15 @@ public partial class SubmissionStatusControl : UserControl
         if (hasError) _status.Text += $"\n{error}";
         _summary.Text=$"Sinh viên: {draft.StudentName} · {draft.StudentCode}\nLớp: {draft.ClassName}\n\n{attempt.Title}\nĐã trả lời: {attempt.Answered}/{attempt.Answers.Length} câu";
         if (draft.PendingSubmission)
-            _summary.Text += $"\nLý do: {(draft.AutoSubmitted ? "Hết giờ" : "Nộp bài chủ động")}";
+            _summary.Text += $"\nLý do: {(attempt.ViolationCount >= 3 ? "Tự động nộp do vi phạm lần thứ 3" : draft.AutoSubmitted ? "Nộp bài tự động" : "Nộp bài chủ động")}";
     }
 
     private void CenterCard()
     {
         int side = Math.Max(StudentLayout.Space24,
             (ClientSize.Width - StudentLayout.Scale(this, StudentLayout.StatusCardMaxWidth)) / 2);
-        _cardHost.Padding = new Padding(side, StudentLayout.Space16, side, StudentLayout.Space24);
+        var padding = new Padding(side, StudentLayout.Space16, side, StudentLayout.Space24);
+        if (_cardHost.Padding != padding) _cardHost.Padding = padding;
     }
 
 }

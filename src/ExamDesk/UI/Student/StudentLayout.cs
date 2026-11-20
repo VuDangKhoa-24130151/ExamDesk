@@ -69,6 +69,8 @@ internal static class StudentLayout
 
     internal const int SidebarWidth = 320;
     internal const int ClockWidth = 184;
+    internal const int ExamBadgeSize = 40;
+    internal const int ExamImageMinHeight = 48;
     internal const int ImageMaxWidth = 480;
     internal const int ImageMaxHeight = 220;
     internal const int ImageDialogWidth = 840;
@@ -85,7 +87,10 @@ internal static class StudentLayout
     internal const int DialogClockWidth = 112;
     internal const int DialogHeaderRightReserve = 176;
 
-    internal const int IdentityCardWidth = 460;
+    internal const int SessionTitleMinWidth = 160;
+    internal const int SessionContinueHeight = 44;
+    internal const int SessionContinueWidth = 208;
+    internal const int EmptyNoticeHeight = 88;
     internal const int SessionPageMaxWidth = 1040;
     internal const int SessionRowBreakpoint = 640;
     internal const int InstructionsMaxWidth = 1120;
@@ -100,14 +105,20 @@ internal static class StudentLayout
     internal const float BodyFontSize = 10f;
     internal const float SubheadingFontSize = 11f;
     internal const float HeadingFontSize = 12f;
+    internal const float QuestionFontSize = 12.5f;
+    internal static readonly Color ExamBorder = ColorTranslator.FromHtml("#ADBFD4");
+    internal static readonly Color ExamMutedText = ColorTranslator.FromHtml("#435570");
     internal const float ClockFontSize = 14f;
     internal const float TitleFontSize = 16f;
     internal const float PageTitleFontSize = 18f;
 
     // Màu bổ sung để Bạn 1 duyệt: 8% Primary trên trắng (#EDF2FA với theme hiện tại).
+    internal static readonly Color SessionCardBorder = ColorTranslator.FromHtml("#9A9A9A");
+    internal static readonly Color SessionCardHoverBorder = ColorTranslator.FromHtml("#686868");
     internal static readonly Color SelectionBack = Blend(UiStyle.Primary, Color.White, 0.08);
     // Màu bổ sung để Bạn 1 duyệt: nền ô đã trả lời 16% Primary trên trắng (#DAE5F4 với theme hiện tại).
     internal static readonly Color AnsweredBack = Blend(UiStyle.Primary, Color.White, 0.16);
+    internal static readonly Color CardHeaderBack = Blend(UiStyle.Primary, UiStyle.Surface, 0.17);
     // Viền ô đã trả lời để Bạn 1 duyệt: viền xanh vừa 45% Primary trên trắng (#97B5E1 với theme hiện tại).
     internal static readonly Color AnsweredBorder = Blend(UiStyle.Primary, Color.White, 0.45);
     // Nền vàng rõ hơn cho ô đánh dấu xem lại để Bạn 1 duyệt (#FFE8A3 với theme hiện tại).
@@ -242,17 +253,6 @@ internal static class StudentLayout
         };
         if (click is not null) button.Click += click;
         return button;
-    }
-
-    internal static void SetButtonPrimary(Button button, bool primary)
-    {
-        if (button is StudentButton studentButton)
-        {
-            studentButton.Kind = primary ? StudentButtonKind.Primary : StudentButtonKind.Secondary;
-            return;
-        }
-        if (primary) UiStyle.StylePrimaryButton(button);
-        else UiStyle.StyleSecondaryButton(button);
     }
 
     internal static int Scale(Control control, int pixels)
@@ -519,6 +519,13 @@ internal sealed class StudentButton : Button
         }
 
         var prefixFlag = ShowKeyboardCues ? TextFormatFlags.Default : TextFormatFlags.HidePrefix;
+        // Hide mnemonic underlines on the exam screen without disabling shortcuts.
+        for (Control? ancestor = Parent; ancestor is not null; ancestor = ancestor.Parent)
+        {
+            if (ancestor is not StudentExamControl) continue;
+            prefixFlag = TextFormatFlags.HidePrefix;
+            break;
+        }
         int textWidth = TextRenderer.MeasureText(e.Graphics, Text, Font, new Size(int.MaxValue, int.MaxValue),
             TextFormatFlags.SingleLine | TextFormatFlags.HidePrefix | TextFormatFlags.NoPadding).Width;
 
