@@ -273,14 +273,17 @@ public partial class ExamPaperEditorDialog : Form
         var hard = (int)_numHard.Value;
         var total = easy + medium + hard;
 
-        _lblTotalSummary.Text = $"Tổng số câu: {total} (Hệ thống sẽ rút ngẫu nhiên)";
+        _lblTotalSummary.Text = total == 0
+            ? "Tổng số câu: 0 (Cần chọn ít nhất 1 câu hỏi)"
+            : $"Tổng số câu: {total} (Hệ thống sẽ rút ngẫu nhiên)";
+        _lblTotalSummary.ForeColor = total == 0 ? UiStyle.ErrorText : UiStyle.Text;
 
         var hasShortage = false;
         hasShortage |= UpdateDifficultyError(_lblEasyError, easy, _availableCounts.EasyCount);
         hasShortage |= UpdateDifficultyError(_lblMediumError, medium, _availableCounts.MediumCount);
         hasShortage |= UpdateDifficultyError(_lblHardError, hard, _availableCounts.HardCount);
 
-        _btnSave.Enabled = _hasSubjects && !hasShortage;
+        _btnSave.Enabled = _hasSubjects && !hasShortage && total > 0;
     }
 
     private static bool UpdateDifficultyError(Label errorLabel, int requested, int available)

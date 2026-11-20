@@ -298,7 +298,7 @@ public sealed class QuestionBankService
         var destinationPath = Path.Combine(imagesDir, fileName);
         File.Copy(sourceFilePath, destinationPath, overwrite: false);
 
-        return fileName;
+        return destinationPath;
     }
 
     public static string? ResolveImageFilePath(string? imagePath)

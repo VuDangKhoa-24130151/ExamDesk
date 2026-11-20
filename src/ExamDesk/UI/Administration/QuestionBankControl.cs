@@ -531,9 +531,19 @@ public partial class QuestionBankControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
+        var isLocked = false;
+        try
+        {
+            isLocked = _service.IsQuestionUsedInAnyPaper(selected.Id);
+        }
+        catch
+        {
+            isLocked = false;
+        }
+
         using var previewDialog = new QuestionPreviewDialog
         {
-            AllowEdit = true
+            AllowEdit = !isLocked
         };
         previewDialog.ShowQuestion(selected, FormatSubjectCode(selected.SubjectId));
 
