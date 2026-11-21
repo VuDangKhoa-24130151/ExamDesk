@@ -1,13 +1,16 @@
 using System.Text.RegularExpressions;
 using ExamDesk.Models;
+using ExamDesk.Services;
 using ExamDesk.UI.Shared;
 
 namespace ExamDesk.UI.Administration;
 
-// GV-03 • Bạn 1 phụ trách: Hộp thoại thêm / sửa sinh viên (mốc UI, dữ liệu minh họa).
+// GV-03 • Bạn 1 phụ trách: Hộp thoại thêm / sửa sinh viên (kết nối SQLite qua AdministrationService).
 public partial class StudentEditDialog : Form
 {
     private static readonly Regex ValidStudentCodeRegex = new(@"^\d{8,10}$", RegexOptions.Compiled);
+
+    private readonly AdministrationService _service;
 
     private int _editingId;
     private string _initialStudentCode = string.Empty;
@@ -18,9 +21,15 @@ public partial class StudentEditDialog : Form
 
     public User? Result { get; private set; }
 
-    public StudentEditDialog()
+    public StudentEditDialog() : this(new AdministrationService())
     {
+    }
+
+    public StudentEditDialog(AdministrationService service)
+    {
+        _service = service ?? throw new ArgumentNullException(nameof(service));
         InitializeComponent();
+        _lblDemoBadge.Visible = false;
         PopulateClasses();
         CaptureInitialSnapshot();
     }
@@ -112,9 +121,21 @@ public partial class StudentEditDialog : Form
         _suppressDirtyTracking = true;
         _cboClass.Items.Clear();
 
-        foreach (var cls in AdminPreviewData.Classes)
+        try
         {
-            _cboClass.Items.Add(new ClassOption(cls.Code, $"{cls.Code} – {cls.Name}"));
+            foreach (var cls in _service.GetClasses())
+            {
+                _cboClass.Items.Add(new ClassOption(cls.Code, $"{cls.Code} – {cls.Name}"));
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                $"Lỗi khi tải danh sách lớp học: {ex.Message}",
+                "Lỗi cơ sở dữ liệu",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
         }
 
         if (_cboClass.Items.Count > 0)
@@ -254,14 +275,14 @@ public partial class StudentEditDialog : Form
         }
         else
         {
-            var duplicate = AdminPreviewData.Students.FirstOrDefault(s =>
-                s.Id != _editingId &&
-                string.Equals(s.StudentCode, studentCode, StringComparison.OrdinalIgnoreCase));
+            var duplicate = _service.FindStudentConflict(studentCode, _editingId > 0 ? _editingId : null);
 
             if (duplicate is not null)
             {
-                _lblStudentCodeError.Text =
-                    $"MSSV \"{studentCode}\" đã tồn tại ({duplicate.FullName} – Lớp {duplicate.ClassName}).";
+                var detail = duplicate.Role == UserRole.Student
+                    ? $"{duplicate.FullName} – Lớp {duplicate.ClassName}"
+                    : $"tài khoản {duplicate.Username}";
+                _lblStudentCodeError.Text = $"MSSV \"{studentCode}\" đã tồn tại ({detail}).";
                 _lblStudentCodeError.Visible = true;
                 firstInvalidControl ??= _txtStudentCode;
             }
@@ -295,19 +316,34 @@ public partial class StudentEditDialog : Form
             return;
         }
 
-        Result = new User
+        try
         {
-            Id = _editingId,
-            Username = studentCode,
-            StudentCode = studentCode,
-            FullName = fullName,
-            ClassName = selectedClass!.Code,
-            Role = UserRole.Student
-        };
+            var student = new User
+            {
+                Id = _editingId,
+                Username = studentCode,
+                StudentCode = studentCode,
+                FullName = fullName,
+                ClassName = selectedClass!.Code,
+                Role = UserRole.Student
+            };
 
-        _allowCloseWithoutPrompt = true;
-        DialogResult = DialogResult.OK;
-        Close();
+            _service.SaveStudent(student);
+            Result = student;
+
+            _allowCloseWithoutPrompt = true;
+            DialogResult = DialogResult.OK;
+            Close();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                ex.Message,
+                "Lỗi lưu sinh viên",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+        }
     }
 
     private void EnsureHeightFitsContent()

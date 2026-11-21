@@ -1,4 +1,5 @@
 using ExamDesk.Models;
+using ExamDesk.Services;
 using ExamDesk.UI.Shared;
 
 namespace ExamDesk.UI.Administration;
@@ -30,6 +31,12 @@ public partial class QuestionPreviewDialog : Form
         UiStyle.ClampToWorkingArea(this);
     }
 
+    protected override void OnFormClosed(FormClosedEventArgs e)
+    {
+        ReleasePreviewImage();
+        base.OnFormClosed(e);
+    }
+
     public void ShowQuestion(Question q, string subjectName)
     {
         ArgumentNullException.ThrowIfNull(q);
@@ -51,6 +58,8 @@ public partial class QuestionPreviewDialog : Form
             ? "(Chưa nhập nội dung câu hỏi)"
             : q.Content;
 
+        UpdateQuestionImage(q.ImagePath);
+
         _lblOptAText.Text = string.IsNullOrWhiteSpace(q.OptionA) ? "(Chưa nhập đáp án A)" : q.OptionA;
         _lblOptBText.Text = string.IsNullOrWhiteSpace(q.OptionB) ? "(Chưa nhập đáp án B)" : q.OptionB;
         _lblOptCText.Text = string.IsNullOrWhiteSpace(q.OptionC) ? "(Chưa nhập đáp án C)" : q.OptionC;
@@ -63,6 +72,38 @@ public partial class QuestionPreviewDialog : Form
         _radOptD.Checked = false;
 
         UpdateCorrectAnswerHighlight();
+    }
+
+    private void UpdateQuestionImage(string? imagePath)
+    {
+        ReleasePreviewImage();
+
+        if (string.IsNullOrWhiteSpace(imagePath))
+        {
+            _picQuestionImage.Visible = false;
+            _lblImageMissing.Visible = false;
+            return;
+        }
+
+        var loadedImage = QuestionBankService.LoadImageUnlocked(imagePath);
+        if (loadedImage is not null)
+        {
+            _picQuestionImage.Image = loadedImage;
+            _picQuestionImage.Visible = true;
+            _lblImageMissing.Visible = false;
+            return;
+        }
+
+        _picQuestionImage.Visible = false;
+        _lblImageMissing.Text = "⚠ Không tìm thấy tệp ảnh đính kèm";
+        _lblImageMissing.Visible = true;
+    }
+
+    private void ReleasePreviewImage()
+    {
+        var oldImage = _picQuestionImage.Image;
+        _picQuestionImage.Image = null;
+        oldImage?.Dispose();
     }
 
     private static string FormatDifficulty(string? difficulty) => difficulty switch

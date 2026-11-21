@@ -176,7 +176,7 @@ partial class LoginForm
         _lblDemoNote.ForeColor = UiStyle.TextMuted;
         _lblDemoNote.TextAlign = ContentAlignment.BottomLeft;
         _lblDemoNote.Margin = new Padding(0, 4, 0, 12);
-        _lblDemoNote.Text = "Bản dựng UI – tài khoản minh họa: gv01 / 123456";
+        _lblDemoNote.Text = "Tài khoản mặc định lần đầu: gv01 / 123456";
 
         // _buttonsLayout
         _buttonsLayout.Dock = DockStyle.Fill;

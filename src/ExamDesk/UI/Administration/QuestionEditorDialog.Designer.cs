@@ -30,6 +30,13 @@ partial class QuestionEditorDialog
     private Label _lblCharCount = null!;
     private TextBox _txtContent = null!;
     private Label _lblContentError = null!;
+    private TableLayoutPanel _imageSectionLayout = null!;
+    private Label _lblImageSection = null!;
+    private FlowLayoutPanel _imageActionsFlow = null!;
+    private Button _btnChooseImage = null!;
+    private Button _btnRemoveImage = null!;
+    private Label _lblImageFileName = null!;
+    private PictureBox _picQuestionImage = null!;
     private TableLayoutPanel _optionsHeaderLayout = null!;
     private Label _lblOptionsSection = null!;
     private Label _lblCorrectColumnHint = null!;
@@ -58,7 +65,16 @@ partial class QuestionEditorDialog
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) components?.Dispose();
+        if (disposing)
+        {
+            var image = _picQuestionImage?.Image;
+            if (_picQuestionImage is not null)
+            {
+                _picQuestionImage.Image = null;
+            }
+            image?.Dispose();
+            components?.Dispose();
+        }
         base.Dispose(disposing);
     }
 
@@ -88,6 +104,13 @@ partial class QuestionEditorDialog
         _lblCharCount = new Label();
         _txtContent = new TextBox();
         _lblContentError = new Label();
+        _imageSectionLayout = new TableLayoutPanel();
+        _lblImageSection = new Label();
+        _imageActionsFlow = new FlowLayoutPanel();
+        _btnChooseImage = new Button();
+        _btnRemoveImage = new Button();
+        _lblImageFileName = new Label();
+        _picQuestionImage = new PictureBox();
         _optionsHeaderLayout = new TableLayoutPanel();
         _lblOptionsSection = new Label();
         _lblCorrectColumnHint = new Label();
@@ -122,6 +145,9 @@ partial class QuestionEditorDialog
         ((System.ComponentModel.ISupportInitialize)_numChapter).BeginInit();
         _difficultyFlow.SuspendLayout();
         _contentHeaderLayout.SuspendLayout();
+        _imageSectionLayout.SuspendLayout();
+        _imageActionsFlow.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)_picQuestionImage).BeginInit();
         _optionsHeaderLayout.SuspendLayout();
         _optionsLayout.SuspendLayout();
         _footerLayout.SuspendLayout();
@@ -183,14 +209,15 @@ partial class QuestionEditorDialog
         _formLayout.BackColor = UiStyle.Surface;
         _formLayout.ColumnCount = 1;
         _formLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        _formLayout.RowCount = 7;
+        _formLayout.RowCount = 8;
         _formLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 0: Meta row (Subject, Chapter, Difficulty)
         _formLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 1: Content header
         _formLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 2: Content textbox
         _formLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 3: Content error
-        _formLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 4: Options header
-        _formLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 5: Options table
-        _formLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 6: Correct option error
+        _formLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 4: Question image (optional)
+        _formLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 5: Options header
+        _formLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 6: Options table
+        _formLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 7: Correct option error
 
         // _metaLayout (3 columns: Subject | Chapter | Difficulty)
         _metaLayout.Dock = DockStyle.Fill;
@@ -356,6 +383,69 @@ partial class QuestionEditorDialog
         _lblContentError.Margin = new Padding(0, 0, 0, 10);
         _lblContentError.Visible = false;
 
+        // _imageSectionLayout
+        _imageSectionLayout.Dock = DockStyle.Fill;
+        _imageSectionLayout.AutoSize = true;
+        _imageSectionLayout.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+        _imageSectionLayout.ColumnCount = 1;
+        _imageSectionLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        _imageSectionLayout.RowCount = 3;
+        _imageSectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 0: Label
+        _imageSectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 1: Buttons + file name
+        _imageSectionLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 2: PictureBox preview
+        _imageSectionLayout.Margin = new Padding(0, 0, 0, 12);
+
+        _lblImageSection.AutoSize = true;
+        _lblImageSection.Font = UiStyle.BodyFont;
+        _lblImageSection.ForeColor = UiStyle.Text;
+        _lblImageSection.Margin = new Padding(0, 0, 0, 6);
+        _lblImageSection.Text = "Hình ảnh minh họa (tùy chọn)";
+
+        _imageActionsFlow.Dock = DockStyle.Fill;
+        _imageActionsFlow.AutoSize = true;
+        _imageActionsFlow.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+        _imageActionsFlow.FlowDirection = FlowDirection.LeftToRight;
+        _imageActionsFlow.WrapContents = true;
+        _imageActionsFlow.Margin = new Padding(0);
+
+        _btnChooseImage.Height = 38;
+        _btnChooseImage.Margin = new Padding(0, 0, 10, 4);
+        _btnChooseImage.TabIndex = 6;
+        _btnChooseImage.Text = "Chọn ảnh...";
+        UiStyle.StyleSecondaryButton(_btnChooseImage);
+        _btnChooseImage.Click += OnChooseImageClick;
+
+        _btnRemoveImage.Height = 38;
+        _btnRemoveImage.Margin = new Padding(0, 0, 12, 4);
+        _btnRemoveImage.TabIndex = 7;
+        _btnRemoveImage.Text = "Xóa ảnh";
+        _btnRemoveImage.Enabled = false;
+        UiStyle.StyleSecondaryButton(_btnRemoveImage);
+        _btnRemoveImage.Click += OnRemoveImageClick;
+
+        _lblImageFileName.AutoSize = true;
+        _lblImageFileName.Font = UiStyle.SmallFont;
+        _lblImageFileName.ForeColor = UiStyle.TextMuted;
+        _lblImageFileName.Margin = new Padding(0, 10, 0, 4);
+        _lblImageFileName.Text = "Chưa đính kèm ảnh";
+
+        _imageActionsFlow.Controls.Add(_btnChooseImage);
+        _imageActionsFlow.Controls.Add(_btnRemoveImage);
+        _imageActionsFlow.Controls.Add(_lblImageFileName);
+
+        _picQuestionImage.Dock = DockStyle.Top;
+        _picQuestionImage.Height = 140;
+        _picQuestionImage.SizeMode = PictureBoxSizeMode.Zoom;
+        _picQuestionImage.BackColor = UiStyle.Background;
+        _picQuestionImage.BorderStyle = BorderStyle.FixedSingle;
+        _picQuestionImage.Margin = new Padding(0, 6, 0, 0);
+        _picQuestionImage.TabStop = false;
+        _picQuestionImage.Visible = false;
+
+        _imageSectionLayout.Controls.Add(_lblImageSection, 0, 0);
+        _imageSectionLayout.Controls.Add(_imageActionsFlow, 0, 1);
+        _imageSectionLayout.Controls.Add(_picQuestionImage, 0, 2);
+
         // _optionsHeaderLayout
         _optionsHeaderLayout.Dock = DockStyle.Fill;
         _optionsHeaderLayout.AutoSize = true;
@@ -399,29 +489,29 @@ partial class QuestionEditorDialog
 
         ConfigureOptionRow(
             _lblOptionA, "Đáp án A *",
-            _txtOptionA, 6,
-            _radCorrectA, 7,
+            _txtOptionA, 8,
+            _radCorrectA, 9,
             _lblOptionAError,
             rowIndex: 0);
 
         ConfigureOptionRow(
             _lblOptionB, "Đáp án B *",
-            _txtOptionB, 8,
-            _radCorrectB, 9,
+            _txtOptionB, 10,
+            _radCorrectB, 11,
             _lblOptionBError,
             rowIndex: 2);
 
         ConfigureOptionRow(
             _lblOptionC, "Đáp án C *",
-            _txtOptionC, 10,
-            _radCorrectC, 11,
+            _txtOptionC, 12,
+            _radCorrectC, 13,
             _lblOptionCError,
             rowIndex: 4);
 
         ConfigureOptionRow(
             _lblOptionD, "Đáp án D *",
-            _txtOptionD, 12,
-            _radCorrectD, 13,
+            _txtOptionD, 14,
+            _radCorrectD, 15,
             _lblOptionDError,
             rowIndex: 6);
 
@@ -437,9 +527,10 @@ partial class QuestionEditorDialog
         _formLayout.Controls.Add(_contentHeaderLayout, 0, 1);
         _formLayout.Controls.Add(_txtContent, 0, 2);
         _formLayout.Controls.Add(_lblContentError, 0, 3);
-        _formLayout.Controls.Add(_optionsHeaderLayout, 0, 4);
-        _formLayout.Controls.Add(_optionsLayout, 0, 5);
-        _formLayout.Controls.Add(_lblCorrectOptionError, 0, 6);
+        _formLayout.Controls.Add(_imageSectionLayout, 0, 4);
+        _formLayout.Controls.Add(_optionsHeaderLayout, 0, 5);
+        _formLayout.Controls.Add(_optionsLayout, 0, 6);
+        _formLayout.Controls.Add(_lblCorrectOptionError, 0, 7);
 
         _scrollPanel.Controls.Add(_formLayout);
 
@@ -460,7 +551,7 @@ partial class QuestionEditorDialog
         _btnPreview.Width = 120;
         _btnPreview.Height = 40;
         _btnPreview.Margin = new Padding(0);
-        _btnPreview.TabIndex = 14;
+        _btnPreview.TabIndex = 16;
         _btnPreview.Text = "Xem trước";
         UiStyle.StyleSecondaryButton(_btnPreview);
         _btnPreview.Click += OnPreviewClick;
@@ -469,7 +560,7 @@ partial class QuestionEditorDialog
         _btnCancel.Width = 100;
         _btnCancel.Height = 40;
         _btnCancel.Margin = new Padding(0, 0, 12, 0);
-        _btnCancel.TabIndex = 15;
+        _btnCancel.TabIndex = 17;
         _btnCancel.Text = "Hủy";
         UiStyle.StyleSecondaryButton(_btnCancel);
         _btnCancel.Click += OnCancelClick;
@@ -478,7 +569,7 @@ partial class QuestionEditorDialog
         _btnSave.Width = 140;
         _btnSave.Height = 40;
         _btnSave.Margin = new Padding(0);
-        _btnSave.TabIndex = 16;
+        _btnSave.TabIndex = 18;
         _btnSave.Text = "Lưu";
         UiStyle.StylePrimaryButton(_btnSave);
         _btnSave.Click += OnSaveClick;
@@ -521,6 +612,11 @@ partial class QuestionEditorDialog
         _difficultyFlow.PerformLayout();
         _contentHeaderLayout.ResumeLayout(false);
         _contentHeaderLayout.PerformLayout();
+        _imageSectionLayout.ResumeLayout(false);
+        _imageSectionLayout.PerformLayout();
+        _imageActionsFlow.ResumeLayout(false);
+        _imageActionsFlow.PerformLayout();
+        ((System.ComponentModel.ISupportInitialize)_picQuestionImage).EndInit();
         _optionsHeaderLayout.ResumeLayout(false);
         _optionsHeaderLayout.PerformLayout();
         _optionsLayout.ResumeLayout(false);

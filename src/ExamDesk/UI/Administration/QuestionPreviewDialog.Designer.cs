@@ -16,6 +16,8 @@ partial class QuestionPreviewDialog
     private Label _lblStudentSectionTitle = null!;
     private Panel _questionBoxPanel = null!;
     private Label _lblQuestionContent = null!;
+    private PictureBox _picQuestionImage = null!;
+    private Label _lblImageMissing = null!;
     private TableLayoutPanel _optionsListLayout = null!;
     private Panel _optABorder = null!;
     private TableLayoutPanel _optARow = null!;
@@ -44,7 +46,16 @@ partial class QuestionPreviewDialog
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) components?.Dispose();
+        if (disposing)
+        {
+            var image = _picQuestionImage?.Image;
+            if (_picQuestionImage is not null)
+            {
+                _picQuestionImage.Image = null;
+            }
+            image?.Dispose();
+            components?.Dispose();
+        }
         base.Dispose(disposing);
     }
 
@@ -60,6 +71,8 @@ partial class QuestionPreviewDialog
         _lblStudentSectionTitle = new Label();
         _questionBoxPanel = new Panel();
         _lblQuestionContent = new Label();
+        _picQuestionImage = new PictureBox();
+        _lblImageMissing = new Label();
         _optionsListLayout = new TableLayoutPanel();
         _optABorder = new Panel();
         _optARow = new TableLayoutPanel();
@@ -92,6 +105,7 @@ partial class QuestionPreviewDialog
         _scrollPanel.SuspendLayout();
         _studentViewLayout.SuspendLayout();
         _questionBoxPanel.SuspendLayout();
+        ((System.ComponentModel.ISupportInitialize)_picQuestionImage).BeginInit();
         _optionsListLayout.SuspendLayout();
         _footerLayout.SuspendLayout();
         SuspendLayout();
@@ -151,10 +165,12 @@ partial class QuestionPreviewDialog
         _studentViewLayout.BackColor = UiStyle.Surface;
         _studentViewLayout.ColumnCount = 1;
         _studentViewLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        _studentViewLayout.RowCount = 3;
+        _studentViewLayout.RowCount = 5;
         _studentViewLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 0: Section label
         _studentViewLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 1: Question content
-        _studentViewLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 2: Options A-D
+        _studentViewLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 2: Question image
+        _studentViewLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 3: Missing image warning
+        _studentViewLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 4: Options A-D
 
         // _lblStudentSectionTitle
         _lblStudentSectionTitle.AutoSize = true;
@@ -181,6 +197,26 @@ partial class QuestionPreviewDialog
 
         _questionBoxPanel.Controls.Add(_lblQuestionContent);
 
+        // _picQuestionImage
+        _picQuestionImage.Dock = DockStyle.Top;
+        _picQuestionImage.Height = 180;
+        _picQuestionImage.SizeMode = PictureBoxSizeMode.Zoom;
+        _picQuestionImage.BackColor = UiStyle.Background;
+        _picQuestionImage.BorderStyle = BorderStyle.FixedSingle;
+        _picQuestionImage.Margin = new Padding(0, 0, 0, 14);
+        _picQuestionImage.TabStop = false;
+        _picQuestionImage.Visible = false;
+
+        // _lblImageMissing
+        _lblImageMissing.AutoSize = true;
+        _lblImageMissing.Font = UiStyle.SmallFont;
+        _lblImageMissing.ForeColor = UiStyle.WarningText;
+        _lblImageMissing.BackColor = UiStyle.WarningBack;
+        _lblImageMissing.Padding = new Padding(10, 6, 10, 6);
+        _lblImageMissing.Margin = new Padding(0, 0, 0, 14);
+        _lblImageMissing.Text = "⚠ Không tìm thấy tệp ảnh đính kèm";
+        _lblImageMissing.Visible = false;
+
         // _optionsListLayout
         _optionsListLayout.Dock = DockStyle.Fill;
         _optionsListLayout.AutoSize = true;
@@ -201,7 +237,9 @@ partial class QuestionPreviewDialog
 
         _studentViewLayout.Controls.Add(_lblStudentSectionTitle, 0, 0);
         _studentViewLayout.Controls.Add(_questionBoxPanel, 0, 1);
-        _studentViewLayout.Controls.Add(_optionsListLayout, 0, 2);
+        _studentViewLayout.Controls.Add(_picQuestionImage, 0, 2);
+        _studentViewLayout.Controls.Add(_lblImageMissing, 0, 3);
+        _studentViewLayout.Controls.Add(_optionsListLayout, 0, 4);
 
         _scrollPanel.Controls.Add(_studentViewLayout);
         _cardBorderPanel.Controls.Add(_scrollPanel);
@@ -282,6 +320,7 @@ partial class QuestionPreviewDialog
         _studentViewLayout.PerformLayout();
         _questionBoxPanel.ResumeLayout(false);
         _questionBoxPanel.PerformLayout();
+        ((System.ComponentModel.ISupportInitialize)_picQuestionImage).EndInit();
         _optionsListLayout.ResumeLayout(false);
         _optionsListLayout.PerformLayout();
         _footerLayout.ResumeLayout(false);

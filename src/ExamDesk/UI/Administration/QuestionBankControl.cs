@@ -282,22 +282,30 @@ public partial class QuestionBankControl : UserControl, IUnsavedChangesGuard
         {
             var subjectCode = FormatSubjectCode(question.SubjectId);
             var difficultyText = FormatDifficulty(question.Difficulty);
+            var hasImage = !string.IsNullOrWhiteSpace(question.ImagePath);
+            var shortContent = ShortenContent(question.Content);
+            var displayContent = hasImage ? $"[🖼 Ảnh] {shortContent}" : shortContent;
 
             var rowIndex = _dgvQuestions.Rows.Add(
                 $"#{question.Id}",
                 subjectCode,
                 $"Chương {question.Chapter}",
                 difficultyText,
-                ShortenContent(question.Content),
+                displayContent,
                 question.CorrectOption);
 
             var row = _dgvQuestions.Rows[rowIndex];
             row.Tag = question;
 
+            var imageLine = hasImage
+                ? $"\nẢnh minh họa: {Path.GetFileName(question.ImagePath)}\n"
+                : string.Empty;
+
             var fullTooltip =
                 $"[#{question.Id}] {subjectCode} • Chương {question.Chapter} • {difficultyText}\n\n" +
-                $"{question.Content}\n\n" +
-                $"A. {question.OptionA}\n" +
+                $"{question.Content}\n" +
+                imageLine +
+                $"\nA. {question.OptionA}\n" +
                 $"B. {question.OptionB}\n" +
                 $"C. {question.OptionC}\n" +
                 $"D. {question.OptionD}\n\n" +
@@ -438,6 +446,30 @@ public partial class QuestionBankControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
+        try
+        {
+            if (_service.IsQuestionUsedInAnyPaper(selected.Id))
+            {
+                MessageBox.Show(
+                    this,
+                    "Câu hỏi này đã được gắn vào đề thi, không thể chỉnh sửa để bảo toàn đề thi.",
+                    "Không thể sửa câu hỏi",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                $"Lỗi khi kiểm tra trạng thái câu hỏi: {ex.Message}",
+                "Lỗi cơ sở dữ liệu",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
+            return;
+        }
+
         using var dialog = new QuestionEditorDialog(_service);
         dialog.LoadQuestion(selected);
         var owner = FindForm();
@@ -499,9 +531,19 @@ public partial class QuestionBankControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
+        var isLocked = false;
+        try
+        {
+            isLocked = _service.IsQuestionUsedInAnyPaper(selected.Id);
+        }
+        catch
+        {
+            isLocked = false;
+        }
+
         using var previewDialog = new QuestionPreviewDialog
         {
-            AllowEdit = true
+            AllowEdit = !isLocked
         };
         previewDialog.ShowQuestion(selected, FormatSubjectCode(selected.SubjectId));
 
