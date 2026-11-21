@@ -69,6 +69,8 @@ internal static class StudentLayout
 
     internal const int SidebarWidth = 320;
     internal const int ClockWidth = 184;
+    internal const int ExamBadgeSize = 40;
+    internal const int ExamImageMinHeight = 48;
     internal const int ImageMaxWidth = 480;
     internal const int ImageMaxHeight = 220;
     internal const int ImageDialogWidth = 840;
@@ -103,6 +105,9 @@ internal static class StudentLayout
     internal const float BodyFontSize = 10f;
     internal const float SubheadingFontSize = 11f;
     internal const float HeadingFontSize = 12f;
+    internal const float QuestionFontSize = 12.5f;
+    internal static readonly Color ExamBorder = ColorTranslator.FromHtml("#ADBFD4");
+    internal static readonly Color ExamMutedText = ColorTranslator.FromHtml("#435570");
     internal const float ClockFontSize = 14f;
     internal const float TitleFontSize = 16f;
     internal const float PageTitleFontSize = 18f;
@@ -514,6 +519,13 @@ internal sealed class StudentButton : Button
         }
 
         var prefixFlag = ShowKeyboardCues ? TextFormatFlags.Default : TextFormatFlags.HidePrefix;
+        // Hide mnemonic underlines on the exam screen without disabling shortcuts.
+        for (Control? ancestor = Parent; ancestor is not null; ancestor = ancestor.Parent)
+        {
+            if (ancestor is not StudentExamControl) continue;
+            prefixFlag = TextFormatFlags.HidePrefix;
+            break;
+        }
         int textWidth = TextRenderer.MeasureText(e.Graphics, Text, Font, new Size(int.MaxValue, int.MaxValue),
             TextFormatFlags.SingleLine | TextFormatFlags.HidePrefix | TextFormatFlags.NoPadding).Width;
 
