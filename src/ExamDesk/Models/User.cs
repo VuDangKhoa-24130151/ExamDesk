@@ -11,3 +11,12 @@ public sealed class User
     public string ClassName { get; set; } = string.Empty;
     public UserRole Role { get; set; } = UserRole.Student;
 }
+
+public sealed class ClassInfo
+{
+    public int Id { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string SchoolYear { get; set; } = string.Empty;
+    public int StudentCount { get; set; }
+}

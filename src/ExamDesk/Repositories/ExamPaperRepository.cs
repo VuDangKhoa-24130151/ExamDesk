@@ -319,22 +319,14 @@ public sealed class ExamPaperRepository
     }
 
     /// <summary>
-    /// Kiểm tra đề thi đã được sử dụng trong bất kỳ ca thi hoặc lượt làm bài nào chưa.
+    /// Kiểm tra đề thi đã được sử dụng trong bất kỳ ca thi, lượt làm bài hoặc bản nháp sinh viên nào chưa.
     /// </summary>
     public bool IsPaperUsedInSession(int paperId)
     {
         using var connection = SqliteContext.CreateConnection();
         connection.Open();
 
-        using var command = connection.CreateCommand();
-        command.CommandText = @"
-            SELECT CASE
-                WHEN EXISTS(SELECT 1 FROM ExamSessions WHERE PaperId = $paperId)
-                  OR EXISTS(SELECT 1 FROM ExamAttempts WHERE PaperId = $paperId)
-                THEN 1 ELSE 0
-            END;";
-        command.Parameters.AddWithValue("$paperId", paperId);
-        return Convert.ToInt32(command.ExecuteScalar()) == 1;
+        return IsPaperUsedInSessionInternal(connection, transaction: null, paperId);
     }
 
     /// <summary>
@@ -352,10 +344,16 @@ public sealed class ExamPaperRepository
         using var connection = SqliteContext.CreateConnection();
         connection.Open();
 
-        // Bảo toàn dữ liệu: xóa bộ câu cũ và ghi bộ câu mới trong cùng 1 transaction.
+        // Bảo toàn dữ liệu: kiểm tra khóa đề, xóa bộ câu cũ và ghi bộ câu mới trong cùng 1 transaction.
         using var transaction = connection.BeginTransaction();
         try
         {
+            if (IsPaperUsedInSessionInternal(connection, transaction, paperId))
+            {
+                throw new InvalidOperationException(
+                    "Đề thi đã được gán vào ca thi hoặc đã có dữ liệu làm bài của sinh viên, không thể rút lại câu hỏi để bảo toàn dữ liệu thi.");
+            }
+
             using (var deleteCmd = connection.CreateCommand())
             {
                 deleteCmd.Transaction = transaction;
@@ -383,10 +381,16 @@ public sealed class ExamPaperRepository
         using var connection = SqliteContext.CreateConnection();
         connection.Open();
 
-        // Bảo toàn dữ liệu: xóa ExamPaperQuestions trước rồi mới xóa ExamPapers trong cùng 1 transaction.
+        // Bảo toàn dữ liệu: kiểm tra khóa đề, xóa ExamPaperQuestions trước rồi mới xóa ExamPapers trong cùng 1 transaction.
         using var transaction = connection.BeginTransaction();
         try
         {
+            if (IsPaperUsedInSessionInternal(connection, transaction, paperId))
+            {
+                throw new InvalidOperationException(
+                    "Đề thi đã được gán vào ca thi hoặc đã có dữ liệu làm bài của sinh viên, không thể xóa để bảo toàn dữ liệu thi.");
+            }
+
             using (var deleteQuestionsCmd = connection.CreateCommand())
             {
                 deleteQuestionsCmd.Transaction = transaction;
@@ -523,6 +527,31 @@ public sealed class ExamPaperRepository
         }
 
         return list;
+    }
+
+    private static bool IsPaperUsedInSessionInternal(
+        SqliteConnection connection,
+        SqliteTransaction? transaction,
+        int paperId)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        // StudentDrafts lưu PaperId gián tiếp qua ExamSessions(SessionId) và trong JSON Payload.
+        command.CommandText = @"
+            SELECT CASE
+                WHEN EXISTS(SELECT 1 FROM ExamSessions WHERE PaperId = $paperId)
+                  OR EXISTS(SELECT 1 FROM ExamAttempts WHERE PaperId = $paperId)
+                  OR EXISTS(
+                      SELECT 1
+                      FROM StudentDrafts d
+                      LEFT JOIN ExamSessions es ON es.Id = d.SessionId
+                      WHERE es.PaperId = $paperId
+                         OR (json_valid(d.Payload) = 1 AND json_extract(d.Payload, '$.PaperId') = $paperId)
+                  )
+                THEN 1 ELSE 0
+            END;";
+        command.Parameters.AddWithValue("$paperId", paperId);
+        return Convert.ToInt32(command.ExecuteScalar()) == 1;
     }
 
     private static void InsertPaperQuestionsInternal(

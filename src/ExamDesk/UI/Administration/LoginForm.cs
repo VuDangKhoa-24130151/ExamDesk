@@ -1,19 +1,25 @@
+using ExamDesk.Models;
+using ExamDesk.Services;
 using ExamDesk.UI.Shared;
 
 namespace ExamDesk.UI.Administration;
 
-// Bạn 1: Form độc lập. Thêm các UserControl/Dialog của phân hệ trong cùng thư mục.
+// AUTH-02 • Bạn 1 phụ trách: Đăng nhập giảng viên qua SQLite (AdministrationService).
 public partial class LoginForm : Form
 {
-    private const string DemoUsername = "gv01";
-    private const string DemoPassword = "123456";
-
+    private readonly AdministrationService _service;
     private bool _isSubmitting;
 
+    public User? LoggedInUser { get; private set; }
     public string LoggedInUsername { get; private set; } = string.Empty;
 
-    public LoginForm()
+    public LoginForm() : this(new AdministrationService())
     {
+    }
+
+    public LoginForm(AdministrationService service)
+    {
+        _service = service ?? throw new ArgumentNullException(nameof(service));
         InitializeComponent();
     }
 
@@ -21,6 +27,17 @@ public partial class LoginForm : Form
     {
         base.OnLoad(e);
         UiStyle.ClampToWorkingArea(this);
+
+        try
+        {
+            _service.EnsureDefaultLecturerAccount();
+        }
+        catch (Exception ex)
+        {
+            _lblGeneralError.Text = $"Không thể khởi tạo tài khoản mặc định: {ex.Message}";
+            _pnlErrorBanner.Visible = true;
+            EnsureHeightFitsContent();
+        }
     }
 
     private void OnUsernameTextChanged(object? sender, EventArgs e)
@@ -52,7 +69,7 @@ public partial class LoginForm : Form
         _txtPassword.UseSystemPasswordChar = !_chkShowPassword.Checked;
     }
 
-    private async void OnLoginClick(object? sender, EventArgs e)
+    private void OnLoginClick(object? sender, EventArgs e)
     {
         if (_isSubmitting)
         {
@@ -90,28 +107,41 @@ public partial class LoginForm : Form
             return;
         }
 
-        if (!string.Equals(username, DemoUsername, StringComparison.Ordinal) ||
-            !string.Equals(password, DemoPassword, StringComparison.Ordinal))
-        {
-            _lblGeneralError.Text = "Tên đăng nhập hoặc mật khẩu không đúng. Kiểm tra lại và thử lần nữa.";
-            _pnlErrorBanner.Visible = true;
-            _txtPassword.Clear();
-            EnsureHeightFitsContent();
-            _txtPassword.Focus();
-            return;
-        }
-
         SetSubmittingState(true);
-        await Task.Delay(500);
-
-        if (IsDisposed || !IsHandleCreated)
+        try
         {
-            return;
-        }
+            var lecturer = _service.AuthenticateLecturer(username, password);
+            if (lecturer is null)
+            {
+                SetSubmittingState(false);
+                _txtPassword.Clear();
+                _lblGeneralError.Text = "Tên đăng nhập hoặc mật khẩu không đúng. Kiểm tra lại và thử lần nữa.";
+                _pnlErrorBanner.Visible = true;
+                EnsureHeightFitsContent();
+                _txtPassword.Focus();
+                return;
+            }
 
-        LoggedInUsername = username;
-        DialogResult = DialogResult.OK;
-        Close();
+            LoggedInUser = lecturer;
+            LoggedInUsername = !string.IsNullOrWhiteSpace(lecturer.FullName)
+                ? $"{lecturer.FullName} ({lecturer.Username})"
+                : lecturer.Username;
+            DialogResult = DialogResult.OK;
+            Close();
+        }
+        catch (Exception ex)
+        {
+            _lblGeneralError.Text = $"Lỗi khi xác thực tài khoản: {ex.Message}";
+            _pnlErrorBanner.Visible = true;
+            EnsureHeightFitsContent();
+        }
+        finally
+        {
+            if (!IsDisposed)
+            {
+                SetSubmittingState(false);
+            }
+        }
     }
 
     private void OnCancelClick(object? sender, EventArgs e)

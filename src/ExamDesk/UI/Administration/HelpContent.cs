@@ -31,7 +31,7 @@ internal static class HelpContent
                 "Bước 2: Nếu là giảng viên, bấm nút \"Đăng nhập giảng viên\" ở thẻ bên trái để mở hộp thoại xác thực.",
                 "Bước 3: Nếu là sinh viên dự thi, bấm nút \"Vào khu sinh viên\" ở thẻ bên phải để mở cửa sổ làm bài thi."
             ],
-            Note = "Trong chế độ dựng UI, bạn vẫn có thể bấm trực tiếp các mục trên thanh menu bên trái để kiểm tra từng màn hình mà chưa cần đăng nhập thật."
+            Note = "Bạn cũng có thể truy cập trực tiếp các mục trên thanh menu bên trái để thao tác nhanh với các phân hệ quản trị và thi."
         },
         new HelpTopic
         {
@@ -42,11 +42,11 @@ internal static class HelpContent
             Steps =
             [
                 "Bước 1: Tại màn hình \"Chọn vai trò\", bấm nút \"Đăng nhập giảng viên\" (hoặc chọn \"Mở UI đăng nhập GV\" ở cuối menu).",
-                "Bước 2: Nhập Tên đăng nhập * (tài khoản minh họa: gv01) và Mật khẩu * (mật khẩu minh họa: 123456).",
+                "Bước 2: Nhập Tên đăng nhập * (tài khoản mặc định lần đầu: gv01) và Mật khẩu * (mật khẩu mặc định: 123456).",
                 "Bước 3: Có thể tích \"Hiện mật khẩu\" để kiểm tra lại ký tự vừa nhập.",
-                "Bước 4: Nhấn phím Enter hoặc bấm nút \"Đăng nhập\". Hệ thống sẽ chuyển tới màn hình \"Tổng quan\" và hiển thị tên giảng viên ở cuối thanh menu."
+                "Bước 4: Nhấn phím Enter hoặc bấm nút \"Đăng nhập\". Hệ thống sẽ xác thực trên bảng Users (SQLite), chuyển tới màn hình \"Tổng quan\" và hiển thị tên giảng viên ở cuối thanh menu."
             ],
-            Note = "Nếu để trống trường bắt buộc hoặc nhập sai tài khoản minh họa, thông báo lỗi sẽ xuất hiện ngay dưới ô nhập và giữ nguyên nội dung để bạn sửa lại."
+            Note = "Nếu để trống trường bắt buộc hoặc nhập sai thông tin đăng nhập, thông báo lỗi sẽ xuất hiện ngay và giữ nguyên tên đăng nhập để bạn sửa lại."
         },
         new HelpTopic
         {
@@ -61,7 +61,7 @@ internal static class HelpContent
                 "Bước 3: Nếu màn hình hiện tại có thay đổi chưa lưu, hệ thống sẽ hỏi xác nhận bỏ thay đổi trước.",
                 "Bước 4: Chọn \"Yes\" (Có) trong hộp thoại \"Xác nhận đăng xuất\" để xóa phiên hiện tại và quay về màn hình \"Chọn vai trò\"."
             ],
-            Note = "Dữ liệu minh họa đã thêm/sửa trong bộ nhớ vẫn được giữ nguyên trong suốt lần chạy ứng dụng cho tới khi đóng chương trình."
+            Note = "Các dữ liệu quản trị đã thêm/sửa được lưu trữ bền vững trong cơ sở dữ liệu SQLite cục bộ nên vẫn được giữ nguyên sau khi đăng xuất hoặc đóng ứng dụng."
         },
 
         // ==================== 2. QUẢN TRỊ ====================
@@ -104,11 +104,11 @@ internal static class HelpContent
             Steps =
             [
                 "Bước 1: Bấm mục \"Ngân hàng câu hỏi\" trên menu trái (Ctrl+4) rồi bấm nút \"Thêm câu hỏi\" (hoặc bấm \"Thêm câu hỏi\" tại mục Thao tác nhanh của màn hình Tổng quan).",
-                "Bước 2: Trong hộp thoại soạn câu hỏi, chọn Môn *, Chương * (1–20) và Độ khó * (Dễ / Trung bình / Khó).",
-                "Bước 3: Nhập Nội dung câu hỏi * và đầy đủ 4 phương án trả lời A, B, C, D * (nội dung 4 phương án không được trùng nhau).",
+                "Bước 2: Trong hộp thoại soạn câu hỏi, chọn Môn *, Chương * (1–50) và Độ khó * (Dễ / Trung bình / Khó).",
+                "Bước 3: Nhập Nội dung câu hỏi *, có thể chọn thêm hình ảnh minh họa (PNG/JPG/BMP/GIF ≤ 5 MB) và nhập đầy đủ 4 phương án trả lời A, B, C, D * (nội dung 4 phương án không được trùng nhau).",
                 "Bước 4: Đánh dấu tròn \"Đúng\" tại đúng 1 phương án chuẩn, sau đó bấm \"Lưu\" hoặc nhấn Ctrl+S."
             ],
-            Note = "Bạn có thể bấm nút \"Xem trước\" ngay trong hộp thoại soạn thảo để kiểm tra giao diện hiển thị câu hỏi trước khi lưu."
+            Note = "Bạn có thể bấm nút \"Xem trước\" ngay trong hộp thoại soạn thảo để kiểm tra giao diện hiển thị câu hỏi và ảnh trước khi lưu. Câu hỏi đã gắn vào đề thi sẽ không thể sửa hoặc xóa."
         },
         new HelpTopic
         {
@@ -153,7 +153,7 @@ internal static class HelpContent
                 "Bước 2: Chọn môn học, thời gian làm bài và cấu hình số lượng câu hỏi theo từng mức độ khó (Dễ, Trung bình, Khó).",
                 "Bước 3: Kiểm tra số lượng câu hỏi khả dụng trong ngân hàng, xem trước đề và phát hành đề thi cho ca thi."
             ],
-            Note = "Chi tiết thao tác sẽ được cập nhật khi hoàn thiện màn hình Đề thi (GV-07 → GV-09)."
+            Note = "Đề thi đã gán vào ca thi hoặc đã có lượt làm bài của sinh viên sẽ tự động bị khóa để bảo toàn dữ liệu thi (không thể rút lại câu hỏi hoặc xóa)."
         },
         new HelpTopic
         {
