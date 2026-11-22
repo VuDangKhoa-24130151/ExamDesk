@@ -1,15 +1,31 @@
 using ExamDesk.Models;
+using ExamDesk.Repositories;
 
 namespace ExamDesk.Services;
 
-// Bạn 2 phụ trách. Stub cho giai đoạn nghiệp vụ; UI hiện tại chưa gọi các hàm này.
+// Bạn 2 phụ trách: Dịch vụ tra cứu danh sách kết quả thi, chi tiết từng câu để phúc khảo và thống kê.
 public sealed class GradingReviewService
 {
-    // TODO (Bạn 2): Tra cứu/lọc dữ liệu cho bảng và thống kê.
-    public List<ExamAttempt> GetAttempts(int? sessionId = null, string? className = null)
-        => throw new NotImplementedException("Bạn 2: chưa triển khai.");
+    private readonly GradingRepository _gradingRepository;
 
-    // TODO (Bạn 2): Đọc lịch sử từng câu để phúc khảo.
+    public GradingReviewService()
+        : this(new GradingRepository())
+    {
+    }
+
+    public GradingReviewService(GradingRepository gradingRepository)
+    {
+        _gradingRepository = gradingRepository ?? throw new ArgumentNullException(nameof(gradingRepository));
+    }
+
+    public List<ExamAttempt> GetAttempts(int? sessionId = null, string? className = null)
+        => _gradingRepository.FindAttempts(sessionId, className);
+
     public List<AttemptAnswer> GetAttemptAnswers(int attemptId)
-        => throw new NotImplementedException("Bạn 2: chưa triển khai.");
+    {
+        if (attemptId <= 0)
+            throw new ArgumentException("Mã lượt thi không hợp lệ.", nameof(attemptId));
+
+        return _gradingRepository.FindAnswersByAttemptId(attemptId);
+    }
 }
