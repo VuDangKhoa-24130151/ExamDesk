@@ -273,19 +273,58 @@ public sealed class QuestionRepository
 
     public void UpdateChapterNumber(int subjectId, int oldNumber, int newNumber)
     {
+        if (oldNumber == newNumber)
+        {
+            return;
+        }
+
         using var connection = SqliteContext.CreateConnection();
         connection.Open();
 
-        using var command = connection.CreateCommand();
-        command.CommandText = @"
-            UPDATE Questions
-            SET Chapter = $newNumber
-            WHERE SubjectId = $subjectId AND Chapter = $oldNumber;";
-        command.Parameters.AddWithValue("$newNumber", newNumber);
-        command.Parameters.AddWithValue("$subjectId", subjectId);
-        command.Parameters.AddWithValue("$oldNumber", oldNumber);
+        using var transaction = connection.BeginTransaction();
+        try
+        {
+            using (var checkCmd = connection.CreateCommand())
+            {
+                checkCmd.Transaction = transaction;
+                checkCmd.CommandText = @"
+                    SELECT EXISTS(
+                        SELECT 1
+                        FROM Questions q
+                        INNER JOIN ExamPaperQuestions epq ON epq.QuestionId = q.Id
+                        WHERE q.SubjectId = $subjectId AND q.Chapter = $oldNumber
+                    );";
+                checkCmd.Parameters.AddWithValue("$subjectId", subjectId);
+                checkCmd.Parameters.AddWithValue("$oldNumber", oldNumber);
 
-        command.ExecuteNonQuery();
+                if (Convert.ToInt32(checkCmd.ExecuteScalar()) == 1)
+                {
+                    throw new InvalidOperationException(
+                        $"Chương {oldNumber} có câu hỏi đã được gắn vào đề thi, không thể đổi số chương (chỉ được phép đổi tên chương).");
+                }
+            }
+
+            using (var command = connection.CreateCommand())
+            {
+                command.Transaction = transaction;
+                command.CommandText = @"
+                    UPDATE Questions
+                    SET Chapter = $newNumber
+                    WHERE SubjectId = $subjectId AND Chapter = $oldNumber;";
+                command.Parameters.AddWithValue("$newNumber", newNumber);
+                command.Parameters.AddWithValue("$subjectId", subjectId);
+                command.Parameters.AddWithValue("$oldNumber", oldNumber);
+
+                command.ExecuteNonQuery();
+            }
+
+            transaction.Commit();
+        }
+        catch
+        {
+            transaction.Rollback();
+            throw;
+        }
 
         UpdateMetadataChapterNumber(subjectId, oldNumber, newNumber);
     }

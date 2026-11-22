@@ -19,6 +19,7 @@ public sealed class MainForm : Form
     private readonly Panel _content = new() { Dock = DockStyle.Fill, Padding = new Padding(0) };
     private readonly FlowLayoutPanel _menu;
     private readonly List<Button> _menuButtons = [];
+    private readonly List<Button> _lecturerOnlyMenuButtons = [];
     private readonly ToolTip _toolTip = new();
 
     private readonly Label _lblLoginStatus;
@@ -98,9 +99,21 @@ public sealed class MainForm : Form
         // 3. Nhóm "Thi"
         AddMenuGroupHeader(_menu, "Thi");
         _examPaperButton = AddMenu(_menu, "Đề thi", () => new ExamPaperControl());
-        AddMenu(_menu, "Ca thi", () => new SessionManagementControl());
-        AddMenu(_menu, "Kết quả và phúc khảo", () => new GradingReviewControl());
-        AddMenu(_menu, "Xuất/nhập và sao lưu", () => new DataManagementControl());
+        var sessionManagementButton = AddMenu(_menu, "Ca thi", () => new SessionManagementControl());
+        var gradingReviewButton = AddMenu(_menu, "Kết quả và phúc khảo", () => new GradingReviewControl());
+        var dataManagementButton = AddMenu(_menu, "Xuất/nhập và sao lưu", () => new DataManagementControl());
+
+        _lecturerOnlyMenuButtons.AddRange(
+        [
+            _dashboardButton,
+            _subjectChapterButton,
+            _classStudentButton,
+            _questionBankButton,
+            _examPaperButton,
+            sessionManagementButton,
+            gradingReviewButton,
+            dataManagementButton
+        ]);
 
         // 4. Trợ giúp
         AddMenuSeparator(_menu);
@@ -149,7 +162,7 @@ public sealed class MainForm : Form
             ForeColor = SidebarMutedTextColor,
             BackColor = UiStyle.Sidebar,
             Margin = new Padding(4, 0, 4, 6),
-            Text = "Chưa đăng nhập – chế độ xem UI"
+            Text = "Chưa đăng nhập giảng viên"
         };
 
         _btnLogout = new Button
@@ -211,26 +224,39 @@ public sealed class MainForm : Form
 
     protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
     {
+        var isLoggedIn = !string.IsNullOrWhiteSpace(_loggedInUsername);
         switch (keyData)
         {
             case Keys.Control | Keys.D1:
             case Keys.Control | Keys.NumPad1:
-                _dashboardButton.PerformClick();
+                if (isLoggedIn)
+                {
+                    _dashboardButton.PerformClick();
+                }
                 return true;
 
             case Keys.Control | Keys.D2:
             case Keys.Control | Keys.NumPad2:
-                _subjectChapterButton.PerformClick();
+                if (isLoggedIn)
+                {
+                    _subjectChapterButton.PerformClick();
+                }
                 return true;
 
             case Keys.Control | Keys.D3:
             case Keys.Control | Keys.NumPad3:
-                _classStudentButton.PerformClick();
+                if (isLoggedIn)
+                {
+                    _classStudentButton.PerformClick();
+                }
                 return true;
 
             case Keys.Control | Keys.D4:
             case Keys.Control | Keys.NumPad4:
-                _questionBankButton.PerformClick();
+                if (isLoggedIn)
+                {
+                    _questionBankButton.PerformClick();
+                }
                 return true;
 
             case Keys.F1:
@@ -377,6 +403,12 @@ public sealed class MainForm : Form
     private void UpdateLoginStatusUi()
     {
         var isLoggedIn = !string.IsNullOrWhiteSpace(_loggedInUsername);
+        foreach (var button in _lecturerOnlyMenuButtons)
+        {
+            button.Enabled = isLoggedIn;
+            button.Cursor = isLoggedIn ? Cursors.Hand : Cursors.Default;
+        }
+
         if (isLoggedIn)
         {
             _lblLoginStatus.Text = $"GV: {_loggedInUsername}";
@@ -384,16 +416,16 @@ public sealed class MainForm : Form
             _lblLoginStatus.Font = ActiveMenuFont;
             _btnLogout.Visible = true;
             _lblBottomNote.Text =
-                $"CHẾ ĐỘ DỰNG UI • Đang đăng nhập minh họa: GV {_loggedInUsername} (chưa kết nối SQLite).";
+                $"Đã kết nối cơ sở dữ liệu SQLite cục bộ • Đang đăng nhập: {_loggedInUsername}";
         }
         else
         {
-            _lblLoginStatus.Text = "Chưa đăng nhập – chế độ xem UI";
+            _lblLoginStatus.Text = "Chưa đăng nhập giảng viên";
             _lblLoginStatus.ForeColor = SidebarMutedTextColor;
             _lblLoginStatus.Font = UiStyle.SmallFont;
             _btnLogout.Visible = false;
             _lblBottomNote.Text =
-                "CHẾ ĐỘ DỰNG UI • Chưa đăng nhập – chế độ xem UI (các màn hình mở tự do để dựng giao diện, chưa kết nối SQLite).";
+                "Đã kết nối cơ sở dữ liệu SQLite cục bộ • Chưa đăng nhập giảng viên (vui lòng đăng nhập để mở các mục Quản trị và Thi).";
         }
     }
 

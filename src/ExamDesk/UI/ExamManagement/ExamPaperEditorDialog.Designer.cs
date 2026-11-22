@@ -175,7 +175,10 @@ partial class ExamPaperEditorDialog
 
         _numEasy.Minimum = 0;
         _numEasy.Maximum = 500;
-        _numEasy.Value = 0;
+        _numEasy.Value = 10;
+        _numEasy.Enabled = false;
+        _numEasy.ReadOnly = true;
+        _numEasy.TabStop = false;
         _numEasy.Width = 140;
         _numEasy.Anchor = AnchorStyles.Left;
         _numEasy.Margin = new Padding(0, 4, 12, 2);
@@ -201,7 +204,10 @@ partial class ExamPaperEditorDialog
 
         _numMedium.Minimum = 0;
         _numMedium.Maximum = 500;
-        _numMedium.Value = 0;
+        _numMedium.Value = 15;
+        _numMedium.Enabled = false;
+        _numMedium.ReadOnly = true;
+        _numMedium.TabStop = false;
         _numMedium.Width = 140;
         _numMedium.Anchor = AnchorStyles.Left;
         _numMedium.Margin = new Padding(0, 4, 12, 2);
@@ -227,7 +233,10 @@ partial class ExamPaperEditorDialog
 
         _numHard.Minimum = 0;
         _numHard.Maximum = 500;
-        _numHard.Value = 0;
+        _numHard.Value = 5;
+        _numHard.Enabled = false;
+        _numHard.ReadOnly = true;
+        _numHard.TabStop = false;
         _numHard.Width = 140;
         _numHard.Anchor = AnchorStyles.Left;
         _numHard.Margin = new Padding(0, 4, 12, 2);
@@ -288,7 +297,7 @@ partial class ExamPaperEditorDialog
         _btnCancel.Text = "Hủy";
         _btnCancel.Margin = new Padding(8, 0, 0, 0);
 
-        _btnSave.Text = "Tạo đề";
+        _btnSave.Text = "Chọn câu hỏi ngẫu nhiên";
         _btnSave.Margin = new Padding(0);
 
         _buttonPanel.Controls.Add(_btnCancel);
