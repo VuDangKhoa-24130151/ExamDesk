@@ -91,7 +91,6 @@ public partial class StudentExamForm : Form
             try
             {
                 _attempt=new StudentAttemptState(new ExamDesk.Services.StudentDraftService().StartOrResume(session.Id, student), screen.ResumeClock);
-                _examLabel.Text = _attempt.Title;
                 // Hoàn tất lượt mà phiên bản cũ chỉ lưu trạng thái khóa.
                 if (_attempt.Draft!.PendingSubmission)
                     SubmitAttempt();
@@ -309,22 +308,22 @@ public partial class StudentExamForm : Form
 
     private void ConfirmClose(object? sender, FormClosingEventArgs e)
     {
-        if (_violationMonitor is not null)
-        {
-            e.Cancel = true;
-            ReportViolation("Yêu cầu thoát cửa sổ làm bài thi");
+        // Cho phép đóng ngay khi Windows tắt máy hoặc ứng dụng được yêu cầu thoát từ hệ thống.
+        if (e.CloseReason is CloseReason.WindowsShutDown or CloseReason.ApplicationExitCall or CloseReason.TaskManagerClosing)
             return;
-        }
+
         if (_submitting || _studentContent.Controls.OfType<StudentExamControl>().Any(screen => screen.IsSaving))
         {
             e.Cancel = true;
             return;
         }
-        if (_attempt is null || _attempt.Submitted || _attempt.Draft?.PendingSubmission == true) return;
-        e.Cancel = MessageBox.Show(this,
-            "Đóng cửa sổ không dừng đồng hồ. Mở lại cùng MSSV và ca để tiếp tục từ tiến độ đã lưu. Bạn muốn đóng?",
-            "Đóng lượt thi", MessageBoxButtons.YesNo, MessageBoxIcon.Warning,
-            MessageBoxDefaultButton.Button2) != DialogResult.Yes;
+
+        // Khi đang làm bài, thao tác đóng cửa sổ bị chặn và ghi nhận vi phạm.
+        if (_violationMonitor is not null)
+        {
+            e.Cancel = true;
+            ReportViolation("Yêu cầu thoát cửa sổ làm bài thi");
+        }
     }
 
     private void ShowScreen(UserControl screen, string title)
@@ -339,7 +338,10 @@ public partial class StudentExamForm : Form
         _studentContent.SuspendLayout();
         try
         {
-            _examLabel.Text = "UniExam";
+            // Hiện tên ca thi khi đang ở màn làm bài, các màn khác trở về tên UniExam.
+            _examLabel.Text = screen is StudentExamControl && !string.IsNullOrWhiteSpace(_attempt?.Title)
+                ? _attempt.Title
+                : "UniExam";
             if (_examLabel.Parent is Control header)
                 header.Visible = true;
             _studentContent.Controls.Add(screen);
