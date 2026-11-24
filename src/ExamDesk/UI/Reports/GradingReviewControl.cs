@@ -1,30 +1,102 @@
+using ExamDesk.Services;
+
 namespace ExamDesk.UI.Reports;
 
-// Bạn 2: phát triển giao diện trong control này; dữ liệu minh họa riêng của phân hệ.
+// Bạn 2: Màn hình tra cứu kết quả thi, phúc khảo và thống kê phổ điểm từ SQLite.
 public partial class GradingReviewControl : UserControl
 {
-    private readonly List<AttemptResultItem> _allAttempts = ReportsPreviewData.Attempts();
+    private readonly GradingReviewService _gradingService = new();
+    private readonly ExamSessionService _sessionService = new();
+    private readonly AdministrationService _adminService = new();
+    private List<AttemptResultItem> _allAttempts = [];
     private bool _isInitializing;
+
     public GradingReviewControl()
     {
         InitializeComponent();
-        InitFilters();
+        LoadDataFromDatabase();
         WireEvents();
         RefreshGrid();
     }
-    private void InitFilters()
+
+    private void LoadDataFromDatabase()
+    {
+        var sessions = _sessionService.GetSessions();
+        var sessionMap = sessions.ToDictionary(
+            s => s.Id,
+            s => $"{s.SessionCode} - {s.SessionName}");
+
+        var attempts = _gradingService.GetAttempts();
+        var items = new List<AttemptResultItem>(attempts.Count);
+
+        foreach (var attempt in attempts)
+        {
+            var answers = _gradingService.GetAttemptAnswers(attempt.Id);
+            int answeredCount = answers.Count(a => !string.IsNullOrWhiteSpace(a.SelectedOption));
+            int blankCount = Math.Max(0, attempt.TotalQuestions - answeredCount);
+
+            string sessionLabel = sessionMap.TryGetValue(attempt.SessionId, out var name)
+                ? name
+                : $"Ca #{attempt.SessionId}";
+
+            items.Add(new AttemptResultItem
+            {
+                AttemptId = attempt.Id,
+                SessionId = attempt.SessionId,
+                Mssv = attempt.StudentCode,
+                HoTen = attempt.StudentName,
+                Lop = attempt.ClassName,
+                Ca = sessionLabel,
+                SoCau = attempt.TotalQuestions,
+                CauDung = attempt.CorrectCount,
+                CauBoTrong = blankCount,
+                CachNop = attempt.IsAutoSubmitted ? ReportsPreviewData.AutoSubmit : ReportsPreviewData.ManualSubmit,
+                NopLuc = attempt.SubmittedAt.ToLocalTime().DateTime,
+                DiemLuu = attempt.Score
+            });
+        }
+
+        _allAttempts = items;
+        InitFilters(sessions.Select(s => $"{s.SessionCode} - {s.SessionName}"));
+    }
+
+    private void InitFilters(IEnumerable<string> dbSessions)
     {
         _isInitializing = true;
+
+        var selectedSession = _cboSession.SelectedItem as string;
         _cboSession.Items.Clear();
         _cboSession.Items.Add("Tất cả ca thi");
-        foreach (var s in ReportsPreviewData.Session())
+
+        var sessionNames = dbSessions
+            .Concat(_allAttempts.Select(a => a.Ca))
+            .Where(s => !string.IsNullOrWhiteSpace(s))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var s in sessionNames)
             _cboSession.Items.Add(s);
-        _cboSession.SelectedIndex = 0;
+
+        _cboSession.SelectedIndex = selectedSession is not null && _cboSession.Items.Contains(selectedSession)
+            ? _cboSession.Items.IndexOf(selectedSession)
+            : 0;
+
+        var selectedClass = _cboClass.SelectedItem as string;
         _cboClass.Items.Clear();
         _cboClass.Items.Add("Tất cả lớp");
-        foreach (var c in ReportsPreviewData.Classes())
+
+        var classNames = _adminService.GetClasses().Select(c => c.Code)
+            .Concat(_allAttempts.Select(a => a.Lop))
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(c => c, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var c in classNames)
             _cboClass.Items.Add(c);
-        _cboClass.SelectedIndex = 0;
+
+        _cboClass.SelectedIndex = selectedClass is not null && _cboClass.Items.Contains(selectedClass)
+            ? _cboClass.Items.IndexOf(selectedClass)
+            : 0;
+
         _isInitializing = false;
     }
         private void RefreshGrid()

@@ -1,4 +1,6 @@
 #nullable enable
+using ExamDesk.Models;
+using ExamDesk.Services;
 using ExamDesk.UI.Shared;
 
 namespace ExamDesk.UI.Reports;
@@ -6,6 +8,9 @@ namespace ExamDesk.UI.Reports;
 // Bạn 2: Hộp thoại tra cứu chi tiết bài làm và lịch sử chọn đáp án 
 internal sealed class AttemptDetailDialog : Form
 {
+    private readonly GradingReviewService _gradingService = new();
+    private readonly StudentDraftService _draftService = new();
+
     public AttemptDetailDialog(AttemptResultItem item)
     {
         AutoScaleMode = AutoScaleMode.Font;
@@ -55,7 +60,7 @@ internal sealed class AttemptDetailDialog : Form
         dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "DapAnDung", HeaderText = "Đáp án đúng", FillWeight = 85 });
         dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "KetQua", HeaderText = "Kết quả", FillWeight = 85 });
         dgv.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "LichSu", HeaderText = "Lịch sử lựa chọn", FillWeight = 130 });
-        dgv.DataSource = ReportsPreviewData.AnswerDetails(item);
+        dgv.DataSource = LoadAnswerDetails(item);
 
         // Hàng 2: Nút Đóng
         var bottomPanel = new FlowLayoutPanel
@@ -75,5 +80,66 @@ internal sealed class AttemptDetailDialog : Form
         root.Controls.Add(dgv, 0, 1);
         root.Controls.Add(bottomPanel, 0, 2);
         Controls.Add(root);
+    }
+
+    private List<AnswerDetailItem> LoadAnswerDetails(AttemptResultItem item)
+    {
+        if (item.AttemptId <= 0)
+            return ReportsPreviewData.AnswerDetails(item);
+
+        var answers = _gradingService.GetAttemptAnswers(item.AttemptId);
+        if (answers.Count == 0)
+            return [];
+
+        var historyByQuestion = BuildHistoryMap(item.SessionId, item.Mssv);
+        var details = new List<AnswerDetailItem>(answers.Count);
+
+        foreach (var ans in answers)
+        {
+            string selected = ans.SelectedOption ?? string.Empty;
+            if (!historyByQuestion.TryGetValue(ans.QuestionId, out var historyText) || string.IsNullOrWhiteSpace(historyText))
+            {
+                historyText = string.IsNullOrWhiteSpace(selected) ? "(không chọn)" : selected;
+            }
+
+            details.Add(new AnswerDetailItem
+            {
+                Cau = ans.QuestionOrder,
+                LuaChon = selected,
+                DapAnDung = ans.CorrectOption,
+                LichSu = historyText
+            });
+        }
+
+        return details;
+    }
+
+    private Dictionary<int, string> BuildHistoryMap(int sessionId, string studentCode)
+    {
+        var result = new Dictionary<int, string>();
+        if (sessionId <= 0 || string.IsNullOrWhiteSpace(studentCode))
+            return result;
+
+        IReadOnlyList<AnswerChange> changes;
+        try
+        {
+            changes = _draftService.GetAnswerHistory(sessionId, studentCode);
+        }
+        catch
+        {
+            return result;
+        }
+
+        foreach (var group in changes.GroupBy(c => c.QuestionId))
+        {
+            var steps = group
+                .Select(c => c.Choice is >= 0 and <= 3 ? ((char)('A' + c.Choice.Value)).ToString() : "(bỏ chọn)")
+                .ToList();
+
+            if (steps.Count > 0)
+                result[group.Key] = string.Join(" → ", steps);
+        }
+
+        return result;
     }
 }
