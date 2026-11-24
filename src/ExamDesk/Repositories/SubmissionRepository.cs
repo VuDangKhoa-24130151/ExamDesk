@@ -144,18 +144,8 @@ public sealed class SubmissionRepository
                 }
             }
 
-            // 4. Xóa bản nháp đang thi trong StudentDrafts sau khi đã chốt kết quả
-            using (var deleteDraftCmd = connection.CreateCommand())
-            {
-                deleteDraftCmd.Transaction = transaction;
-                deleteDraftCmd.CommandText = @"
-                    DELETE FROM StudentDrafts
-                    WHERE SessionId = $sessionId AND StudentCode = $studentCode;";
-                deleteDraftCmd.Parameters.AddWithValue("$sessionId", attempt.SessionId);
-                deleteDraftCmd.Parameters.AddWithValue("$studentCode", attempt.StudentCode.Trim());
-                deleteDraftCmd.ExecuteNonQuery();
-            }
-
+            // Giữ lại bản ghi trong StudentDrafts (đã khóa PendingSubmission = true)
+            // để bảo toàn lịch sử đổi đáp án (History) phục vụ tra cứu và phúc khảo.
             transaction.Commit();
             return attempt.Id;
         }

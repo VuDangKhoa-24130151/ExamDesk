@@ -4,7 +4,7 @@ using ExamDesk.Repositories;
 namespace ExamDesk.Services;
 
 // Bạn 2 phụ trách: Nhận bài nộp, đối chiếu đáp án chuẩn từ CSDL, chấm điểm và lưu kết quả.
-public sealed class SubmissionService
+public sealed class SubmissionService : ISubmissionGrader
 {
     private readonly SubmissionRepository _submissionRepository;
     private readonly ExamPaperService _examPaperService;
@@ -20,7 +20,50 @@ public sealed class SubmissionService
         _examPaperService = examPaperService ?? throw new ArgumentNullException(nameof(examPaperService));
     }
 
+    // Nối với luồng nộp bài sinh viên qua giao diện ISubmissionGrader
+    public void GradeAndSave(StudentDraft lockedDraft)
+    {
+        ArgumentNullException.ThrowIfNull(lockedDraft);
+
+        if (lockedDraft.Questions.Count == 0 || lockedDraft.Questions.Count != lockedDraft.Answers.Length)
+            throw new InvalidOperationException("Đề thi hoặc danh sách câu trả lời trong bản nháp không hợp lệ.");
+
+        var selectedAnswers = new Dictionary<int, string>(lockedDraft.Questions.Count);
+        for (int i = 0; i < lockedDraft.Questions.Count; i++)
+        {
+            int? choice = lockedDraft.Answers[i];
+            if (choice is < 0 or > 3)
+                throw new InvalidOperationException("Đáp án đã lưu không hợp lệ.");
+
+            string option = choice.HasValue ? ((char)('A' + choice.Value)).ToString() : string.Empty;
+            selectedAnswers[lockedDraft.Questions[i].Id] = option;
+        }
+
+        var submittedAt = lockedDraft.LockedAtUtc
+            ?? (lockedDraft.AutoSubmitted ? lockedDraft.DeadlineUtc : DateTimeOffset.UtcNow);
+        if (lockedDraft.AutoSubmitted && submittedAt > lockedDraft.DeadlineUtc)
+            submittedAt = lockedDraft.DeadlineUtc;
+
+        var submission = new ExamSubmission
+        {
+            SessionId = lockedDraft.SessionId,
+            PaperId = lockedDraft.PaperId,
+            StudentCode = lockedDraft.StudentCode,
+            StudentName = lockedDraft.StudentName,
+            ClassName = lockedDraft.ClassName,
+            StartedAt = lockedDraft.StartedUtc,
+            DeadlineUtc = lockedDraft.DeadlineUtc,
+            SelectedAnswers = selectedAnswers,
+            IsAutoSubmitted = lockedDraft.AutoSubmitted
+        };
+
+        GradeAndSaveAttemptCore(submission, submittedAt);
+    }
+
     public ExamAttempt GradeAndSaveAttempt(ExamSubmission submission)
+        => GradeAndSaveAttemptCore(submission, submittedAtOverride: null);
+
+    private ExamAttempt GradeAndSaveAttemptCore(ExamSubmission submission, DateTimeOffset? submittedAtOverride)
     {
         ArgumentNullException.ThrowIfNull(submission);
 
@@ -69,7 +112,7 @@ public sealed class SubmissionService
 
         int totalQuestions = answerKey.Count;
         // Điểm = số câu đúng / tổng số câu × 10, làm tròn 2 chữ số thập phân
-        double score = Math.Round(correctCount * 10.0 / totalQuestions, 2);
+        double score = Math.Round(correctCount * 10.0 / totalQuestions, 2, MidpointRounding.AwayFromZero);
 
         var attempt = new ExamAttempt
         {
@@ -79,7 +122,7 @@ public sealed class SubmissionService
             StudentName = (submission.StudentName ?? string.Empty).Trim(),
             ClassName = (submission.ClassName ?? string.Empty).Trim(),
             StartedAt = submission.StartedAt == default ? DateTimeOffset.UtcNow : submission.StartedAt,
-            SubmittedAt = DateTimeOffset.UtcNow,
+            SubmittedAt = submittedAtOverride ?? DateTimeOffset.UtcNow,
             TotalQuestions = totalQuestions,
             CorrectCount = correctCount,
             Score = score,
