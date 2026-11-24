@@ -199,12 +199,10 @@ partial class ExamPaperEditorDialog
         _numEasy.Minimum = 0;
         _numEasy.Maximum = 500;
         _numEasy.Value = 10;
-        _numEasy.Enabled = false;
-        _numEasy.ReadOnly = true;
-        _numEasy.TabStop = false;
         _numEasy.Width = 140;
         _numEasy.Anchor = AnchorStyles.Left;
         _numEasy.Margin = new Padding(0, 4, 12, 2);
+        _numEasy.TabIndex = 4;
 
         _lblEasyAvailable.AutoSize = true;
         _lblEasyAvailable.Anchor = AnchorStyles.Left;
@@ -228,12 +226,10 @@ partial class ExamPaperEditorDialog
         _numMedium.Minimum = 0;
         _numMedium.Maximum = 500;
         _numMedium.Value = 15;
-        _numMedium.Enabled = false;
-        _numMedium.ReadOnly = true;
-        _numMedium.TabStop = false;
         _numMedium.Width = 140;
         _numMedium.Anchor = AnchorStyles.Left;
         _numMedium.Margin = new Padding(0, 4, 12, 2);
+        _numMedium.TabIndex = 5;
 
         _lblMediumAvailable.AutoSize = true;
         _lblMediumAvailable.Anchor = AnchorStyles.Left;
@@ -257,12 +253,10 @@ partial class ExamPaperEditorDialog
         _numHard.Minimum = 0;
         _numHard.Maximum = 500;
         _numHard.Value = 5;
-        _numHard.Enabled = false;
-        _numHard.ReadOnly = true;
-        _numHard.TabStop = false;
         _numHard.Width = 140;
         _numHard.Anchor = AnchorStyles.Left;
         _numHard.Margin = new Padding(0, 4, 12, 2);
+        _numHard.TabIndex = 6;
 
         _lblHardAvailable.AutoSize = true;
         _lblHardAvailable.Anchor = AnchorStyles.Left;
@@ -321,11 +315,11 @@ partial class ExamPaperEditorDialog
 
         _btnSave.Text = "Tạo đề thi";
         _btnSave.Margin = new Padding(0);
-        _btnSave.TabIndex = 4;
+        _btnSave.TabIndex = 7;
 
         _btnCancel.Text = "Hủy";
         _btnCancel.Margin = new Padding(0, 0, 10, 0);
-        _btnCancel.TabIndex = 5;
+        _btnCancel.TabIndex = 8;
 
         _buttonPanel.Controls.Add(_btnSave);
         _buttonPanel.Controls.Add(_btnCancel);

@@ -170,7 +170,7 @@ public partial class QuestionBankControl : UserControl, IUnsavedChangesGuard
             return true;
         }
 
-        if (keyData == Keys.Delete && !_txtSearch.Focused && _btnDelete.Enabled)
+        if (keyData == Keys.Delete && _dgvQuestions.ContainsFocus && _btnDelete.Enabled)
         {
             DeleteSelectedQuestion();
             return true;
@@ -644,6 +644,30 @@ public partial class QuestionBankControl : UserControl, IUnsavedChangesGuard
         var selected = GetSelectedQuestion();
         if (selected is null)
         {
+            return;
+        }
+
+        try
+        {
+            if (_service.IsQuestionUsedInAnyPaper(selected.Id))
+            {
+                MessageBox.Show(
+                    this,
+                    "Câu hỏi đã nằm trong đề thi, không thể xóa.",
+                    "Không thể xóa câu hỏi",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                ex.Message,
+                "Lỗi kiểm tra câu hỏi",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Error);
             return;
         }
 

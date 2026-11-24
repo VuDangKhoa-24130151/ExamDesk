@@ -147,7 +147,13 @@ public partial class ExamPaperControl : UserControl
             }
         };
 
-        _txtSearch.TextChanged += (_, _) => LoadPapers();
+        _txtSearch.TextChanged += (_, _) =>
+        {
+            if (!_isLoadingFilters)
+            {
+                LoadPapers();
+            }
+        };
 
         _btnClearFilter.Click += (_, _) =>
         {
@@ -264,6 +270,14 @@ public partial class ExamPaperControl : UserControl
             _lblResultCount.Text = $"Hiển thị {_currentRows.Count} đề thi";
 
             var isEmpty = _currentRows.Count == 0;
+            if (isEmpty)
+            {
+                var hasFilter = subjectId.HasValue || !string.IsNullOrWhiteSpace(keyword);
+                _lblEmptyState.Text = hasFilter
+                    ? "Không tìm thấy đề thi nào khớp với bộ lọc hiện tại."
+                    : "Chưa có đề thi nào. Bấm \"+ Tạo đề thi\" để tạo đề mới.";
+            }
+
             _emptyStatePanel.Visible = isEmpty;
             _dgvPapers.Visible = !isEmpty;
 
@@ -355,6 +369,21 @@ public partial class ExamPaperControl : UserControl
         using var dialog = new ExamPaperEditorDialog(initialSubjectId);
         if (dialog.ShowDialog(this) == DialogResult.OK)
         {
+            _isLoadingFilters = true;
+            try
+            {
+                if (_cboSubjectFilter.Items.Count > 0)
+                {
+                    _cboSubjectFilter.SelectedIndex = 0;
+                }
+
+                _txtSearch.Clear();
+            }
+            finally
+            {
+                _isLoadingFilters = false;
+            }
+
             LoadPapers(dialog.CreatedPaperId);
         }
     }
