@@ -1,3 +1,4 @@
+using System.Text.Json;
 using ExamDesk.Models;
 using ExamDesk.Repositories;
 
@@ -41,7 +42,7 @@ public sealed class SubmissionService : ISubmissionGrader
 
         var submittedAt = lockedDraft.LockedAtUtc
             ?? (lockedDraft.AutoSubmitted ? lockedDraft.DeadlineUtc : DateTimeOffset.UtcNow);
-        if (lockedDraft.AutoSubmitted && submittedAt > lockedDraft.DeadlineUtc)
+        if (lockedDraft.AutoSubmitted && lockedDraft.DeadlineUtc != default && submittedAt > lockedDraft.DeadlineUtc)
             submittedAt = lockedDraft.DeadlineUtc;
 
         var submission = new ExamSubmission
@@ -57,13 +58,20 @@ public sealed class SubmissionService : ISubmissionGrader
             IsAutoSubmitted = lockedDraft.AutoSubmitted
         };
 
-        GradeAndSaveAttemptCore(submission, submittedAt);
+        string historySnapshot = lockedDraft.History.Count > 0
+            ? JsonSerializer.Serialize(lockedDraft.History)
+            : string.Empty;
+
+        GradeAndSaveAttemptCore(submission, submittedAt, historySnapshot);
     }
 
     public ExamAttempt GradeAndSaveAttempt(ExamSubmission submission)
-        => GradeAndSaveAttemptCore(submission, submittedAtOverride: null);
+        => GradeAndSaveAttemptCore(submission, submittedAtOverride: null, reviewNoteOverride: null);
 
-    private ExamAttempt GradeAndSaveAttemptCore(ExamSubmission submission, DateTimeOffset? submittedAtOverride)
+    private ExamAttempt GradeAndSaveAttemptCore(
+        ExamSubmission submission,
+        DateTimeOffset? submittedAtOverride,
+        string? reviewNoteOverride)
     {
         ArgumentNullException.ThrowIfNull(submission);
 
@@ -76,6 +84,10 @@ public sealed class SubmissionService : ISubmissionGrader
         if (existing is not null)
             return existing;
 
+        // Xác thực ca thi và đề thi phải khớp nhau trong bảng ExamSessions
+        if (!_submissionRepository.IsSessionMatchingPaper(submission.SessionId, submission.PaperId))
+            throw new InvalidOperationException("Đề thi không khớp với ca thi hoặc ca thi không tồn tại.");
+
         // Lấy bảng đáp án chuẩn từ CSDL (Bạn 1 cung cấp qua ExamPaperService)
         var answerKey = _examPaperService.GetAnswerKey(submission.PaperId);
         if (answerKey.Count == 0)
@@ -87,12 +99,12 @@ public sealed class SubmissionService : ISubmissionGrader
         foreach (var keyItem in answerKey.OrderBy(k => k.OrderIndex))
         {
             string selected = string.Empty;
-            if (submission.SelectedAnswers is not null)
+            // Chỉ tra cứu theo QuestionId để tránh lấy nhầm đáp án khi OrderIndex trùng với QuestionId câu khác
+            if (submission.SelectedAnswers is not null &&
+                submission.SelectedAnswers.TryGetValue(keyItem.QuestionId, out var byQuestionId) &&
+                !string.IsNullOrWhiteSpace(byQuestionId))
             {
-                if (submission.SelectedAnswers.TryGetValue(keyItem.QuestionId, out var byQuestionId) && !string.IsNullOrWhiteSpace(byQuestionId))
-                    selected = NormalizeOption(byQuestionId);
-                else if (submission.SelectedAnswers.TryGetValue(keyItem.OrderIndex, out var byOrder) && !string.IsNullOrWhiteSpace(byOrder))
-                    selected = NormalizeOption(byOrder);
+                selected = NormalizeOption(byQuestionId);
             }
 
             string correct = NormalizeOption(keyItem.CorrectOption);
@@ -114,6 +126,10 @@ public sealed class SubmissionService : ISubmissionGrader
         // Điểm = số câu đúng / tổng số câu × 10, làm tròn 2 chữ số thập phân
         double score = Math.Round(correctCount * 10.0 / totalQuestions, 2, MidpointRounding.AwayFromZero);
 
+        var submittedAt = submittedAtOverride ?? DateTimeOffset.UtcNow;
+        if (submission.IsAutoSubmitted && submission.DeadlineUtc != default && submittedAt > submission.DeadlineUtc)
+            submittedAt = submission.DeadlineUtc;
+
         var attempt = new ExamAttempt
         {
             SessionId = submission.SessionId,
@@ -121,13 +137,13 @@ public sealed class SubmissionService : ISubmissionGrader
             StudentCode = studentCode,
             StudentName = (submission.StudentName ?? string.Empty).Trim(),
             ClassName = (submission.ClassName ?? string.Empty).Trim(),
-            StartedAt = submission.StartedAt == default ? DateTimeOffset.UtcNow : submission.StartedAt,
-            SubmittedAt = submittedAtOverride ?? DateTimeOffset.UtcNow,
+            StartedAt = submission.StartedAt == default ? submittedAt : submission.StartedAt,
+            SubmittedAt = submittedAt,
             TotalQuestions = totalQuestions,
             CorrectCount = correctCount,
             Score = score,
             IsAutoSubmitted = submission.IsAutoSubmitted,
-            ReviewNote = string.Empty
+            ReviewNote = reviewNoteOverride ?? string.Empty
         };
 
         _submissionRepository.SaveAttemptWithAnswers(attempt, attemptAnswers);

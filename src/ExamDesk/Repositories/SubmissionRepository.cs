@@ -47,6 +47,23 @@ public sealed class SubmissionRepository
         };
     }
 
+    // Kiểm tra ca thi có tồn tại và khớp với mã đề thi được gửi lên hay không (schema.sql TODO Bạn 2)
+    public bool IsSessionMatchingPaper(int sessionId, int paperId)
+    {
+        using var connection = SqliteContext.CreateConnection();
+        connection.Open();
+
+        using var command = connection.CreateCommand();
+        command.CommandText = @"
+            SELECT EXISTS(
+                SELECT 1 FROM ExamSessions
+                WHERE Id = $sessionId AND PaperId = $paperId
+            );";
+        command.Parameters.AddWithValue("$sessionId", sessionId);
+        command.Parameters.AddWithValue("$paperId", paperId);
+        return Convert.ToInt32(command.ExecuteScalar()) == 1;
+    }
+
     // Lưu bài nộp và toàn bộ câu trả lời trong 1 transaction duy nhất
     public int SaveAttemptWithAnswers(ExamAttempt attempt, List<AttemptAnswer> answers)
     {
@@ -59,6 +76,23 @@ public sealed class SubmissionRepository
 
         try
         {
+            // 0. Kiểm tra ca thi và đề thi phải khớp nhau ngay trong transaction
+            using (var verifySessionCmd = connection.CreateCommand())
+            {
+                verifySessionCmd.Transaction = transaction;
+                verifySessionCmd.CommandText = @"
+                    SELECT EXISTS(
+                        SELECT 1 FROM ExamSessions
+                        WHERE Id = $sessionId AND PaperId = $paperId
+                    );";
+                verifySessionCmd.Parameters.AddWithValue("$sessionId", attempt.SessionId);
+                verifySessionCmd.Parameters.AddWithValue("$paperId", attempt.PaperId);
+                if (Convert.ToInt32(verifySessionCmd.ExecuteScalar()) != 1)
+                {
+                    throw new InvalidOperationException("Ca thi không tồn tại hoặc mã đề thi không khớp với ca thi.");
+                }
+            }
+
             // 1. Kiểm tra chống nộp lặp ngay trong transaction
             using (var checkCmd = connection.CreateCommand())
             {
