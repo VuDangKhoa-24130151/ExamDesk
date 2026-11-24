@@ -333,6 +333,11 @@ public sealed class MainForm : Form
                         {
                             BeginInvoke(() =>
                             {
+                                if (questionBank.IsDisposed)
+                                {
+                                    return;
+                                }
+
                                 try
                                 {
                                     questionBank.StartAddQuestion();

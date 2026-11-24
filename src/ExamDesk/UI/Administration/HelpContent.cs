@@ -93,7 +93,7 @@ internal static class HelpContent
                 "Bước 3: Chọn một lớp ở cột trái để hiển thị danh sách sinh viên của lớp đó ở cột phải. Dùng ô tìm kiếm (Ctrl+F) để lọc nhanh theo MSSV hoặc họ và tên.",
                 "Bước 4: Bấm \"Thêm sinh viên\" hoặc nhấp đúp vào một sinh viên để sửa thông tin (MSSV * gồm 8–10 chữ số không trùng toàn hệ thống, Họ và tên *, Lớp *). Khi đổi Lớp trong hộp thoại Sửa, sĩ số hai lớp sẽ tự động cập nhật."
             ],
-            Note = "Không thể xóa lớp học đang còn sinh viên. Chức năng \"Nhập từ tệp…\" được thực hiện tại màn hình \"Xuất/nhập và sao lưu\"."
+            Note = "Không thể xóa lớp học đang còn sinh viên. Nếu muốn xóa lớp, hãy chuyển sinh viên sang lớp khác hoặc xóa sinh viên trước."
         },
         new HelpTopic
         {

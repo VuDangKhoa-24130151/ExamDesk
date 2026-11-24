@@ -53,8 +53,6 @@ partial class ClassStudentControl
     private Button _btnAddStudent = null!;
     private Button _btnEditStudent = null!;
     private Button _btnDeleteStudent = null!;
-    private Panel _importButtonHost = null!;
-    private Button _btnImportFile = null!;
 
     protected override void Dispose(bool disposing)
     {
@@ -110,8 +108,6 @@ partial class ClassStudentControl
         _btnAddStudent = new Button();
         _btnEditStudent = new Button();
         _btnDeleteStudent = new Button();
-        _importButtonHost = new Panel();
-        _btnImportFile = new Button();
 
         _rootLayout.SuspendLayout();
         _headerLayout.SuspendLayout();
@@ -131,7 +127,6 @@ partial class ClassStudentControl
         _studentGridHost.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)_dgvStudents).BeginInit();
         _studentActionsPanel.SuspendLayout();
-        _importButtonHost.SuspendLayout();
         SuspendLayout();
 
         // _rootLayout
@@ -493,32 +488,9 @@ partial class ClassStudentControl
         _btnDeleteStudent.ForeColor = UiStyle.ErrorText;
         _btnDeleteStudent.Click += OnDeleteStudentClick;
 
-        // Wrap disabled _btnImportFile in _importButtonHost so tooltip shows reliably on hover
-        _importButtonHost.AutoSize = true;
-        _importButtonHost.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        _importButtonHost.Margin = new Padding(0, 0, 0, 4);
-        _importButtonHost.Padding = new Padding(0);
-
-        _btnImportFile.Width = 128;
-        _btnImportFile.Height = 38;
-        _btnImportFile.Margin = new Padding(0);
-        _btnImportFile.TabIndex = 10;
-        _btnImportFile.Text = "Nhập từ tệp…";
-        UiStyle.StyleSecondaryButton(_btnImportFile);
-        _btnImportFile.Enabled = false;
-        _btnImportFile.ForeColor = UiStyle.TextMuted;
-
-        const string importTooltipText = "Nhập danh sách sinh viên từ tệp tại màn hình \"Xuất/nhập và sao lưu\".";
-        _toolTip.ShowAlways = true;
-        _toolTip.SetToolTip(_btnImportFile, importTooltipText);
-        _toolTip.SetToolTip(_importButtonHost, importTooltipText);
-
-        _importButtonHost.Controls.Add(_btnImportFile);
-
         _studentActionsPanel.Controls.Add(_btnAddStudent);
         _studentActionsPanel.Controls.Add(_btnEditStudent);
         _studentActionsPanel.Controls.Add(_btnDeleteStudent);
-        _studentActionsPanel.Controls.Add(_importButtonHost);
 
         _studentCardLayout.Controls.Add(_studentHeaderRow, 0, 0);
         _studentCardLayout.Controls.Add(_studentSearchLayout, 0, 1);
@@ -570,7 +542,6 @@ partial class ClassStudentControl
         ((System.ComponentModel.ISupportInitialize)_dgvStudents).EndInit();
         _studentActionsPanel.ResumeLayout(false);
         _studentActionsPanel.PerformLayout();
-        _importButtonHost.ResumeLayout(false);
         ResumeLayout(false);
     }
 }

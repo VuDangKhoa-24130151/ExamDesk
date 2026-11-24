@@ -211,7 +211,18 @@ public sealed class ExamPaperRepository
                 s.Code AS SubjectCode,
                 s.Name AS SubjectName,
                 (SELECT COUNT(*) FROM ExamPaperQuestions epq WHERE epq.PaperId = p.Id) AS AssignedQuestionCount,
-                (SELECT COUNT(*) FROM ExamSessions es WHERE es.PaperId = p.Id) AS SessionCount
+                (SELECT COUNT(*) FROM ExamSessions es WHERE es.PaperId = p.Id) AS SessionCount,
+                CASE
+                    WHEN EXISTS(SELECT 1 FROM ExamAttempts ea WHERE ea.PaperId = p.Id)
+                      OR EXISTS(
+                          SELECT 1
+                          FROM StudentDrafts d
+                          LEFT JOIN ExamSessions es2 ON es2.Id = d.SessionId
+                          WHERE es2.PaperId = p.Id
+                             OR (json_valid(d.Payload) = 1 AND json_extract(d.Payload, '$.PaperId') = p.Id)
+                      )
+                    THEN 1 ELSE 0
+                END AS HasAttemptOrDraft
             FROM ExamPapers p
             INNER JOIN Subjects s ON s.Id = p.SubjectId
             WHERE 1 = 1";
@@ -241,7 +252,8 @@ public sealed class ExamPaperRepository
                 SubjectCode = reader.GetString(8),
                 SubjectName = reader.GetString(9),
                 AssignedQuestionCount = reader.GetInt32(10),
-                SessionCount = reader.GetInt32(11)
+                SessionCount = reader.GetInt32(11),
+                HasAttemptOrDraft = reader.GetInt32(12) == 1
             });
         }
 

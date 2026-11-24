@@ -623,7 +623,6 @@ public partial class QuestionEditorDialog : Form
                 "Lỗi lưu câu hỏi",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Warning);
-            firstInvalidControl?.Focus();
         }
     }
 
