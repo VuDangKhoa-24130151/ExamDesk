@@ -2,7 +2,7 @@ using Microsoft.Data.Sqlite;
 
 namespace ExamDesk.Data;
 
-// File chung: Bạn 1 điều phối kết nối và khởi tạo schema, không nạp dữ liệu mẫu.
+// Mỗi máy dùng database riêng; lần chạy đầu nhận bản dữ liệu đi kèm ứng dụng.
 public static class SqliteContext
 {
     public static string DatabaseFilePath => Path.Combine(
@@ -22,6 +22,10 @@ public static class SqliteContext
 
     public static void InitializeDatabase()
     {
+        BootstrapDatabase.RestoreIfMissing(
+            DatabaseFilePath,
+            Path.Combine(AppContext.BaseDirectory, "database", "bootstrap"));
+
         // Nhúng schema vào assembly để chạy được cả khi đổi thư mục hoặc đóng gói app.
         using var stream = typeof(SqliteContext).Assembly
             .GetManifestResourceStream("ExamDesk.Data.schema.sql")

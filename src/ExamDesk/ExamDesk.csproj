@@ -13,4 +13,11 @@
     <EmbeddedResource Include="../../database/sql/seed_questions.sql" LogicalName="ExamDesk.Data.seed_questions.sql" />
     <Compile Remove="Services/StudentTestDataService.cs" Condition="'$(Configuration)' != 'Debug'" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="../../database/bootstrap/**/*">
+      <Link>database/bootstrap/%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
 </Project>
