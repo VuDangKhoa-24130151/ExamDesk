@@ -1,4 +1,3 @@
-using System.Text.Json;
 using ExamDesk.Models;
 using ExamDesk.Repositories;
 
@@ -21,57 +20,18 @@ public sealed class SubmissionService : ISubmissionGrader
         _examPaperService = examPaperService ?? throw new ArgumentNullException(nameof(examPaperService));
     }
 
-    // Nối với luồng nộp bài sinh viên qua giao diện ISubmissionGrader
     public void GradeAndSave(StudentDraft lockedDraft)
+        => GradeAndSaveAttempt(lockedDraft);
+
+    public ExamAttempt GradeAndSaveAttempt(StudentDraft lockedDraft)
     {
         ArgumentNullException.ThrowIfNull(lockedDraft);
-
-        if (lockedDraft.Questions.Count == 0 || lockedDraft.Questions.Count != lockedDraft.Answers.Length)
-            throw new InvalidOperationException("Đề thi hoặc danh sách câu trả lời trong bản nháp không hợp lệ.");
-
-        var selectedAnswers = new Dictionary<int, string>(lockedDraft.Questions.Count);
-        for (int i = 0; i < lockedDraft.Questions.Count; i++)
-        {
-            int? choice = lockedDraft.Answers[i];
-            if (choice is < 0 or > 3)
-                throw new InvalidOperationException("Đáp án đã lưu không hợp lệ.");
-
-            string option = choice.HasValue ? ((char)('A' + choice.Value)).ToString() : string.Empty;
-            selectedAnswers[lockedDraft.Questions[i].Id] = option;
-        }
-
-        var submittedAt = lockedDraft.LockedAtUtc
-            ?? (lockedDraft.AutoSubmitted ? lockedDraft.DeadlineUtc : DateTimeOffset.UtcNow);
-        if (lockedDraft.AutoSubmitted && lockedDraft.DeadlineUtc != default && submittedAt > lockedDraft.DeadlineUtc)
-            submittedAt = lockedDraft.DeadlineUtc;
-
-        var submission = new ExamSubmission
-        {
-            SessionId = lockedDraft.SessionId,
-            PaperId = lockedDraft.PaperId,
-            StudentCode = lockedDraft.StudentCode,
-            StudentName = lockedDraft.StudentName,
-            ClassName = lockedDraft.ClassName,
-            StartedAt = lockedDraft.StartedUtc,
-            DeadlineUtc = lockedDraft.DeadlineUtc,
-            SelectedAnswers = selectedAnswers,
-            IsAutoSubmitted = lockedDraft.AutoSubmitted
-        };
-
-        string historySnapshot = lockedDraft.History.Count > 0
-            ? JsonSerializer.Serialize(lockedDraft.History)
-            : string.Empty;
-
-        GradeAndSaveAttemptCore(submission, submittedAt, historySnapshot);
+        return _submissionRepository.GradeAndSaveLockedDraft(
+            lockedDraft,
+            paperId => _examPaperService.GetAnswerKey(paperId));
     }
 
     public ExamAttempt GradeAndSaveAttempt(ExamSubmission submission)
-        => GradeAndSaveAttemptCore(submission, submittedAtOverride: null, reviewNoteOverride: null);
-
-    private ExamAttempt GradeAndSaveAttemptCore(
-        ExamSubmission submission,
-        DateTimeOffset? submittedAtOverride,
-        string? reviewNoteOverride)
     {
         ArgumentNullException.ThrowIfNull(submission);
 
@@ -79,16 +39,15 @@ public sealed class SubmissionService : ISubmissionGrader
         if (submission.SessionId <= 0 || submission.PaperId <= 0 || string.IsNullOrWhiteSpace(studentCode))
             throw new ArgumentException("Thông tin ca thi, đề thi hoặc mã sinh viên không hợp lệ.");
 
-        // Nếu bài đã nộp trước đó thì trả về kết quả đã lưu, không chấm/lưu lần hai
+        // Chống nộp lặp: nếu đã có kết quả của sinh viên ở ca này thì trả về bản cũ luôn.
         var existing = _submissionRepository.FindExistingAttempt(submission.SessionId, studentCode);
         if (existing is not null)
             return existing;
 
-        // Xác thực ca thi và đề thi phải khớp nhau trong bảng ExamSessions
         if (!_submissionRepository.IsSessionMatchingPaper(submission.SessionId, submission.PaperId))
             throw new InvalidOperationException("Đề thi không khớp với ca thi hoặc ca thi không tồn tại.");
 
-        // Lấy bảng đáp án chuẩn từ CSDL (Bạn 1 cung cấp qua ExamPaperService)
+        // Lấy bảng đáp án chuẩn từ ExamPaperService (không tin dữ liệu đáp án từ UI).
         var answerKey = _examPaperService.GetAnswerKey(submission.PaperId);
         if (answerKey.Count == 0)
             throw new InvalidOperationException("Không tìm thấy đáp án chuẩn của đề thi để chấm điểm.");
@@ -99,15 +58,15 @@ public sealed class SubmissionService : ISubmissionGrader
         foreach (var keyItem in answerKey.OrderBy(k => k.OrderIndex))
         {
             string selected = string.Empty;
-            // Chỉ tra cứu theo QuestionId để tránh lấy nhầm đáp án khi OrderIndex trùng với QuestionId câu khác
+            // Chỉ tra cứu theo QuestionId, không fallback theo OrderIndex để tránh lệch câu khi trộn đề.
             if (submission.SelectedAnswers is not null &&
                 submission.SelectedAnswers.TryGetValue(keyItem.QuestionId, out var byQuestionId) &&
                 !string.IsNullOrWhiteSpace(byQuestionId))
             {
-                selected = NormalizeOption(byQuestionId);
+                selected = SubmissionRepository.NormalizeOption(byQuestionId);
             }
 
-            string correct = NormalizeOption(keyItem.CorrectOption);
+            string correct = SubmissionRepository.NormalizeOption(keyItem.CorrectOption);
             bool isCorrect = selected.Length > 0 && selected == correct;
             if (isCorrect)
                 correctCount++;
@@ -123,10 +82,9 @@ public sealed class SubmissionService : ISubmissionGrader
         }
 
         int totalQuestions = answerKey.Count;
-        // Điểm = số câu đúng / tổng số câu × 10, làm tròn 2 chữ số thập phân
         double score = Math.Round(correctCount * 10.0 / totalQuestions, 2, MidpointRounding.AwayFromZero);
 
-        var submittedAt = submittedAtOverride ?? DateTimeOffset.UtcNow;
+        var submittedAt = DateTimeOffset.UtcNow;
         if (submission.IsAutoSubmitted && submission.DeadlineUtc != default && submittedAt > submission.DeadlineUtc)
             submittedAt = submission.DeadlineUtc;
 
@@ -143,19 +101,10 @@ public sealed class SubmissionService : ISubmissionGrader
             CorrectCount = correctCount,
             Score = score,
             IsAutoSubmitted = submission.IsAutoSubmitted,
-            ReviewNote = reviewNoteOverride ?? string.Empty
+            ReviewNote = string.Empty
         };
 
         _submissionRepository.SaveAttemptWithAnswers(attempt, attemptAnswers);
         return _submissionRepository.FindExistingAttempt(submission.SessionId, studentCode) ?? attempt;
-    }
-
-    private static string NormalizeOption(string? option)
-    {
-        if (string.IsNullOrWhiteSpace(option))
-            return string.Empty;
-
-        string upper = option.Trim().ToUpperInvariant();
-        return upper is "A" or "B" or "C" or "D" ? upper : string.Empty;
     }
 }

@@ -9,7 +9,7 @@ public sealed class StudentDraftService
     private readonly StudentDraftRepository _repository = new();
     private readonly ISubmissionGrader _grader;
 
-    public StudentDraftService() : this(new StudentExamTemporaryGrader()) { }
+    public StudentDraftService() : this(new SubmissionServiceGraderAdapter()) { }
     internal StudentDraftService(ISubmissionGrader grader) => _grader = grader;
     public StudentDraft StartOrResume(int sessionId, User student) => _repository.StartOrResume(sessionId, student);
     internal StudentDraft? FindDraft(int sessionId, string studentCode) => _repository.FindDraft(sessionId, studentCode);

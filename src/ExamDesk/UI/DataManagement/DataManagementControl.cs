@@ -1,18 +1,18 @@
+#nullable enable
 using System.Globalization;
+using System.IO.Compression;
 using System.Text;
 using ExamDesk.Data;
 using ExamDesk.Services;
-using ExamDesk.UI.Reports;
 using ExamDesk.UI.Shared;
 using Microsoft.Data.Sqlite;
 
 namespace ExamDesk.UI.DataManagement;
 
-// Bạn 2: Màn hình GV-15 xuất kết quả thi và sao lưu/khôi phục CSDL.
+// Bạn 2: Màn hình xuất kết quả thi và sao lưu/khôi phục dữ liệu SQLite + ảnh + metadata.
 public partial class DataManagementControl : UserControl
 {
     private readonly GradingReviewService _gradingService = new();
-    private readonly ExamSessionService _sessionService = new();
 
     public DataManagementControl()
     {
@@ -41,31 +41,20 @@ public partial class DataManagementControl : UserControl
 
         try
         {
-            var sessionMap = _sessionService.GetSessions()
-                .ToDictionary(s => s.Id, s => $"{s.SessionCode} - {s.SessionName}");
-            var attempts = _gradingService.GetAttempts();
+            var attempts = _gradingService.GetAttemptSummaries();
 
             var sb = new StringBuilder();
-            sb.AppendLine("MSSV,HoTen,Lop,CaThi,SoCau,CauDung,CauSai,CauBoTrong,Diem,CachNop,NopLuc");
+            sb.AppendLine("MSSV,HoTen,Lop,CaThi,DeThi,SoCau,CauDung,CauSai,CauBoTrong,Diem,CachNop,NopLuc");
 
             foreach (var a in attempts)
             {
-                var answers = _gradingService.GetAttemptAnswers(a.Id);
-                int answeredCount = answers.Count(ans => !string.IsNullOrWhiteSpace(ans.SelectedOption));
-                int blankCount = Math.Max(0, a.TotalQuestions - answeredCount);
-                int wrongCount = Math.Max(0, a.TotalQuestions - a.CorrectCount - blankCount);
-
-                string sessionLabel = sessionMap.TryGetValue(a.SessionId, out var name)
-                    ? name
-                    : $"Ca #{a.SessionId}";
-                string submitWay = a.IsAutoSubmitted ? ReportsPreviewData.AutoSubmit : ReportsPreviewData.ManualSubmit;
                 string submittedAtText = a.SubmittedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
                 string scoreText = a.Score.ToString("0.00", CultureInfo.InvariantCulture);
 
                 sb.AppendLine(
                     $"{EscapeCsv(a.StudentCode)},{EscapeCsv(a.StudentName)},{EscapeCsv(a.ClassName)}," +
-                    $"{EscapeCsv(sessionLabel)},{a.TotalQuestions},{a.CorrectCount},{wrongCount},{blankCount}," +
-                    $"{scoreText},{EscapeCsv(submitWay)},{EscapeCsv(submittedAtText)}");
+                    $"{EscapeCsv(a.SessionName)},{EscapeCsv(a.PaperTitle)},{a.TotalQuestions},{a.CorrectCount},{a.WrongCount},{a.BlankCount}," +
+                    $"{scoreText},{EscapeCsv(a.SubmitMethodText)},{EscapeCsv(submittedAtText)}");
             }
 
             File.WriteAllText(dialog.FileName, sb.ToString(), new UTF8Encoding(true));
@@ -83,32 +72,29 @@ public partial class DataManagementControl : UserControl
     {
         using var dialog = new SaveFileDialog
         {
-            Title = "Chọn nơi lưu bản sao lưu CSDL",
-            Filter = "SQLite Database (*.db)|*.db",
-            FileName = $"examdesk_backup_{DateTime.Now:yyyyMMdd_HHmm}.db"
+            Title = "Chọn nơi lưu gói sao lưu dữ liệu",
+            Filter = "Gói sao lưu UniExam (*.zip)|*.zip",
+            FileName = $"examdesk_backup_{DateTime.Now:yyyyMMdd_HHmm}.zip"
         };
 
         if (dialog.ShowDialog(this) != DialogResult.OK)
             return;
 
-        if (IsSameFilePath(dialog.FileName, SqliteContext.DatabaseFilePath))
-        {
-            _lblStatus.ForeColor = UiStyle.WarningText;
-            _lblStatus.Text = "Trạng thái: Vui lòng chọn tệp đích khác với tệp CSDL đang chạy.";
-            return;
-        }
+        string stagingDir = Path.Combine(Path.GetTempPath(), $"examdesk_backup_{Guid.NewGuid():N}");
+        string tempZip = Path.Combine(Path.GetTempPath(), $"examdesk_backup_{Guid.NewGuid():N}.zip");
 
         try
         {
-            if (File.Exists(dialog.FileName))
-                File.Delete(dialog.FileName);
+            Directory.CreateDirectory(stagingDir);
 
+            // 1. Hot-backup tệp SQLite đang chạy sang tệp tạm
+            string stagedDb = Path.Combine(stagingDir, "examdesk.db");
             using (var sourceConnection = SqliteContext.CreateConnection())
             {
                 sourceConnection.Open();
                 var destConnString = new SqliteConnectionStringBuilder
                 {
-                    DataSource = dialog.FileName,
+                    DataSource = stagedDb,
                     Pooling = false
                 }.ToString();
 
@@ -117,13 +103,36 @@ public partial class DataManagementControl : UserControl
                 sourceConnection.BackupDatabase(destConnection);
             }
 
+            // 2. Sao chép thư mục images và các tệp metadata JSON đi kèm (nếu có)
+            string databaseDir = Path.GetDirectoryName(SqliteContext.DatabaseFilePath)!;
+            string sourceImagesDir = Path.Combine(databaseDir, "images");
+            if (Directory.Exists(sourceImagesDir))
+                CopyDirectory(sourceImagesDir, Path.Combine(stagingDir, "images"));
+
+            if (Directory.Exists(databaseDir))
+            {
+                foreach (var jsonFile in Directory.EnumerateFiles(databaseDir, "*.json", SearchOption.TopDirectoryOnly))
+                {
+                    File.Copy(jsonFile, Path.Combine(stagingDir, Path.GetFileName(jsonFile)), overwrite: true);
+                }
+            }
+
+            // 3. Đóng gói thành tệp .zip và thay thế tệp đích an toàn
+            ZipFile.CreateFromDirectory(stagingDir, tempZip, CompressionLevel.Optimal, includeBaseDirectory: false);
+            File.Move(tempZip, dialog.FileName, overwrite: true);
+
             _lblStatus.ForeColor = UiStyle.SuccessText;
-            _lblStatus.Text = $"Trạng thái: Đã sao lưu CSDL thành công ra tệp {Path.GetFileName(dialog.FileName)}.";
+            _lblStatus.Text = $"Trạng thái: Đã sao lưu CSDL, ảnh câu hỏi và metadata ra tệp {Path.GetFileName(dialog.FileName)}.";
         }
         catch (Exception ex)
         {
             _lblStatus.ForeColor = UiStyle.ErrorText;
-            _lblStatus.Text = $"Trạng thái: Sao lưu CSDL thất bại ({ex.Message}).";
+            _lblStatus.Text = $"Trạng thái: Sao lưu dữ liệu thất bại ({ex.Message}).";
+        }
+        finally
+        {
+            TryDeleteFile(tempZip);
+            TryDeleteDirectory(stagingDir);
         }
     }
 
@@ -131,23 +140,16 @@ public partial class DataManagementControl : UserControl
     {
         using var openDialog = new OpenFileDialog
         {
-            Title = "Chọn tệp sao lưu CSDL để khôi phục",
-            Filter = "SQLite Database (*.db)|*.db"
+            Title = "Chọn gói sao lưu để khôi phục",
+            Filter = "Gói sao lưu UniExam (*.zip)|*.zip"
         };
 
         if (openDialog.ShowDialog(this) != DialogResult.OK)
             return;
 
-        if (IsSameFilePath(openDialog.FileName, SqliteContext.DatabaseFilePath))
-        {
-            _lblStatus.ForeColor = UiStyle.WarningText;
-            _lblStatus.Text = "Trạng thái: Tệp đã chọn trùng với tệp CSDL đang sử dụng.";
-            return;
-        }
-
         // Xác nhận trước khi khôi phục theo quy định G6/H3 trong DESIGN.md
         var confirm = MessageBox.Show(this,
-            $"Khôi phục từ tệp '{Path.GetFileName(openDialog.FileName)}' sẽ thay thế dữ liệu hiện tại.\n\nBạn có chắc chắn muốn tiếp tục không?",
+            $"Khôi phục từ gói '{Path.GetFileName(openDialog.FileName)}' sẽ thay thế toàn bộ CSDL, ảnh câu hỏi và metadata hiện tại.\n\nBạn có chắc chắn muốn tiếp tục không?",
             "Xác nhận khôi phục bản sao lưu",
             MessageBoxButtons.YesNo,
             MessageBoxIcon.Warning,
@@ -160,39 +162,95 @@ public partial class DataManagementControl : UserControl
             return;
         }
 
+        string stagingDir = Path.Combine(Path.GetTempPath(), $"examdesk_restore_{Guid.NewGuid():N}");
+        string? rollbackDb = null;
+
         try
         {
-            var sourceConnString = new SqliteConnectionStringBuilder
+            Directory.CreateDirectory(stagingDir);
+            ZipFile.ExtractToDirectory(openDialog.FileName, stagingDir);
+
+            string stagedDb = Path.Combine(stagingDir, "examdesk.db");
+            if (!File.Exists(stagedDb))
+                throw new InvalidOperationException("Gói sao lưu không chứa tệp examdesk.db.");
+
+            // Kiểm tra tính toàn vẹn của SQLite trước khi ghi đè dữ liệu hiện tại
+            var verifyConnString = new SqliteConnectionStringBuilder
             {
-                DataSource = openDialog.FileName,
+                DataSource = stagedDb,
                 Mode = SqliteOpenMode.ReadOnly,
                 Pooling = false
             }.ToString();
 
-            using (var sourceConnection = new SqliteConnection(sourceConnString))
+            using (var verifyConn = new SqliteConnection(verifyConnString))
             {
-                sourceConnection.Open();
-                using (var checkCmd = sourceConnection.CreateCommand())
-                {
-                    checkCmd.CommandText = "PRAGMA integrity_check;";
-                    var checkResult = checkCmd.ExecuteScalar() as string;
-                    if (!string.Equals(checkResult, "ok", StringComparison.OrdinalIgnoreCase))
-                        throw new InvalidOperationException("Tệp sao lưu không hợp lệ hoặc bị hỏng.");
-                }
+                verifyConn.Open();
+                using var checkCmd = verifyConn.CreateCommand();
+                checkCmd.CommandText = "PRAGMA integrity_check;";
+                var checkResult = checkCmd.ExecuteScalar() as string;
+                if (!string.Equals(checkResult, "ok", StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("Tệp cơ sở dữ liệu trong bản sao lưu bị hỏng.");
+            }
 
-                using var destConnection = SqliteContext.CreateConnection();
-                destConnection.Open();
-                sourceConnection.BackupDatabase(destConnection);
+            // Bắt buộc giải phóng toàn bộ connection pool trước khi ghi đè tệp SQLite trên Windows
+            SqliteConnection.ClearAllPools();
+
+            string targetDb = SqliteContext.DatabaseFilePath;
+            string targetDir = Path.GetDirectoryName(targetDb)!;
+            Directory.CreateDirectory(targetDir);
+
+            if (File.Exists(targetDb))
+            {
+                rollbackDb = Path.Combine(targetDir, $".restore_bak_{Guid.NewGuid():N}.db");
+                File.Copy(targetDb, rollbackDb, overwrite: true);
+            }
+
+            TryDeleteFile(targetDb + "-wal");
+            TryDeleteFile(targetDb + "-shm");
+            File.Copy(stagedDb, targetDb, overwrite: true);
+
+            string stagedImages = Path.Combine(stagingDir, "images");
+            string targetImages = Path.Combine(targetDir, "images");
+            if (Directory.Exists(stagedImages))
+            {
+                TryDeleteDirectory(targetImages);
+                CopyDirectory(stagedImages, targetImages);
+            }
+
+            foreach (var jsonFile in Directory.EnumerateFiles(stagingDir, "*.json", SearchOption.TopDirectoryOnly))
+            {
+                File.Copy(jsonFile, Path.Combine(targetDir, Path.GetFileName(jsonFile)), overwrite: true);
             }
 
             SqliteContext.InitializeDatabase();
+            if (rollbackDb is not null)
+                TryDeleteFile(rollbackDb);
+
             _lblStatus.ForeColor = UiStyle.SuccessText;
-            _lblStatus.Text = $"Trạng thái: Đã khôi phục CSDL thành công từ tệp {Path.GetFileName(openDialog.FileName)}.";
+            _lblStatus.Text = $"Trạng thái: Đã khôi phục CSDL, ảnh và metadata thành công từ gói {Path.GetFileName(openDialog.FileName)}.";
         }
         catch (Exception ex)
         {
+            if (rollbackDb is not null && File.Exists(rollbackDb))
+            {
+                try
+                {
+                    SqliteConnection.ClearAllPools();
+                    File.Copy(rollbackDb, SqliteContext.DatabaseFilePath, overwrite: true);
+                    TryDeleteFile(rollbackDb);
+                }
+                catch
+                {
+                    // Giữ lại thông báo lỗi chính
+                }
+            }
+
             _lblStatus.ForeColor = UiStyle.ErrorText;
-            _lblStatus.Text = $"Trạng thái: Khôi phục CSDL thất bại ({ex.Message}).";
+            _lblStatus.Text = $"Trạng thái: Khôi phục dữ liệu thất bại ({ex.Message}).";
+        }
+        finally
+        {
+            TryDeleteDirectory(stagingDir);
         }
     }
 
@@ -204,6 +262,41 @@ public partial class DataManagementControl : UserControl
         return $"\"{value.Replace("\"", "\"\"")}\"";
     }
 
-    private static bool IsSameFilePath(string pathA, string pathB)
-        => string.Equals(Path.GetFullPath(pathA), Path.GetFullPath(pathB), StringComparison.OrdinalIgnoreCase);
+    private static void CopyDirectory(string sourceDir, string destinationDir)
+    {
+        Directory.CreateDirectory(destinationDir);
+        foreach (var file in Directory.EnumerateFiles(sourceDir, "*", SearchOption.AllDirectories))
+        {
+            var relative = Path.GetRelativePath(sourceDir, file);
+            var destFile = Path.Combine(destinationDir, relative);
+            Directory.CreateDirectory(Path.GetDirectoryName(destFile)!);
+            File.Copy(file, destFile, overwrite: true);
+        }
+    }
+
+    private static void TryDeleteFile(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+        }
+        catch
+        {
+            // Bỏ qua lỗi dọn tệp tạm
+        }
+    }
+
+    private static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+                Directory.Delete(path, recursive: true);
+        }
+        catch
+        {
+            // Bỏ qua lỗi dọn thư mục tạm
+        }
+    }
 }
