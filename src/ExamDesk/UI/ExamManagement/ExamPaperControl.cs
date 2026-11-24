@@ -26,6 +26,7 @@ public partial class ExamPaperControl : UserControl
     protected override void OnLoad(EventArgs e)
     {
         base.OnLoad(e);
+        UpdateFilterPanelMaxWidth();
         RefreshAllData();
     }
 
@@ -37,6 +38,9 @@ public partial class ExamPaperControl : UserControl
 
         _lblTitle.Font = UiStyle.TitleFont;
         _lblTitle.ForeColor = UiStyle.Text;
+
+        _filterPanel.BackColor = UiStyle.Surface;
+        UiStyle.StyleCard(_filterCardBorder, 10);
 
         _lblSubjectFilter.Font = UiStyle.BodyFont;
         _lblSubjectFilter.ForeColor = UiStyle.Text;
@@ -52,11 +56,11 @@ public partial class ExamPaperControl : UserControl
         _lblEmptyState.ForeColor = UiStyle.TextMuted;
 
         UiStyle.StyleGrid(_dgvPapers);
-        UiStyle.StyleSecondaryButton(_btnClearFilter);
+        UiStyle.StyleCompactSecondaryButton(_btnClearFilter);
         UiStyle.StylePrimaryButton(_btnCreate);
         UiStyle.StyleSecondaryButton(_btnPreview);
         UiStyle.StyleSecondaryButton(_btnRegenerate);
-        UiStyle.StyleSecondaryButton(_btnDelete);
+        UiStyle.StyleDangerButton(_btnDelete);
     }
 
     private void ConfigureGrid()
@@ -67,21 +71,24 @@ public partial class ExamPaperControl : UserControl
             Name = "colPaperCode",
             HeaderText = "Mã đề",
             DataPropertyName = nameof(ExamPaperRow.PaperCode),
-            FillWeight = 12
+            FillWeight = 12,
+            MinimumWidth = 70
         });
         _dgvPapers.Columns.Add(new DataGridViewTextBoxColumn
         {
             Name = "colTitle",
             HeaderText = "Tiêu đề",
             DataPropertyName = nameof(ExamPaperRow.Title),
-            FillWeight = 28
+            FillWeight = 28,
+            MinimumWidth = 150
         });
         _dgvPapers.Columns.Add(new DataGridViewTextBoxColumn
         {
             Name = "colSubject",
             HeaderText = "Môn",
             DataPropertyName = nameof(ExamPaperRow.SubjectDisplay),
-            FillWeight = 20
+            FillWeight = 20,
+            MinimumWidth = 110
         });
         _dgvPapers.Columns.Add(new DataGridViewTextBoxColumn
         {
@@ -89,6 +96,7 @@ public partial class ExamPaperControl : UserControl
             HeaderText = "Thời lượng (phút)",
             DataPropertyName = nameof(ExamPaperRow.DurationMinutes),
             FillWeight = 11,
+            MinimumWidth = 85,
             DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter }
         });
         _dgvPapers.Columns.Add(new DataGridViewTextBoxColumn
@@ -97,6 +105,7 @@ public partial class ExamPaperControl : UserControl
             HeaderText = "Cơ cấu",
             DataPropertyName = nameof(ExamPaperRow.StructureDisplay),
             FillWeight = 14,
+            MinimumWidth = 110,
             DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter }
         });
         _dgvPapers.Columns.Add(new DataGridViewTextBoxColumn
@@ -105,6 +114,7 @@ public partial class ExamPaperControl : UserControl
             HeaderText = "Tổng câu",
             DataPropertyName = nameof(ExamPaperRow.TotalQuestions),
             FillWeight = 8,
+            MinimumWidth = 68,
             DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter }
         });
         _dgvPapers.Columns.Add(new DataGridViewTextBoxColumn
@@ -113,12 +123,14 @@ public partial class ExamPaperControl : UserControl
             HeaderText = "Trạng thái",
             DataPropertyName = nameof(ExamPaperRow.StatusDisplay),
             FillWeight = 16,
+            MinimumWidth = 110,
             DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleCenter }
         });
     }
 
     private void WireEvents()
     {
+        _filterCardBorder.SizeChanged += (_, _) => UpdateFilterPanelMaxWidth();
         VisibleChanged += (_, _) =>
         {
             if (Visible && IsHandleCreated)
@@ -178,6 +190,18 @@ public partial class ExamPaperControl : UserControl
         var previousSubjectId = GetSelectedSubjectFilterId();
         LoadSubjectFilter(previousSubjectId);
         LoadPapers();
+    }
+
+    private void UpdateFilterPanelMaxWidth()
+    {
+        if (_filterCardBorder.ClientSize.Width <= 0)
+        {
+            return;
+        }
+
+        _filterPanel.MaximumSize = new Size(
+            Math.Max(240, _filterCardBorder.ClientSize.Width - _filterCardBorder.Padding.Horizontal),
+            0);
     }
 
     private void LoadSubjectFilter(int? selectedSubjectId)

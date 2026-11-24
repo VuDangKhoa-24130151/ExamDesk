@@ -31,7 +31,7 @@ internal static class HelpContent
                 "Bước 2: Nếu là giảng viên, bấm nút \"Đăng nhập giảng viên\" ở thẻ bên trái để mở hộp thoại xác thực.",
                 "Bước 3: Nếu là sinh viên dự thi, bấm nút \"Vào khu sinh viên\" ở thẻ bên phải để mở cửa sổ làm bài thi."
             ],
-            Note = "Bạn cũng có thể truy cập trực tiếp các mục trên thanh menu bên trái để thao tác nhanh với các phân hệ quản trị và thi."
+            Note = "Các mục Quản trị và Thi trên thanh menu bên trái sẽ tự động mở khóa sau khi giảng viên đăng nhập thành công."
         },
         new HelpTopic
         {
@@ -41,7 +41,7 @@ internal static class HelpContent
             Keywords = "dang nhap giang vien, mat khau, tai khoan, gv01, auth-02",
             Steps =
             [
-                "Bước 1: Tại màn hình \"Chọn vai trò\", bấm nút \"Đăng nhập giảng viên\" (hoặc chọn \"Mở UI đăng nhập GV\" ở cuối menu).",
+                "Bước 1: Tại màn hình \"Chọn vai trò\", bấm nút \"Đăng nhập giảng viên\".",
                 "Bước 2: Nhập Tên đăng nhập * (tài khoản mặc định lần đầu: gv01) và Mật khẩu * (mật khẩu mặc định: 123456).",
                 "Bước 3: Có thể tích \"Hiện mật khẩu\" để kiểm tra lại ký tự vừa nhập.",
                 "Bước 4: Nhấn phím Enter hoặc bấm nút \"Đăng nhập\". Hệ thống sẽ xác thực trên bảng Users (SQLite), chuyển tới màn hình \"Tổng quan\" và hiển thị tên giảng viên ở cuối thanh menu."
@@ -93,7 +93,7 @@ internal static class HelpContent
                 "Bước 3: Chọn một lớp ở cột trái để hiển thị danh sách sinh viên của lớp đó ở cột phải. Dùng ô tìm kiếm (Ctrl+F) để lọc nhanh theo MSSV hoặc họ và tên.",
                 "Bước 4: Bấm \"Thêm sinh viên\" hoặc nhấp đúp vào một sinh viên để sửa thông tin (MSSV * gồm 8–10 chữ số không trùng toàn hệ thống, Họ và tên *, Lớp *). Khi đổi Lớp trong hộp thoại Sửa, sĩ số hai lớp sẽ tự động cập nhật."
             ],
-            Note = "Không thể xóa lớp học đang còn sinh viên. Chức năng \"Nhập từ tệp…\" được thực hiện tại màn hình \"Xuất/nhập và sao lưu\" (GV-15 – Bạn 2 phụ trách)."
+            Note = "Không thể xóa lớp học đang còn sinh viên. Chức năng \"Nhập từ tệp…\" được thực hiện tại màn hình \"Xuất/nhập và sao lưu\"."
         },
         new HelpTopic
         {
@@ -167,7 +167,7 @@ internal static class HelpContent
                 "Bước 2: Tạo ca thi mới gắn với đề thi đã phát hành, thiết lập mã ca, tên ca, phòng thi và khung giờ mở ca.",
                 "Bước 3: Mở hoặc đóng ca thi để cho phép sinh viên trong danh sách bắt đầu vào làm bài."
             ],
-            Note = "Chi tiết do phân hệ phụ trách cập nhật (Bạn 3 – Quản lý ca thi GV-10 → GV-11)."
+            Note = "Chỉ các ca thi đang ở trạng thái mở mới hiển thị cho sinh viên chọn vào làm bài."
         },
         new HelpTopic
         {
@@ -181,7 +181,7 @@ internal static class HelpContent
                 "Bước 2: Lọc kết quả theo ca thi hoặc lớp học để xem bảng điểm, số câu đúng và trạng thái nộp bài của từng sinh viên.",
                 "Bước 3: Chọn một bài thi để đối chiếu chi tiết từng câu trả lời (phúc khảo chỉ đọc) hoặc xem biểu đồ phổ điểm của ca thi."
             ],
-            Note = "Chi tiết do phân hệ phụ trách cập nhật (Bạn 2 – Kết quả, phúc khảo và phổ điểm GV-12 → GV-14)."
+            Note = "Màn hình phúc khảo hoạt động ở chế độ chỉ đọc để đảm bảo tính minh bạch của điểm số."
         },
 
         // ==================== 4. SINH VIÊN ====================
@@ -193,7 +193,7 @@ internal static class HelpContent
             Keywords = "sinh vien chon ca thi, nhan dien, huong dan truoc khi thi, sv-01, sv-02",
             Steps =
             [
-                "Bước 1: Từ màn hình \"Chọn vai trò\", bấm \"Vào khu sinh viên\" (hoặc mục \"Mở UI sinh viên\" trên menu).",
+                "Bước 1: Từ màn hình \"Chọn vai trò\", bấm \"Vào khu sinh viên\".",
                 "Bước 2: Kiểm tra thông tin họ tên, MSSV, lớp học và chọn ca thi có trạng thái \"Đang mở\" bằng cách bấm nút \"Xem hướng dẫn →\".",
                 "Bước 3: Đọc kỹ quy chế phòng thi và cách tính điểm tại màn hình \"Hướng dẫn trước khi thi\".",
                 "Bước 4: Tích vào ô \"Tôi đã đọc và hiểu hướng dẫn làm bài\" rồi bấm \"Bắt đầu làm bài →\"."

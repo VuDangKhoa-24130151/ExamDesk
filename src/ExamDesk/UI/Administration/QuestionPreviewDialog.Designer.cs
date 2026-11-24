@@ -174,7 +174,7 @@ partial class QuestionPreviewDialog
 
         // _lblStudentSectionTitle
         _lblStudentSectionTitle.AutoSize = true;
-        _lblStudentSectionTitle.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+        _lblStudentSectionTitle.Font = UiStyle.BodyBoldFont;
         _lblStudentSectionTitle.ForeColor = UiStyle.Primary;
         _lblStudentSectionTitle.Margin = new Padding(0, 0, 0, 12);
         _lblStudentSectionTitle.Text = "Cách sinh viên nhìn thấy";
@@ -190,12 +190,13 @@ partial class QuestionPreviewDialog
         // _lblQuestionContent
         _lblQuestionContent.AutoSize = true;
         _lblQuestionContent.Dock = DockStyle.Fill;
-        _lblQuestionContent.Font = new Font("Segoe UI", 10.5F, FontStyle.Regular);
+        _lblQuestionContent.Font = UiStyle.QuestionBodyFont;
         _lblQuestionContent.ForeColor = UiStyle.Text;
         _lblQuestionContent.Margin = new Padding(0);
         _lblQuestionContent.Text = string.Empty;
 
         _questionBoxPanel.Controls.Add(_lblQuestionContent);
+        UiStyle.ApplyRoundedCorners(_questionBoxPanel, 8);
 
         // _picQuestionImage
         _picQuestionImage.Dock = DockStyle.Top;
@@ -243,6 +244,7 @@ partial class QuestionPreviewDialog
 
         _scrollPanel.Controls.Add(_studentViewLayout);
         _cardBorderPanel.Controls.Add(_scrollPanel);
+        UiStyle.StyleCard(_cardBorderPanel, 10);
 
         // _footerLayout
         _footerLayout.Dock = DockStyle.Fill;
@@ -363,7 +365,7 @@ partial class QuestionPreviewDialog
         radioButton.AutoSize = true;
         radioButton.Enabled = false;
         radioButton.Checked = false;
-        radioButton.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+        radioButton.Font = UiStyle.BodyBoldFont;
         radioButton.ForeColor = UiStyle.Text;
         radioButton.Margin = new Padding(0, 0, 8, 0);
         radioButton.Text = prefix;
@@ -376,7 +378,7 @@ partial class QuestionPreviewDialog
         textLabel.Text = string.Empty;
 
         badgeLabel.AutoSize = true;
-        badgeLabel.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
+        badgeLabel.Font = UiStyle.SmallBoldFont;
         badgeLabel.ForeColor = UiStyle.SuccessText;
         badgeLabel.Margin = new Padding(8, 2, 0, 0);
         badgeLabel.Text = "✓ Đáp án đúng";
@@ -386,6 +388,7 @@ partial class QuestionPreviewDialog
         rowLayout.Controls.Add(textLabel, 1, 0);
         rowLayout.Controls.Add(badgeLabel, 2, 0);
         borderPanel.Controls.Add(rowLayout);
+        UiStyle.StyleCard(borderPanel, 8);
 
         _optionsListLayout.Controls.Add(borderPanel, 0, rowIndex);
 

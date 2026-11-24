@@ -133,6 +133,7 @@ partial class HelpControl
         _lblOfflineBadge.Padding = new Padding(10, 6, 10, 6);
         _lblOfflineBadge.Margin = new Padding(8, 4, 0, 0);
         _lblOfflineBadge.Text = "Hướng dẫn offline theo tác vụ";
+        UiStyle.StyleBadge(_lblOfflineBadge, 6);
 
         _headerLayout.Controls.Add(_lblTitle, 0, 0);
         _headerLayout.Controls.Add(_lblOfflineBadge, 1, 0);
@@ -183,17 +184,15 @@ partial class HelpControl
         _txtSearch.Dock = DockStyle.Fill;
         _txtSearch.Font = UiStyle.BodyFont;
         _txtSearch.PlaceholderText = "Nhập tiêu đề, từ khóa…";
-        _txtSearch.Margin = new Padding(0, 4, 6, 0);
+        _txtSearch.Margin = new Padding(0, 2, 6, 0);
         _txtSearch.TabIndex = 0;
         _txtSearch.TextChanged += OnSearchTextChanged;
 
         _btnClearSearch.Width = 72;
-        _btnClearSearch.Height = 32;
         _btnClearSearch.Margin = new Padding(0);
         _btnClearSearch.TabIndex = 1;
         _btnClearSearch.Text = "Xóa";
-        UiStyle.StyleSecondaryButton(_btnClearSearch);
-        _btnClearSearch.Height = 32;
+        UiStyle.StyleCompactSecondaryButton(_btnClearSearch);
         _btnClearSearch.Click += OnClearSearchClick;
 
         _searchLayout.Controls.Add(_lblSearch, 0, 0);
@@ -247,6 +246,7 @@ partial class HelpControl
         _leftCardLayout.Controls.Add(_lblTopicCount, 0, 1);
         _leftCardLayout.Controls.Add(_treeBorderPanel, 0, 2);
         _leftCardBorder.Controls.Add(_leftCardLayout);
+        UiStyle.StyleCard(_leftCardBorder, 10);
 
         // ================= RIGHT COLUMN: TOPIC CONTENT =================
         _rightCardBorder.Dock = DockStyle.Fill;
@@ -273,7 +273,7 @@ partial class HelpControl
 
         // _lblTopicGroup
         _lblTopicGroup.AutoSize = true;
-        _lblTopicGroup.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
+        _lblTopicGroup.Font = UiStyle.SmallBoldFont;
         _lblTopicGroup.ForeColor = UiStyle.Primary;
         _lblTopicGroup.Margin = new Padding(0, 0, 0, 4);
         _lblTopicGroup.Text = "NHÓM CHỦ ĐỀ";
@@ -300,7 +300,7 @@ partial class HelpControl
 
         // _lblStepsHeader
         _lblStepsHeader.AutoSize = true;
-        _lblStepsHeader.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+        _lblStepsHeader.Font = UiStyle.SectionTitleFont;
         _lblStepsHeader.ForeColor = UiStyle.Text;
         _lblStepsHeader.Margin = new Padding(0, 0, 0, 10);
         _lblStepsHeader.Text = "Các bước thực hiện";
@@ -323,7 +323,7 @@ partial class HelpControl
         _noteBox.Margin = new Padding(0);
 
         _lblNoteHeader.AutoSize = true;
-        _lblNoteHeader.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+        _lblNoteHeader.Font = UiStyle.BodyBoldFont;
         _lblNoteHeader.ForeColor = UiStyle.WarningText;
         _lblNoteHeader.Margin = new Padding(0, 0, 0, 4);
         _lblNoteHeader.Text = "Lưu ý";
@@ -336,6 +336,7 @@ partial class HelpControl
 
         _noteBox.Controls.Add(_lblNoteHeader);
         _noteBox.Controls.Add(_lblNoteContent);
+        UiStyle.ApplyRoundedCorners(_noteBox, 8);
 
         _topicContentFlow.Controls.Add(_lblTopicGroup);
         _topicContentFlow.Controls.Add(_lblTopicTitle);
@@ -358,6 +359,7 @@ partial class HelpControl
         _rightCardHost.Controls.Add(_lblRightEmptyState);
         _rightCardHost.Controls.Add(_topicScrollPanel);
         _rightCardBorder.Controls.Add(_rightCardHost);
+        UiStyle.StyleCard(_rightCardBorder, 10);
 
         _splitLayout.Controls.Add(_leftCardBorder, 0, 0);
         _splitLayout.Controls.Add(_rightCardBorder, 1, 0);

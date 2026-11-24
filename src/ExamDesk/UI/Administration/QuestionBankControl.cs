@@ -10,6 +10,7 @@ public partial class QuestionBankControl : UserControl, IUnsavedChangesGuard
     private readonly QuestionBankService _service;
     private Dictionary<int, Subject> _subjectMap = [];
     private bool _suppressFilterEvents;
+    private TableLayoutPanel _emptyStateContainer = null!;
     private Button _btnSeedData = null!;
 
     // Thêm/sửa câu hỏi thực hiện qua hộp thoại modal QuestionEditorDialog (đã tự kiểm tra thay đổi chưa lưu).
@@ -29,40 +30,91 @@ public partial class QuestionBankControl : UserControl, IUnsavedChangesGuard
         // Đã kết nối SQLite thật: ẩn nhãn dữ liệu minh họa
         _lblDemoBadge.Visible = false;
 
-        InitializeSeedButton();
+        InitializeEmptyStateContainer();
+        _filterCardBorder.SizeChanged += (_, _) => UpdateFilterFlowMaxWidth();
+        _gridHostPanel.SizeChanged += (_, _) => UpdateEmptyStateWrapWidth();
+
         InitializeFilterOptions();
         RefreshGrid();
     }
 
-    private void InitializeSeedButton()
+    protected override void OnLoad(EventArgs e)
     {
+        base.OnLoad(e);
+        UpdateFilterFlowMaxWidth();
+        UpdateEmptyStateWrapWidth();
+    }
+
+    private void InitializeEmptyStateContainer()
+    {
+        _gridHostPanel.Controls.Remove(_lblEmptyState);
+        _lblEmptyState.Dock = DockStyle.None;
+        _lblEmptyState.AutoSize = true;
+        _lblEmptyState.Anchor = AnchorStyles.None;
+        _lblEmptyState.Margin = Padding.Empty;
+        _lblEmptyState.Visible = true;
+
         _btnSeedData = new Button
         {
             Text = "Nạp dữ liệu mẫu thử nghiệm",
-            Font = UiStyle.BodyFont,
-            BackColor = UiStyle.Primary,
-            ForeColor = Color.White,
-            FlatStyle = FlatStyle.Flat,
-            Cursor = Cursors.Hand,
-            AutoSize = true,
-            Padding = new Padding(14, 8, 14, 8),
+            Anchor = AnchorStyles.None,
+            Margin = new Padding(0, 12, 0, 0),
+            Padding = new Padding(14, 6, 14, 6),
             Visible = false
         };
-        _btnSeedData.FlatAppearance.BorderSize = 0;
+        UiStyle.StylePrimaryButton(_btnSeedData);
         _btnSeedData.Click += OnSeedDataClick;
 
-        _gridHostPanel.Controls.Add(_btnSeedData);
-        _gridHostPanel.ClientSizeChanged += (_, _) => PositionSeedButton();
+        var centerFlow = new FlowLayoutPanel
+        {
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            FlowDirection = FlowDirection.TopDown,
+            WrapContents = false,
+            Anchor = AnchorStyles.None,
+            BackColor = UiStyle.Surface,
+            Margin = Padding.Empty
+        };
+        centerFlow.Controls.Add(_lblEmptyState);
+        centerFlow.Controls.Add(_btnSeedData);
+
+        _emptyStateContainer = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = UiStyle.Surface,
+            ColumnCount = 1,
+            RowCount = 3,
+            Visible = false
+        };
+        _emptyStateContainer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+        _emptyStateContainer.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+        _emptyStateContainer.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        _emptyStateContainer.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+        _emptyStateContainer.Controls.Add(centerFlow, 0, 1);
+
+        _gridHostPanel.Controls.Add(_emptyStateContainer);
     }
 
-    private void PositionSeedButton()
+    private void UpdateFilterFlowMaxWidth()
     {
-        if (_btnSeedData != null && _btnSeedData.Visible)
+        if (_filterCardBorder.ClientSize.Width <= 0)
         {
-            _btnSeedData.Location = new Point(
-                Math.Max(0, (_gridHostPanel.ClientSize.Width - _btnSeedData.Width) / 2),
-                Math.Max(0, _gridHostPanel.ClientSize.Height / 2 + 30));
+            return;
         }
+
+        var maxWidth = Math.Max(240, _filterCardBorder.ClientSize.Width - _filterCardBorder.Padding.Horizontal);
+        _filterFlow.MaximumSize = new Size(maxWidth, 0);
+    }
+
+    private void UpdateEmptyStateWrapWidth()
+    {
+        if (_gridHostPanel.ClientSize.Width <= 0)
+        {
+            return;
+        }
+
+        var maxWidth = Math.Max(220, _gridHostPanel.ClientSize.Width - 48);
+        _lblEmptyState.MaximumSize = new Size(maxWidth, 0);
     }
 
     private void OnSeedDataClick(object? sender, EventArgs e)
@@ -320,24 +372,24 @@ public partial class QuestionBankControl : UserControl, IUnsavedChangesGuard
         if (totalCount == 0)
         {
             _lblEmptyState.Text = "Ngân hàng câu hỏi trong cơ sở dữ liệu hiện đang trống.\nBạn có thể tự bấm \"Thêm câu hỏi\" hoặc nạp nhanh bộ dữ liệu mẫu:";
-            _lblEmptyState.Visible = true;
-            _dgvQuestions.Visible = false;
             _btnSeedData.Visible = true;
-            _btnSeedData.BringToFront();
-            PositionSeedButton();
+            _emptyStateContainer.Visible = true;
+            _emptyStateContainer.BringToFront();
+            _dgvQuestions.Visible = false;
         }
         else if (isEmpty)
         {
             _lblEmptyState.Text = "Không có câu hỏi phù hợp với bộ lọc hiện tại. Thử đổi bộ lọc hoặc từ khóa tìm kiếm.";
-            _lblEmptyState.Visible = true;
-            _dgvQuestions.Visible = false;
             _btnSeedData.Visible = false;
+            _emptyStateContainer.Visible = true;
+            _emptyStateContainer.BringToFront();
+            _dgvQuestions.Visible = false;
         }
         else
         {
-            _lblEmptyState.Visible = false;
-            _dgvQuestions.Visible = true;
+            _emptyStateContainer.Visible = false;
             _btnSeedData.Visible = false;
+            _dgvQuestions.Visible = true;
         }
 
         if (!isEmpty)

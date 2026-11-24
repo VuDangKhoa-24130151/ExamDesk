@@ -7,8 +7,6 @@ namespace ExamDesk.UI.Administration;
 // GV-06 • Bạn 1 phụ trách: Hộp thoại xem trước câu hỏi (nhận dữ liệu câu hỏi từ SQLite).
 public partial class QuestionPreviewDialog : Form
 {
-    private static readonly Font BoldOptionFont = new("Segoe UI", 10F, FontStyle.Bold);
-
     private Question _question = new();
 
     [System.ComponentModel.DesignerSerializationVisibility(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
@@ -23,12 +21,21 @@ public partial class QuestionPreviewDialog : Form
     public QuestionPreviewDialog()
     {
         InitializeComponent();
+        _rootLayout.SizeChanged += (_, _) => AdjustWrappedTextWidths();
+        _scrollPanel.SizeChanged += (_, _) => AdjustWrappedTextWidths();
     }
 
     protected override void OnLoad(EventArgs e)
     {
         base.OnLoad(e);
         UiStyle.ClampToWorkingArea(this);
+        AdjustWrappedTextWidths();
+    }
+
+    protected override void OnShown(EventArgs e)
+    {
+        base.OnShown(e);
+        AdjustWrappedTextWidths();
     }
 
     protected override void OnFormClosed(FormClosedEventArgs e)
@@ -72,6 +79,39 @@ public partial class QuestionPreviewDialog : Form
         _radOptD.Checked = false;
 
         UpdateCorrectAnswerHighlight();
+        AdjustWrappedTextWidths();
+    }
+
+    private void AdjustWrappedTextWidths()
+    {
+        if (_rootLayout.ClientSize.Width > 0)
+        {
+            _lblMetaInfo.MaximumSize = new Size(
+                Math.Max(240, _rootLayout.ClientSize.Width - _rootLayout.Padding.Horizontal - 4),
+                0);
+        }
+
+        if (_scrollPanel.ClientSize.Width <= 0)
+        {
+            return;
+        }
+
+        var viewportWidth = Math.Max(
+            280,
+            _scrollPanel.ClientSize.Width - _scrollPanel.Padding.Horizontal - SystemInformation.VerticalScrollBarWidth - 6);
+
+        _lblQuestionContent.MaximumSize = new Size(
+            Math.Max(220, viewportWidth - _questionBoxPanel.Padding.Horizontal),
+            0);
+
+        var badgeReserved = _chkShowCorrect.Checked
+            ? Math.Max(120, _lblOptABadge.PreferredSize.Width + 12)
+            : 0;
+        var optionWidth = Math.Max(180, viewportWidth - 95 - badgeReserved);
+        _lblOptAText.MaximumSize = new Size(optionWidth, 0);
+        _lblOptBText.MaximumSize = new Size(optionWidth, 0);
+        _lblOptCText.MaximumSize = new Size(optionWidth, 0);
+        _lblOptDText.MaximumSize = new Size(optionWidth, 0);
     }
 
     private void UpdateQuestionImage(string? imagePath)
@@ -135,6 +175,8 @@ public partial class QuestionPreviewDialog : Form
 
         ApplyOptionHighlight(_optDBorder, _optDRow, _radOptD, _lblOptDText, _lblOptDBadge,
             showCorrect && string.Equals(correct, "D", StringComparison.OrdinalIgnoreCase));
+
+        AdjustWrappedTextWidths();
     }
 
     private static void ApplyOptionHighlight(
@@ -146,12 +188,14 @@ public partial class QuestionPreviewDialog : Form
         bool isHighlightedCorrect)
     {
         var rowBack = isHighlightedCorrect ? UiStyle.SuccessBack : UiStyle.Surface;
-        borderPanel.BackColor = isHighlightedCorrect ? UiStyle.SuccessText : UiStyle.Border;
+        var borderColor = isHighlightedCorrect ? UiStyle.SuccessText : UiStyle.Border;
+        borderPanel.BackColor = rowBack;
+        UiStyle.ApplyRoundedCorners(borderPanel, 8, borderColor);
         rowLayout.BackColor = rowBack;
         radioButton.BackColor = rowBack;
         textLabel.BackColor = rowBack;
         textLabel.ForeColor = isHighlightedCorrect ? UiStyle.SuccessText : UiStyle.Text;
-        textLabel.Font = isHighlightedCorrect ? BoldOptionFont : UiStyle.BodyFont;
+        textLabel.Font = isHighlightedCorrect ? UiStyle.BodyBoldFont : UiStyle.BodyFont;
         badgeLabel.BackColor = rowBack;
         badgeLabel.Visible = isHighlightedCorrect;
     }

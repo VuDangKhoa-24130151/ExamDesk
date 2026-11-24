@@ -25,6 +25,9 @@ public partial class QuestionEditorDialog : Form
     {
         _service = service ?? throw new ArgumentNullException(nameof(service));
         InitializeComponent();
+        _lblDemoBadge.Visible = false;
+        _scrollPanel.SizeChanged += (_, _) => UpdateResponsiveWrapWidths();
+        _imageActionsFlow.SizeChanged += (_, _) => UpdateResponsiveWrapWidths();
         PopulateSubjects();
         SetQuestionImagePreview(string.Empty);
         CaptureInitialSnapshot();
@@ -34,6 +37,27 @@ public partial class QuestionEditorDialog : Form
     {
         base.OnLoad(e);
         UiStyle.ClampToWorkingArea(this);
+        UpdateResponsiveWrapWidths();
+    }
+
+    private void UpdateResponsiveWrapWidths()
+    {
+        if (_scrollPanel.ClientSize.Width > 0)
+        {
+            var formWidth = Math.Max(260, _scrollPanel.ClientSize.Width - _scrollPanel.Padding.Horizontal - SystemInformation.VerticalScrollBarWidth - 6);
+            _lblContentError.MaximumSize = new Size(formWidth, 0);
+            _lblCorrectOptionError.MaximumSize = new Size(formWidth, 0);
+            var optionErrorWidth = Math.Max(200, formWidth - 180);
+            _lblOptionAError.MaximumSize = new Size(optionErrorWidth, 0);
+            _lblOptionBError.MaximumSize = new Size(optionErrorWidth, 0);
+            _lblOptionCError.MaximumSize = new Size(optionErrorWidth, 0);
+            _lblOptionDError.MaximumSize = new Size(optionErrorWidth, 0);
+        }
+
+        if (_imageActionsFlow.ClientSize.Width > 0)
+        {
+            _lblImageFileName.MaximumSize = new Size(Math.Max(160, _imageActionsFlow.ClientSize.Width - 16), 0);
+        }
     }
 
     public void LoadQuestion(Question q)

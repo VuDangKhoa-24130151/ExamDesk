@@ -1,3 +1,4 @@
+using ExamDesk.UI.Shared;
 using ExamDesk.UI.Student;
 
 namespace ExamDesk.UI.Administration;
@@ -13,6 +14,36 @@ public partial class RoleSelectionControl : UserControl
     public RoleSelectionControl()
     {
         InitializeComponent();
+        UiStyle.StyleCard(_lecturerCardBorder, 12);
+        UiStyle.StyleCard(_studentCardBorder, 12);
+        _lecturerCardContent.SizeChanged += (_, _) => AdjustCardLabelWidths();
+        _studentCardContent.SizeChanged += (_, _) => AdjustCardLabelWidths();
+    }
+
+    protected override void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+        AdjustCardLabelWidths();
+    }
+
+    private void AdjustCardLabelWidths()
+    {
+        ApplyCardWidths(_lecturerCardContent, _lblLecturerTag, _lblLecturerTitle, _lblLecturerDesc);
+        ApplyCardWidths(_studentCardContent, _lblStudentTag, _lblStudentTitle, _lblStudentDesc);
+    }
+
+    private static void ApplyCardWidths(Control container, params Label[] labels)
+    {
+        if (container.ClientSize.Width <= 0)
+        {
+            return;
+        }
+
+        var maxWidth = Math.Max(180, container.ClientSize.Width - container.Padding.Horizontal);
+        foreach (var label in labels)
+        {
+            label.MaximumSize = new Size(maxWidth, 0);
+        }
     }
 
     private void OnLecturerLoginClick(object? sender, EventArgs e)

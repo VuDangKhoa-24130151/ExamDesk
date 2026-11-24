@@ -21,12 +21,13 @@ public partial class LoginForm : Form
     {
         _service = service ?? throw new ArgumentNullException(nameof(service));
         InitializeComponent();
+        UiStyle.ApplyRoundedCorners(_pnlErrorBanner, 6, UiStyle.DangerBorder);
     }
 
     protected override void OnLoad(EventArgs e)
     {
         base.OnLoad(e);
-        UiStyle.ClampToWorkingArea(this);
+        UpdateWrappedLabelWidths();
 
         try
         {
@@ -36,7 +37,17 @@ public partial class LoginForm : Form
         {
             _lblGeneralError.Text = $"Không thể khởi tạo tài khoản mặc định: {ex.Message}";
             _pnlErrorBanner.Visible = true;
-            EnsureHeightFitsContent();
+        }
+
+        EnsureHeightFitsContent();
+    }
+
+    protected override void OnSizeChanged(EventArgs e)
+    {
+        base.OnSizeChanged(e);
+        if (IsHandleCreated)
+        {
+            UpdateWrappedLabelWidths();
         }
     }
 
@@ -164,6 +175,24 @@ public partial class LoginForm : Form
         _btnLogin.Enabled = !submitting;
         _btnCancel.Enabled = !submitting;
         _btnLogin.Text = submitting ? "Đang đăng nhập…" : "Đăng nhập";
+    }
+
+    private void UpdateWrappedLabelWidths()
+    {
+        if (_rootLayout.ClientSize.Width <= 0)
+        {
+            return;
+        }
+
+        var rootContentWidth = Math.Max(240, _rootLayout.ClientSize.Width - _rootLayout.Padding.Horizontal - 4);
+        _lblTitle.MaximumSize = new Size(rootContentWidth, 0);
+        _lblSubtitle.MaximumSize = new Size(rootContentWidth, 0);
+        _lblUsernameError.MaximumSize = new Size(rootContentWidth, 0);
+        _lblPasswordError.MaximumSize = new Size(rootContentWidth, 0);
+        _lblDemoNote.MaximumSize = new Size(rootContentWidth, 0);
+
+        var bannerContentWidth = Math.Max(200, rootContentWidth - _pnlErrorBanner.Padding.Horizontal);
+        _lblGeneralError.MaximumSize = new Size(bannerContentWidth, 0);
     }
 
     private void EnsureHeightFitsContent()

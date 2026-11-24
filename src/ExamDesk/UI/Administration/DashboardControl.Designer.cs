@@ -17,7 +17,7 @@ partial class DashboardControl
     private Label _lblDate = null!;
     private Label _lblDemoBadge = null!;
 
-    // 2. Metric cards (5 cards)
+    // 2. Metric cards (6 cards)
     private FlowLayoutPanel _metricsFlow = null!;
     private Panel _cardSubjectsBorder = null!;
     private Label _lblSubjectsValue = null!;
@@ -28,6 +28,9 @@ partial class DashboardControl
     private Panel _cardQuestionsBorder = null!;
     private Label _lblQuestionsValue = null!;
     private Label _lblQuestionsLabel = null!;
+    private Panel _cardExamPapersBorder = null!;
+    private Label _lblExamPapersValue = null!;
+    private Label _lblExamPapersLabel = null!;
     private Panel _cardClassesBorder = null!;
     private Label _lblClassesValue = null!;
     private Label _lblClassesLabel = null!;
@@ -98,6 +101,9 @@ partial class DashboardControl
         _cardQuestionsBorder = new Panel();
         _lblQuestionsValue = new Label();
         _lblQuestionsLabel = new Label();
+        _cardExamPapersBorder = new Panel();
+        _lblExamPapersValue = new Label();
+        _lblExamPapersLabel = new Label();
         _cardClassesBorder = new Panel();
         _lblClassesValue = new Label();
         _lblClassesLabel = new Label();
@@ -201,7 +207,7 @@ partial class DashboardControl
         _lblTitle.Text = "Tổng quan";
 
         _lblGreeting.AutoSize = true;
-        _lblGreeting.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+        _lblGreeting.Font = UiStyle.SectionTitleFont;
         _lblGreeting.ForeColor = UiStyle.Primary;
         _lblGreeting.Margin = new Padding(0, 0, 0, 2);
         _lblGreeting.Text = "Xin chào, Giảng viên";
@@ -238,12 +244,14 @@ partial class DashboardControl
         ConfigureMetricCard(_cardSubjectsBorder, _lblSubjectsValue, _lblSubjectsLabel, "Môn học", "subjects");
         ConfigureMetricCard(_cardChaptersBorder, _lblChaptersValue, _lblChaptersLabel, "Chương", "subjects");
         ConfigureMetricCard(_cardQuestionsBorder, _lblQuestionsValue, _lblQuestionsLabel, "Câu hỏi", "questions");
+        ConfigureMetricCard(_cardExamPapersBorder, _lblExamPapersValue, _lblExamPapersLabel, "Đề thi", "exams");
         ConfigureMetricCard(_cardClassesBorder, _lblClassesValue, _lblClassesLabel, "Lớp", "classes");
         ConfigureMetricCard(_cardStudentsBorder, _lblStudentsValue, _lblStudentsLabel, "Sinh viên", "classes");
 
         _metricsFlow.Controls.Add(_cardSubjectsBorder);
         _metricsFlow.Controls.Add(_cardChaptersBorder);
         _metricsFlow.Controls.Add(_cardQuestionsBorder);
+        _metricsFlow.Controls.Add(_cardExamPapersBorder);
         _metricsFlow.Controls.Add(_cardClassesBorder);
         _metricsFlow.Controls.Add(_cardStudentsBorder);
 
@@ -288,7 +296,7 @@ partial class DashboardControl
         _difficultyHeaderRow.Margin = new Padding(0, 0, 0, 12);
 
         _lblDifficultyTitle.AutoSize = true;
-        _lblDifficultyTitle.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+        _lblDifficultyTitle.Font = UiStyle.SectionTitleFont;
         _lblDifficultyTitle.ForeColor = UiStyle.Text;
         _lblDifficultyTitle.Margin = new Padding(0);
         _lblDifficultyTitle.Text = "Phân bố câu hỏi theo độ khó";
@@ -353,7 +361,7 @@ partial class DashboardControl
         _attentionHeaderRow.Margin = new Padding(0, 0, 0, 12);
 
         _lblAttentionTitle.AutoSize = true;
-        _lblAttentionTitle.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+        _lblAttentionTitle.Font = UiStyle.SectionTitleFont;
         _lblAttentionTitle.ForeColor = UiStyle.Text;
         _lblAttentionTitle.Margin = new Padding(0);
         _lblAttentionTitle.Text = "Cần chú ý";
@@ -402,7 +410,7 @@ partial class DashboardControl
         _quickActionsCardLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         _lblQuickActionsTitle.AutoSize = true;
-        _lblQuickActionsTitle.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+        _lblQuickActionsTitle.Font = UiStyle.SectionTitleFont;
         _lblQuickActionsTitle.ForeColor = UiStyle.Text;
         _lblQuickActionsTitle.Margin = new Padding(0, 0, 0, 12);
         _lblQuickActionsTitle.Text = "Thao tác nhanh";
@@ -513,8 +521,10 @@ partial class DashboardControl
         string labelText,
         string navigationKey)
     {
-        borderPanel.Width = 178;
-        borderPanel.Height = 96;
+        var cardHeight = Math.Max(96, UiStyle.MetricValueFont.Height + UiStyle.BodyFont.Height + 34);
+        borderPanel.Width = 152;
+        borderPanel.Height = cardHeight;
+        borderPanel.MinimumSize = new Size(136, cardHeight);
         borderPanel.BackColor = UiStyle.Border;
         borderPanel.Padding = new Padding(1);
         borderPanel.Margin = new Padding(0, 0, 12, 12);
@@ -534,7 +544,7 @@ partial class DashboardControl
         surfaceLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 40F));
 
         valueLabel.Dock = DockStyle.Fill;
-        valueLabel.Font = new Font("Segoe UI", 20F, FontStyle.Bold);
+        valueLabel.Font = UiStyle.MetricValueFont;
         valueLabel.ForeColor = UiStyle.Primary;
         valueLabel.TextAlign = ContentAlignment.MiddleLeft;
         valueLabel.Margin = new Padding(0);
@@ -578,6 +588,7 @@ partial class DashboardControl
 
         barPanel.Dock = DockStyle.Fill;
         barPanel.Height = 22;
+        barPanel.MinimumSize = new Size(60, 20);
         barPanel.BackColor = UiStyle.Background;
         barPanel.Margin = new Padding(0, 8, 10, 8);
         barPanel.Paint += OnDifficultyBarPaint;

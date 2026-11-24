@@ -260,20 +260,19 @@ partial class QuestionBankControl
         _grpFilterActions.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _grpFilterActions.FlowDirection = FlowDirection.LeftToRight;
         _grpFilterActions.WrapContents = false;
-        _grpFilterActions.Margin = new Padding(0, 18, 0, 4);
+        _grpFilterActions.Margin = new Padding(0, 17, 0, 4);
 
-        _btnClearFilter.Width = 96;
-        _btnClearFilter.Height = 38;
+        _btnClearFilter.Width = 92;
         _btnClearFilter.Margin = new Padding(0, 0, 12, 0);
         _btnClearFilter.TabIndex = 4;
         _btnClearFilter.Text = "Xóa lọc";
-        UiStyle.StyleSecondaryButton(_btnClearFilter);
+        UiStyle.StyleCompactSecondaryButton(_btnClearFilter);
         _btnClearFilter.Click += OnClearFilterClick;
 
         _lblCount.AutoSize = true;
         _lblCount.Font = UiStyle.SmallFont;
         _lblCount.ForeColor = UiStyle.TextMuted;
-        _lblCount.Margin = new Padding(0, 10, 0, 0);
+        _lblCount.Margin = new Padding(0, 6, 0, 0);
         _lblCount.Text = "Hiển thị 0 / 0 câu";
 
         _grpFilterActions.Controls.Add(_btnClearFilter);
@@ -285,6 +284,7 @@ partial class QuestionBankControl
         _filterFlow.Controls.Add(_grpSearch);
         _filterFlow.Controls.Add(_grpFilterActions);
         _filterCardBorder.Controls.Add(_filterFlow);
+        UiStyle.StyleCard(_filterCardBorder, 10);
 
         // _gridBorderPanel
         _gridBorderPanel.Dock = DockStyle.Fill;
@@ -395,8 +395,7 @@ partial class QuestionBankControl
         _btnDelete.Margin = new Padding(0, 0, 0, 4);
         _btnDelete.TabIndex = 9;
         _btnDelete.Text = "Xóa";
-        UiStyle.StyleSecondaryButton(_btnDelete);
-        _btnDelete.ForeColor = UiStyle.ErrorText;
+        UiStyle.StyleDangerButton(_btnDelete);
         _btnDelete.Click += OnDeleteClick;
 
         _actionsPanel.Controls.Add(_btnAdd);

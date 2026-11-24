@@ -116,7 +116,7 @@ partial class LoginForm
 
         // _txtUsername
         _txtUsername.Dock = DockStyle.Fill;
-        _txtUsername.Font = new Font("Segoe UI", 11F, FontStyle.Regular);
+        _txtUsername.Font = UiStyle.InputLargeFont;
         _txtUsername.ForeColor = UiStyle.Text;
         _txtUsername.BackColor = UiStyle.Surface;
         _txtUsername.BorderStyle = BorderStyle.FixedSingle;
@@ -142,7 +142,7 @@ partial class LoginForm
 
         // _txtPassword
         _txtPassword.Dock = DockStyle.Fill;
-        _txtPassword.Font = new Font("Segoe UI", 11F, FontStyle.Regular);
+        _txtPassword.Font = UiStyle.InputLargeFont;
         _txtPassword.ForeColor = UiStyle.Text;
         _txtPassword.BackColor = UiStyle.Surface;
         _txtPassword.BorderStyle = BorderStyle.FixedSingle;

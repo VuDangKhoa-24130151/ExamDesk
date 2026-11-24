@@ -22,7 +22,11 @@ public partial class ExamPaperEditorDialog : Form
 
     public int CreatedPaperId { get; private set; }
 
-    public ExamPaperEditorDialog(int? initialSubjectId = null)
+    public ExamPaperEditorDialog() : this(null)
+    {
+    }
+
+    public ExamPaperEditorDialog(int? initialSubjectId)
     {
         _initialSubjectId = initialSubjectId;
         _examPaperService = new ExamPaperService();
@@ -34,10 +38,18 @@ public partial class ExamPaperEditorDialog : Form
         LoadSubjects();
     }
 
+    protected override void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+        UiStyle.ClampToWorkingArea(this);
+        UpdateWrappedLabelWidths();
+    }
+
     protected override void OnShown(EventArgs e)
     {
         base.OnShown(e);
         UiStyle.ClampToWorkingArea(this);
+        UpdateWrappedLabelWidths();
         _txtPaperCode.Focus();
     }
 
@@ -80,9 +92,12 @@ public partial class ExamPaperEditorDialog : Form
 
     private void ApplyUiStyle()
     {
-        BackColor = UiStyle.Surface;
+        BackColor = UiStyle.Background;
         ForeColor = UiStyle.Text;
         Font = UiStyle.BodyFont;
+
+        _scrollPanel.BackColor = UiStyle.Surface;
+        _formTable.BackColor = UiStyle.Surface;
 
         _lblDialogTitle.Font = UiStyle.TitleFont;
         _lblDialogTitle.ForeColor = UiStyle.Text;
@@ -110,7 +125,7 @@ public partial class ExamPaperEditorDialog : Form
         _lblHardError.Font = UiStyle.SmallFont;
         _lblHardError.ForeColor = UiStyle.ErrorText;
 
-        _lblTotalSummary.Font = new Font(UiStyle.BodyFont, FontStyle.Bold);
+        _lblTotalSummary.Font = UiStyle.BodyBoldFont;
         _lblTotalSummary.ForeColor = UiStyle.Text;
 
         _lblFormError.Font = UiStyle.SmallFont;
@@ -118,12 +133,12 @@ public partial class ExamPaperEditorDialog : Form
         _lblFormError.BackColor = UiStyle.ErrorBack;
 
         UiStyle.StylePrimaryButton(_btnSave);
-        _btnSave.AutoSize = true;
         UiStyle.StyleSecondaryButton(_btnCancel);
     }
 
     private void WireEvents()
     {
+        SizeChanged += (_, _) => UpdateWrappedLabelWidths();
         _cboSubject.SelectedIndexChanged += (_, _) =>
         {
             if (!_suppressEvents)
@@ -340,6 +355,18 @@ public partial class ExamPaperEditorDialog : Form
         {
             ShowFormError(ex.Message);
         }
+    }
+
+    private void UpdateWrappedLabelWidths()
+    {
+        if (_rootLayout.ClientSize.Width <= 0)
+        {
+            return;
+        }
+
+        var summaryWidth = Math.Max(260, _rootLayout.ClientSize.Width - _rootLayout.Padding.Horizontal - 4);
+        _lblTotalSummary.MaximumSize = new Size(summaryWidth, 0);
+        _lblFormError.MaximumSize = new Size(Math.Max(220, summaryWidth - _lblFormError.Padding.Horizontal), 0);
     }
 
     private void ShowFormError(string message)
