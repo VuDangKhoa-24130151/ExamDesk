@@ -1,0 +1,62 @@
+[
+  {
+    "SubjectId": 16,
+    "Number": 1,
+    "Name": "N\u1EC1n t\u1EA3ng .NET v\u00E0 ng\u00F4n ng\u1EEF C#"
+  },
+  {
+    "SubjectId": 16,
+    "Number": 2,
+    "Name": "Thi\u1EBFt k\u1EBF giao di\u1EC7n v\u1EDBi WinForms"
+  },
+  {
+    "SubjectId": 16,
+    "Number": 3,
+    "Name": "Truy v\u1EA5n LINQ v\u00E0 l\u1EADp tr\u00ECnh b\u1EA5t \u0111\u1ED3ng b\u1ED9"
+  },
+  {
+    "SubjectId": 16,
+    "Number": 4,
+    "Name": "Truy c\u1EADp d\u1EEF li\u1EC7u v\u1EDBi ADO.NET v\u00E0 SQLite"
+  },
+  {
+    "SubjectId": 17,
+    "Number": 1,
+    "Name": "M\u00F4 h\u00ECnh c\u01A1 s\u1EDF d\u1EEF li\u1EC7u quan h\u1EC7"
+  },
+  {
+    "SubjectId": 17,
+    "Number": 2,
+    "Name": "Ng\u00F4n ng\u1EEF truy v\u1EA5n c\u00F3 c\u1EA5u tr\u00FAc (SQL)"
+  },
+  {
+    "SubjectId": 17,
+    "Number": 3,
+    "Name": "Chu\u1EA9n h\u00F3a d\u1EEF li\u1EC7u v\u00E0 giao d\u1ECBch (Transaction)"
+  },
+  {
+    "SubjectId": 17,
+    "Number": 4,
+    "Name": "Ch\u1EC9 m\u1EE5c, t\u1ED1i \u01B0u h\u00F3a v\u00E0 an to\u00E0n d\u1EEF li\u1EC7u"
+  },
+  {
+    "SubjectId": 18,
+    "Number": 1,
+    "Name": "T\u1ED5ng quan m\u1EA1ng m\u00E1y t\u00EDnh v\u00E0 m\u00F4 h\u00ECnh OSI"
+  },
+  {
+    "SubjectId": 18,
+    "Number": 2,
+    "Name": "T\u1EA7ng \u1EE9ng d\u1EE5ng v\u00E0 c\u00E1c giao th\u1EE9c m\u1EA1ng"
+  },
+  {
+    "SubjectId": 18,
+    "Number": 3,
+    "Name": "T\u1EA7ng giao v\u1EADn (TCP/UDP)"
+  },
+  {
+    "SubjectId": 18,
+    "Number": 4,
+    "Name": "\u0110\u1ECBa ch\u1EC9 IPv4 v\u00E0 chia m\u1EA1ng con (Subnetting)"
+  }
+]

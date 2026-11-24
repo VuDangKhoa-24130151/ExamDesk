@@ -1,26 +1,37 @@
 using System.Text.RegularExpressions;
+using ExamDesk.Models;
+using ExamDesk.Services;
 using ExamDesk.UI.Shared;
 
 namespace ExamDesk.UI.Administration;
 
-// GV-03 • Bạn 1 phụ trách: Hộp thoại thêm / sửa lớp học (mốc UI, dữ liệu minh họa).
+// GV-03 • Bạn 1 phụ trách: Hộp thoại thêm / sửa lớp học (kết nối SQLite qua AdministrationService).
 public partial class ClassEditDialog : Form
 {
     private static readonly Regex ValidClassCodeRegex = new("^[A-Z0-9]{2,15}$", RegexOptions.Compiled);
     private static readonly Regex SchoolYearRegex = new(@"^(\d{4})-(\d{4})$", RegexOptions.Compiled);
 
+    private readonly AdministrationService _service;
+
     private int _editingId;
+    private string _editingOriginalCode = string.Empty;
     private string _initialCode = string.Empty;
     private string _initialName = string.Empty;
     private string _initialSchoolYear = string.Empty;
     private bool _suppressDirtyTracking;
     private bool _allowCloseWithoutPrompt;
 
-    internal ClassPreview? Result { get; private set; }
+    public ClassInfo? Result { get; private set; }
 
-    public ClassEditDialog()
+    public ClassEditDialog() : this(new AdministrationService())
     {
+    }
+
+    public ClassEditDialog(AdministrationService service)
+    {
+        _service = service ?? throw new ArgumentNullException(nameof(service));
         InitializeComponent();
+        _lblDemoBadge.Visible = false;
         CaptureInitialSnapshot();
     }
 
@@ -30,12 +41,13 @@ public partial class ClassEditDialog : Form
         UiStyle.ClampToWorkingArea(this);
     }
 
-    internal void LoadClass(ClassPreview classItem)
+    public void LoadClass(ClassInfo classItem)
     {
         ArgumentNullException.ThrowIfNull(classItem);
 
         _suppressDirtyTracking = true;
         _editingId = classItem.Id;
+        _editingOriginalCode = classItem.Code;
 
         var titleText = $"Sửa lớp: {classItem.Code}";
         Text = titleText;
@@ -182,21 +194,22 @@ public partial class ClassEditDialog : Form
         var name = _txtName.Text.Trim();
         var schoolYear = _txtSchoolYear.Text.Trim();
 
+        var isUnchangedExistingCode = !string.IsNullOrWhiteSpace(_editingOriginalCode) &&
+            string.Equals(code, _editingOriginalCode, StringComparison.OrdinalIgnoreCase);
+
         if (string.IsNullOrWhiteSpace(code))
         {
             _lblCodeError.Text = "Vui lòng nhập mã lớp.";
             _lblCodeError.Visible = true;
             firstInvalidControl ??= _txtCode;
         }
-        else if (!ValidClassCodeRegex.IsMatch(code))
+        else if (!isUnchangedExistingCode && !ValidClassCodeRegex.IsMatch(code))
         {
             _lblCodeError.Text = "Mã lớp chỉ gồm chữ in hoa không dấu (A–Z) hoặc số (0–9), độ dài 2–15 ký tự.";
             _lblCodeError.Visible = true;
             firstInvalidControl ??= _txtCode;
         }
-        else if (AdminPreviewData.Classes.Any(c =>
-                     c.Id != _editingId &&
-                     string.Equals(c.Code, code, StringComparison.OrdinalIgnoreCase)))
+        else if (_service.IsClassCodeExists(code, _editingId > 0 ? _editingId : null))
         {
             _lblCodeError.Text = $"Mã lớp \"{code}\" đã tồn tại. Vui lòng nhập mã khác.";
             _lblCodeError.Visible = true;
@@ -252,17 +265,32 @@ public partial class ClassEditDialog : Form
             return;
         }
 
-        Result = new ClassPreview
+        try
         {
-            Id = _editingId,
-            Code = code,
-            Name = name,
-            SchoolYear = schoolYear
-        };
+            var classInfo = new ClassInfo
+            {
+                Id = _editingId,
+                Code = code,
+                Name = name,
+                SchoolYear = schoolYear
+            };
 
-        _allowCloseWithoutPrompt = true;
-        DialogResult = DialogResult.OK;
-        Close();
+            _service.SaveClass(classInfo, string.IsNullOrEmpty(_editingOriginalCode) ? null : _editingOriginalCode);
+            Result = classInfo;
+
+            _allowCloseWithoutPrompt = true;
+            DialogResult = DialogResult.OK;
+            Close();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                this,
+                ex.Message,
+                "Lỗi lưu lớp học",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Warning);
+        }
     }
 
     private void EnsureHeightFitsContent()

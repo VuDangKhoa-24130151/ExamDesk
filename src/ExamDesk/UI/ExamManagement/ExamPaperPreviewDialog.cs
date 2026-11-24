@@ -6,6 +6,11 @@ namespace ExamDesk.UI.ExamManagement;
 
 public partial class ExamPaperPreviewDialog : Form
 {
+    private static readonly Font PaperTitleFont = new("Segoe UI", 13F, FontStyle.Bold);
+    private static readonly Font CardHeaderFont = new(UiStyle.SmallFont, FontStyle.Bold);
+    private static readonly Font CardContentFont = new(UiStyle.BodyFont, FontStyle.Bold);
+    private static readonly Font CorrectOptionFont = new(UiStyle.BodyFont, FontStyle.Bold);
+
     private readonly ExamPaperService _examPaperService;
     private readonly ExamPaperSummary _summary;
     private List<ExamPaperQuestionDetail> _questions = [];
@@ -31,6 +36,13 @@ public partial class ExamPaperPreviewDialog : Form
         AdjustCardWidths();
     }
 
+    protected override void OnFormClosed(FormClosedEventArgs e)
+    {
+        DisposeQuestionPanelControls();
+        _questionsPanel.Controls.Clear();
+        base.OnFormClosed(e);
+    }
+
     private void ApplyUiStyle()
     {
         BackColor = UiStyle.Background;
@@ -40,7 +52,7 @@ public partial class ExamPaperPreviewDialog : Form
         _headerCard.BackColor = UiStyle.Surface;
         _headerCard.BorderStyle = BorderStyle.FixedSingle;
 
-        _lblPaperTitle.Font = new Font("Segoe UI", 13F, FontStyle.Bold);
+        _lblPaperTitle.Font = PaperTitleFont;
         _lblPaperTitle.ForeColor = UiStyle.Text;
 
         _lblMetaInfo.Font = UiStyle.BodyFont;
@@ -112,6 +124,7 @@ public partial class ExamPaperPreviewDialog : Form
         _questionsPanel.SuspendLayout();
         try
         {
+            DisposeQuestionPanelControls();
             _questionsPanel.Controls.Clear();
 
             if (_questions.Count == 0)
@@ -172,7 +185,7 @@ public partial class ExamPaperPreviewDialog : Form
         {
             AutoSize = true,
             MaximumSize = new Size(textMaxWidth, 0),
-            Font = new Font(UiStyle.SmallFont, FontStyle.Bold),
+            Font = CardHeaderFont,
             ForeColor = UiStyle.Primary,
             Text = $"Câu {q.OrderIndex}  •  {FormatDifficulty(q.Difficulty)}  •  Chương {q.Chapter}",
             Margin = new Padding(0, 0, 0, 6)
@@ -182,7 +195,7 @@ public partial class ExamPaperPreviewDialog : Form
         {
             AutoSize = true,
             MaximumSize = new Size(textMaxWidth, 0),
-            Font = new Font(UiStyle.BodyFont, FontStyle.Bold),
+            Font = CardContentFont,
             ForeColor = UiStyle.Text,
             Text = q.Content,
             Margin = new Padding(0, 0, 0, 8)
@@ -190,6 +203,47 @@ public partial class ExamPaperPreviewDialog : Form
 
         inner.Controls.Add(headerLabel);
         inner.Controls.Add(contentLabel);
+
+        if (!string.IsNullOrWhiteSpace(q.ImagePath))
+        {
+            var questionImage = QuestionBankService.LoadImageUnlocked(q.ImagePath);
+            if (questionImage is not null)
+            {
+                var pictureBox = new PictureBox
+                {
+                    SizeMode = PictureBoxSizeMode.Zoom,
+                    Width = textMaxWidth,
+                    Height = 160,
+                    BackColor = UiStyle.Background,
+                    BorderStyle = BorderStyle.FixedSingle,
+                    Margin = new Padding(0, 0, 0, 8),
+                    Image = questionImage,
+                    TabStop = false
+                };
+                pictureBox.Disposed += (_, _) =>
+                {
+                    var img = pictureBox.Image;
+                    pictureBox.Image = null;
+                    img?.Dispose();
+                };
+                inner.Controls.Add(pictureBox);
+            }
+            else
+            {
+                var missingLabel = new Label
+                {
+                    AutoSize = true,
+                    MaximumSize = new Size(textMaxWidth, 0),
+                    Font = UiStyle.SmallFont,
+                    ForeColor = UiStyle.WarningText,
+                    BackColor = UiStyle.WarningBack,
+                    Padding = new Padding(8, 4, 8, 4),
+                    Margin = new Padding(0, 0, 0, 8),
+                    Text = "⚠ Không tìm thấy tệp ảnh đính kèm"
+                };
+                inner.Controls.Add(missingLabel);
+            }
+        }
 
         inner.Controls.Add(BuildOptionLabel("A", q.OptionA, q.CorrectOption, showAnswer, textMaxWidth));
         inner.Controls.Add(BuildOptionLabel("B", q.OptionB, q.CorrectOption, showAnswer, textMaxWidth));
@@ -215,7 +269,7 @@ public partial class ExamPaperPreviewDialog : Form
             MaximumSize = new Size(maxWidth, 0),
             Padding = new Padding(8, 5, 8, 5),
             Margin = new Padding(0, 2, 0, 2),
-            Font = isCorrect ? new Font(UiStyle.BodyFont, FontStyle.Bold) : UiStyle.BodyFont,
+            Font = isCorrect ? CorrectOptionFont : UiStyle.BodyFont,
             BackColor = isCorrect ? UiStyle.SuccessBack : UiStyle.Surface,
             ForeColor = isCorrect ? UiStyle.SuccessText : UiStyle.Text,
             Text = isCorrect
@@ -224,6 +278,37 @@ public partial class ExamPaperPreviewDialog : Form
         };
 
         return label;
+    }
+
+    private void DisposeQuestionPanelControls()
+    {
+        if (_questionsPanel.Controls.Count == 0)
+        {
+            return;
+        }
+
+        // Giải phóng ảnh và toàn bộ control con cùng handle GDI trước khi xóa khỏi panel.
+        var oldControls = _questionsPanel.Controls.Cast<Control>().ToArray();
+        foreach (var ctrl in oldControls)
+        {
+            DisposeControlImages(ctrl);
+            ctrl.Dispose();
+        }
+    }
+
+    private static void DisposeControlImages(Control root)
+    {
+        if (root is PictureBox pictureBox)
+        {
+            var img = pictureBox.Image;
+            pictureBox.Image = null;
+            img?.Dispose();
+        }
+
+        foreach (Control child in root.Controls)
+        {
+            DisposeControlImages(child);
+        }
     }
 
     private int GetTargetCardWidth()
@@ -262,6 +347,10 @@ public partial class ExamPaperPreviewDialog : Form
                             if (child is Label lbl)
                             {
                                 lbl.MaximumSize = new Size(textMaxWidth, 0);
+                            }
+                            else if (child is PictureBox pic)
+                            {
+                                pic.Width = textMaxWidth;
                             }
                         }
                     }

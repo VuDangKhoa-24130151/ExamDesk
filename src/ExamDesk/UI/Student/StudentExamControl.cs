@@ -117,13 +117,22 @@ public partial class StudentExamControl : UserControl
         _questionViewport.SizeChanged += (_, _) => QueueFit();
         _right.SizeChanged += (_, _) => QueueFit();
         _gridViewport.SizeChanged += (_, _) => QueueFit();
-        Load += (_, _) => FitColumns();
+        ParentChanged += (_, _) => UpdateEmbeddedHeader();
+        Load += (_, _) => { UpdateEmbeddedHeader(); FitColumns(); };
         DpiChangedAfterParent += (_, _) => { ApplyExamLayout(); QueueFit(); };
         if (!_attempt.Submitted)
         {
             _timer.Tick += Tick;
             _timer.Start();
         }
+    }
+
+    // Chỉ hiện tiêu đề và tên sinh viên trong control khi mở độc lập, tránh trùng thanh đầu Form.
+    private void UpdateEmbeddedHeader()
+    {
+        bool standalone = FindForm() is not StudentExamForm;
+        _titleGroup.Visible = standalone;
+        _identity.Visible = standalone;
     }
 
     private void ShowKeyboardHelp()
@@ -405,10 +414,12 @@ public partial class StudentExamControl : UserControl
                 {
                     try
                     {
-                        using var original = Image.FromFile(question.ImagePath);
-                        _image.Image = new Bitmap(original);
+                        // Dùng hàm chung để hỗ trợ cả đường dẫn tương đối và không khóa tệp ảnh trên đĩa.
+                        _image.Image = ExamDesk.Services.QuestionBankService.LoadImageUnlocked(question.ImagePath);
+                        _imageLoadFailed = _image.Image is null;
                     }
-                    catch (Exception ex) when (ex is IOException or ArgumentException or OutOfMemoryException or UnauthorizedAccessException)
+                    catch (Exception ex) when (ex is IOException or ArgumentException or OutOfMemoryException
+                        or UnauthorizedAccessException or NotSupportedException or System.Runtime.InteropServices.ExternalException)
                     {
                         System.Diagnostics.Trace.WriteLine(ex);
                         _imageLoadFailed = true;

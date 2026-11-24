@@ -1,5 +1,5 @@
 -- SCHEMA BAN DAU - APP TU DONG THUC THI KHI KHOI DONG.
--- Moi may mot database cuc bo. Khong co du lieu mau.
+-- Moi may mot database cuc bo; lan dau nhan ban sao database/bootstrap.
 -- Ban 1 dieu phoi schema; thay doi chung can thong nhat ca nhom.
 -- CREATE TABLE IF NOT EXISTS khong nang cap database cu.
 PRAGMA foreign_keys = ON;

@@ -56,12 +56,11 @@ partial class StudentExamControl
 
         _identity = new Label
         {
-            Visible = false,
             Dock = DockStyle.Fill,
             AutoEllipsis = true,
             Font = StudentLayout.GetLabelFont(StudentLayout.SmallFontSize, FontStyle.Regular),
             ForeColor = UiStyle.TextMuted,
-            BackColor = UiStyle.Surface,
+            BackColor = UiStyle.Background,
             TextAlign = ContentAlignment.MiddleRight,
             Margin = new Padding(S(StudentLayout.Space16), 0, S(StudentLayout.Space16), 0),
             UseMnemonic = false
@@ -120,7 +119,6 @@ partial class StudentExamControl
         };
         _titleGroup = new BufferedStudentTable
         {
-            Visible = false,
             Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1,
             Margin = Padding.Empty, TabStop = false,
             ColumnStyles =
