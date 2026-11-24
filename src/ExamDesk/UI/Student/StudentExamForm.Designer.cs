@@ -7,7 +7,7 @@ partial class StudentExamForm
 {
     private System.ComponentModel.IContainer? components = null;
     private Label _studentLabel = null!, _examLabel = null!;
-    private readonly Panel _studentContent = new StudentScreenHost { Dock = DockStyle.Fill };
+    private readonly Panel _studentContent = new BufferedStudentPanel { Dock = DockStyle.Fill };
 
     protected override void Dispose(bool disposing)
     {

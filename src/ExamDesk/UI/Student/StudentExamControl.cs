@@ -632,7 +632,6 @@ public partial class StudentExamControl : UserControl
         else GoToQuestion(_attempt.Current + direction);
         return true;
     }
-    internal bool IsDeadlineReached => _attempt.IsExpired;
 
     private void ChangeChoice(int? choice, Control? source = null) =>
         SaveChange(() => _attempt.Choose(choice), source ?? _clearChoice);
