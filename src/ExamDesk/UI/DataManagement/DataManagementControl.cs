@@ -1,12 +1,19 @@
+using System.Globalization;
 using System.Text;
+using ExamDesk.Data;
+using ExamDesk.Services;
 using ExamDesk.UI.Reports;
 using ExamDesk.UI.Shared;
+using Microsoft.Data.Sqlite;
 
 namespace ExamDesk.UI.DataManagement;
 
 // Bạn 2: Màn hình GV-15 xuất kết quả thi và sao lưu/khôi phục CSDL.
 public partial class DataManagementControl : UserControl
 {
+    private readonly GradingReviewService _gradingService = new();
+    private readonly ExamSessionService _sessionService = new();
+
     public DataManagementControl()
     {
         InitializeComponent();
@@ -32,15 +39,44 @@ public partial class DataManagementControl : UserControl
         if (dialog.ShowDialog(this) != DialogResult.OK)
             return;
 
-        var rows = ReportsPreviewData.Attempts();
-        var sb = new StringBuilder();
-        sb.AppendLine("MSSV,HoTen,Lop,CaThi,SoCau,CauDung,CauSai,CauBoTrong,Diem,CachNop");
-        foreach (var r in rows)
-            sb.AppendLine($"{r.Mssv},\"{r.HoTen}\",{r.Lop},\"{r.Ca}\",{r.SoCau},{r.CauDung},{r.CauSai},{r.CauBoTrong},{r.Diem:0.00},\"{r.CachNop}\"");
+        try
+        {
+            var sessionMap = _sessionService.GetSessions()
+                .ToDictionary(s => s.Id, s => $"{s.SessionCode} - {s.SessionName}");
+            var attempts = _gradingService.GetAttempts();
 
-        File.WriteAllText(dialog.FileName, sb.ToString(), new UTF8Encoding(true));
-        _lblStatus.ForeColor = UiStyle.SuccessText;
-        _lblStatus.Text = $"Trạng thái: Đã xuất {rows.Count} kết quả ra tệp {Path.GetFileName(dialog.FileName)}.";
+            var sb = new StringBuilder();
+            sb.AppendLine("MSSV,HoTen,Lop,CaThi,SoCau,CauDung,CauSai,CauBoTrong,Diem,CachNop,NopLuc");
+
+            foreach (var a in attempts)
+            {
+                var answers = _gradingService.GetAttemptAnswers(a.Id);
+                int answeredCount = answers.Count(ans => !string.IsNullOrWhiteSpace(ans.SelectedOption));
+                int blankCount = Math.Max(0, a.TotalQuestions - answeredCount);
+                int wrongCount = Math.Max(0, a.TotalQuestions - a.CorrectCount - blankCount);
+
+                string sessionLabel = sessionMap.TryGetValue(a.SessionId, out var name)
+                    ? name
+                    : $"Ca #{a.SessionId}";
+                string submitWay = a.IsAutoSubmitted ? ReportsPreviewData.AutoSubmit : ReportsPreviewData.ManualSubmit;
+                string submittedAtText = a.SubmittedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+                string scoreText = a.Score.ToString("0.00", CultureInfo.InvariantCulture);
+
+                sb.AppendLine(
+                    $"{EscapeCsv(a.StudentCode)},{EscapeCsv(a.StudentName)},{EscapeCsv(a.ClassName)}," +
+                    $"{EscapeCsv(sessionLabel)},{a.TotalQuestions},{a.CorrectCount},{wrongCount},{blankCount}," +
+                    $"{scoreText},{EscapeCsv(submitWay)},{EscapeCsv(submittedAtText)}");
+            }
+
+            File.WriteAllText(dialog.FileName, sb.ToString(), new UTF8Encoding(true));
+            _lblStatus.ForeColor = UiStyle.SuccessText;
+            _lblStatus.Text = $"Trạng thái: Đã xuất {attempts.Count} kết quả thi từ SQLite ra tệp {Path.GetFileName(dialog.FileName)}.";
+        }
+        catch (Exception ex)
+        {
+            _lblStatus.ForeColor = UiStyle.ErrorText;
+            _lblStatus.Text = $"Trạng thái: Không thể xuất tệp CSV ({ex.Message}).";
+        }
     }
 
     private void BackupDatabase()
@@ -55,8 +91,40 @@ public partial class DataManagementControl : UserControl
         if (dialog.ShowDialog(this) != DialogResult.OK)
             return;
 
-        _lblStatus.ForeColor = UiStyle.SuccessText;
-        _lblStatus.Text = $"Trạng thái: Đã chọn vị trí sao lưu {Path.GetFileName(dialog.FileName)} (chế độ minh họa UI).";
+        if (IsSameFilePath(dialog.FileName, SqliteContext.DatabaseFilePath))
+        {
+            _lblStatus.ForeColor = UiStyle.WarningText;
+            _lblStatus.Text = "Trạng thái: Vui lòng chọn tệp đích khác với tệp CSDL đang chạy.";
+            return;
+        }
+
+        try
+        {
+            if (File.Exists(dialog.FileName))
+                File.Delete(dialog.FileName);
+
+            using (var sourceConnection = SqliteContext.CreateConnection())
+            {
+                sourceConnection.Open();
+                var destConnString = new SqliteConnectionStringBuilder
+                {
+                    DataSource = dialog.FileName,
+                    Pooling = false
+                }.ToString();
+
+                using var destConnection = new SqliteConnection(destConnString);
+                destConnection.Open();
+                sourceConnection.BackupDatabase(destConnection);
+            }
+
+            _lblStatus.ForeColor = UiStyle.SuccessText;
+            _lblStatus.Text = $"Trạng thái: Đã sao lưu CSDL thành công ra tệp {Path.GetFileName(dialog.FileName)}.";
+        }
+        catch (Exception ex)
+        {
+            _lblStatus.ForeColor = UiStyle.ErrorText;
+            _lblStatus.Text = $"Trạng thái: Sao lưu CSDL thất bại ({ex.Message}).";
+        }
     }
 
     private void RestoreDatabase()
@@ -69,6 +137,13 @@ public partial class DataManagementControl : UserControl
 
         if (openDialog.ShowDialog(this) != DialogResult.OK)
             return;
+
+        if (IsSameFilePath(openDialog.FileName, SqliteContext.DatabaseFilePath))
+        {
+            _lblStatus.ForeColor = UiStyle.WarningText;
+            _lblStatus.Text = "Trạng thái: Tệp đã chọn trùng với tệp CSDL đang sử dụng.";
+            return;
+        }
 
         // Xác nhận trước khi khôi phục theo quy định G6/H3 trong DESIGN.md
         var confirm = MessageBox.Show(this,
@@ -85,7 +160,50 @@ public partial class DataManagementControl : UserControl
             return;
         }
 
-        _lblStatus.ForeColor = UiStyle.WarningText;
-        _lblStatus.Text = $"Trạng thái: Đã xác nhận khôi phục từ {Path.GetFileName(openDialog.FileName)} (chờ nối nghiệp vụ CSDL).";
+        try
+        {
+            var sourceConnString = new SqliteConnectionStringBuilder
+            {
+                DataSource = openDialog.FileName,
+                Mode = SqliteOpenMode.ReadOnly,
+                Pooling = false
+            }.ToString();
+
+            using (var sourceConnection = new SqliteConnection(sourceConnString))
+            {
+                sourceConnection.Open();
+                using (var checkCmd = sourceConnection.CreateCommand())
+                {
+                    checkCmd.CommandText = "PRAGMA integrity_check;";
+                    var checkResult = checkCmd.ExecuteScalar() as string;
+                    if (!string.Equals(checkResult, "ok", StringComparison.OrdinalIgnoreCase))
+                        throw new InvalidOperationException("Tệp sao lưu không hợp lệ hoặc bị hỏng.");
+                }
+
+                using var destConnection = SqliteContext.CreateConnection();
+                destConnection.Open();
+                sourceConnection.BackupDatabase(destConnection);
+            }
+
+            SqliteContext.InitializeDatabase();
+            _lblStatus.ForeColor = UiStyle.SuccessText;
+            _lblStatus.Text = $"Trạng thái: Đã khôi phục CSDL thành công từ tệp {Path.GetFileName(openDialog.FileName)}.";
+        }
+        catch (Exception ex)
+        {
+            _lblStatus.ForeColor = UiStyle.ErrorText;
+            _lblStatus.Text = $"Trạng thái: Khôi phục CSDL thất bại ({ex.Message}).";
+        }
     }
+
+    private static string EscapeCsv(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+            return "\"\"";
+
+        return $"\"{value.Replace("\"", "\"\"")}\"";
+    }
+
+    private static bool IsSameFilePath(string pathA, string pathB)
+        => string.Equals(Path.GetFullPath(pathA), Path.GetFullPath(pathB), StringComparison.OrdinalIgnoreCase);
 }
