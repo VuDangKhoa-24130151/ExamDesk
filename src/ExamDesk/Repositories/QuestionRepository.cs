@@ -49,7 +49,8 @@ public sealed class QuestionRepository
             var dbQuestionCount = reader.GetInt32(4);
 
             var metaChapters = GetMetadataChapters(id);
-            var chapterCount = Math.Max(dbChapterCount, metaChapters.Count);
+            var dbChapters = GetDistinctChapters(id);
+            var chapterCount = dbChapters.Concat(metaChapters.Keys).Distinct().Count();
 
             list.Add(new Subject
             {
@@ -93,7 +94,8 @@ public sealed class QuestionRepository
         var dbQuestionCount = reader.GetInt32(4);
 
         var metaChapters = GetMetadataChapters(subjectId);
-        var chapterCount = Math.Max(dbChapterCount, metaChapters.Count);
+        var dbChapters = GetDistinctChapters(subjectId);
+        var chapterCount = dbChapters.Concat(metaChapters.Keys).Distinct().Count();
 
         return new Subject
         {
@@ -450,22 +452,15 @@ public sealed class QuestionRepository
 
     private static void SaveMetadata(List<ChapterMetadataEntry> entries)
     {
-        try
+        var path = MetadataFilePath;
+        var directory = Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
-            var path = MetadataFilePath;
-            var directory = Path.GetDirectoryName(path);
-            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
+            Directory.CreateDirectory(directory);
+        }
 
-            var json = JsonSerializer.Serialize(entries, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(path, json);
-        }
-        catch
-        {
-            // Bỏ qua lỗi ghi phụ nếu không ảnh hưởng hoạt động chính
-        }
+        var json = JsonSerializer.Serialize(entries, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(path, json);
     }
 
     private static List<ChapterMetadataEntry> CreateInitialChapterMetadata() => [];

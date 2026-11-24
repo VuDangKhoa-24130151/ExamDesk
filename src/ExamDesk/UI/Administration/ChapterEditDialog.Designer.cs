@@ -122,7 +122,8 @@ partial class ChapterEditDialog
 
         // _lblSubjectInfo
         _lblSubjectInfo.AutoSize = true;
-        _lblSubjectInfo.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+        _lblSubjectInfo.Dock = DockStyle.Fill;
+        _lblSubjectInfo.Font = UiStyle.BodyBoldFont;
         _lblSubjectInfo.ForeColor = UiStyle.Primary;
         _lblSubjectInfo.Margin = new Padding(0, 0, 0, 12);
         _lblSubjectInfo.Text = "Môn học: —";
@@ -148,6 +149,7 @@ partial class ChapterEditDialog
 
         // _lblNumberHint
         _lblNumberHint.AutoSize = true;
+        _lblNumberHint.Dock = DockStyle.Fill;
         _lblNumberHint.Font = UiStyle.SmallFont;
         _lblNumberHint.ForeColor = UiStyle.TextMuted;
         _lblNumberHint.Margin = new Padding(0, 0, 0, 4);

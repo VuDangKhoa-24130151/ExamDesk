@@ -162,7 +162,8 @@ partial class RoleSelectionControl
 
         // _btnLecturerLogin
         _btnLecturerLogin.Dock = DockStyle.Fill;
-        _btnLecturerLogin.Height = 40;
+        _btnLecturerLogin.Height = 42;
+        _btnLecturerLogin.MinimumSize = new Size(0, 40);
         _btnLecturerLogin.Margin = new Padding(0);
         _btnLecturerLogin.TabIndex = 0;
         _btnLecturerLogin.Text = "Đăng nhập giảng viên";
@@ -221,7 +222,8 @@ partial class RoleSelectionControl
 
         // _btnStudentArea
         _btnStudentArea.Dock = DockStyle.Fill;
-        _btnStudentArea.Height = 40;
+        _btnStudentArea.Height = 42;
+        _btnStudentArea.MinimumSize = new Size(0, 40);
         _btnStudentArea.Margin = new Padding(0);
         _btnStudentArea.TabIndex = 1;
         _btnStudentArea.Text = "Vào khu sinh viên";

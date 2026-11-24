@@ -53,8 +53,6 @@ partial class ClassStudentControl
     private Button _btnAddStudent = null!;
     private Button _btnEditStudent = null!;
     private Button _btnDeleteStudent = null!;
-    private Panel _importButtonHost = null!;
-    private Button _btnImportFile = null!;
 
     protected override void Dispose(bool disposing)
     {
@@ -110,8 +108,6 @@ partial class ClassStudentControl
         _btnAddStudent = new Button();
         _btnEditStudent = new Button();
         _btnDeleteStudent = new Button();
-        _importButtonHost = new Panel();
-        _btnImportFile = new Button();
 
         _rootLayout.SuspendLayout();
         _headerLayout.SuspendLayout();
@@ -131,7 +127,6 @@ partial class ClassStudentControl
         _studentGridHost.SuspendLayout();
         ((System.ComponentModel.ISupportInitialize)_dgvStudents).BeginInit();
         _studentActionsPanel.SuspendLayout();
-        _importButtonHost.SuspendLayout();
         SuspendLayout();
 
         // _rootLayout
@@ -174,12 +169,12 @@ partial class ClassStudentControl
         _headerLayout.Controls.Add(_lblTitle, 0, 0);
         _headerLayout.Controls.Add(_lblDemoBadge, 1, 0);
 
-        // _splitLayout (42% Left / 58% Right)
+        // _splitLayout (44% Left / 56% Right)
         _splitLayout.Dock = DockStyle.Fill;
         _splitLayout.Margin = new Padding(0);
         _splitLayout.ColumnCount = 2;
-        _splitLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42F));
-        _splitLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58F));
+        _splitLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 44F));
+        _splitLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 56F));
         _splitLayout.RowCount = 1;
         _splitLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
@@ -211,7 +206,7 @@ partial class ClassStudentControl
         _classHeaderRow.Margin = new Padding(0, 0, 0, 12);
 
         _lblClassSectionTitle.AutoSize = true;
-        _lblClassSectionTitle.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+        _lblClassSectionTitle.Font = UiStyle.SectionTitleFont;
         _lblClassSectionTitle.ForeColor = UiStyle.Text;
         _lblClassSectionTitle.Margin = new Padding(0);
         _lblClassSectionTitle.Text = "Lớp";
@@ -242,22 +237,22 @@ partial class ClassStudentControl
 
         _colClassCode.HeaderText = "Mã lớp";
         _colClassCode.Name = "_colClassCode";
-        _colClassCode.FillWeight = 23F;
+        _colClassCode.FillWeight = 22F;
         _colClassCode.MinimumWidth = 58;
 
         _colClassName.HeaderText = "Tên lớp";
         _colClassName.Name = "_colClassName";
-        _colClassName.FillWeight = 39F;
-        _colClassName.MinimumWidth = 85;
+        _colClassName.FillWeight = 38F;
+        _colClassName.MinimumWidth = 95;
 
         _colSchoolYear.HeaderText = "Niên khóa";
         _colSchoolYear.Name = "_colSchoolYear";
-        _colSchoolYear.FillWeight = 23F;
-        _colSchoolYear.MinimumWidth = 68;
+        _colSchoolYear.FillWeight = 24F;
+        _colSchoolYear.MinimumWidth = 74;
 
         _colStudentCount.HeaderText = "Sĩ số";
         _colStudentCount.Name = "_colStudentCount";
-        _colStudentCount.FillWeight = 15F;
+        _colStudentCount.FillWeight = 16F;
         _colStudentCount.MinimumWidth = 46;
 
         _dgvClasses.Columns.AddRange(
@@ -323,6 +318,7 @@ partial class ClassStudentControl
         _classCardLayout.Controls.Add(_classGridBorder, 0, 1);
         _classCardLayout.Controls.Add(_classActionsPanel, 0, 2);
         _classCardBorder.Controls.Add(_classCardLayout);
+        UiStyle.StyleCard(_classCardBorder, 10);
 
         // ================= RIGHT COLUMN: STUDENTS (65%) =================
         _studentCardBorder.Dock = DockStyle.Fill;
@@ -354,9 +350,9 @@ partial class ClassStudentControl
 
         _lblStudentSectionTitle.AutoSize = false;
         _lblStudentSectionTitle.Dock = DockStyle.Fill;
-        _lblStudentSectionTitle.Height = 26;
+        _lblStudentSectionTitle.Height = Math.Max(30, UiStyle.SectionTitleFont.Height + 8);
         _lblStudentSectionTitle.AutoEllipsis = true;
-        _lblStudentSectionTitle.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+        _lblStudentSectionTitle.Font = UiStyle.SectionTitleFont;
         _lblStudentSectionTitle.ForeColor = UiStyle.Text;
         _lblStudentSectionTitle.TextAlign = ContentAlignment.MiddleLeft;
         _lblStudentSectionTitle.Margin = new Padding(0);
@@ -392,17 +388,15 @@ partial class ClassStudentControl
         _txtSearchStudent.Dock = DockStyle.Fill;
         _txtSearchStudent.Font = UiStyle.BodyFont;
         _txtSearchStudent.PlaceholderText = "Nhập MSSV hoặc họ và tên sinh viên…";
-        _txtSearchStudent.Margin = new Padding(0, 4, 8, 0);
+        _txtSearchStudent.Margin = new Padding(0, 2, 8, 0);
         _txtSearchStudent.TabIndex = 4;
         _txtSearchStudent.TextChanged += OnStudentSearchTextChanged;
 
         _btnClearStudentSearch.Width = 88;
-        _btnClearStudentSearch.Height = 34;
         _btnClearStudentSearch.Margin = new Padding(0);
         _btnClearStudentSearch.TabIndex = 5;
         _btnClearStudentSearch.Text = "Xóa lọc";
-        UiStyle.StyleSecondaryButton(_btnClearStudentSearch);
-        _btnClearStudentSearch.Height = 34;
+        UiStyle.StyleCompactSecondaryButton(_btnClearStudentSearch);
         _btnClearStudentSearch.Click += OnClearStudentSearchClick;
 
         _studentSearchLayout.Controls.Add(_lblSearchStudent, 0, 0);
@@ -494,38 +488,16 @@ partial class ClassStudentControl
         _btnDeleteStudent.ForeColor = UiStyle.ErrorText;
         _btnDeleteStudent.Click += OnDeleteStudentClick;
 
-        // Wrap disabled _btnImportFile in _importButtonHost so tooltip shows reliably on hover
-        _importButtonHost.AutoSize = true;
-        _importButtonHost.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        _importButtonHost.Margin = new Padding(0, 0, 0, 4);
-        _importButtonHost.Padding = new Padding(0);
-
-        _btnImportFile.Width = 128;
-        _btnImportFile.Height = 38;
-        _btnImportFile.Margin = new Padding(0);
-        _btnImportFile.TabIndex = 10;
-        _btnImportFile.Text = "Nhập từ tệp…";
-        UiStyle.StyleSecondaryButton(_btnImportFile);
-        _btnImportFile.Enabled = false;
-        _btnImportFile.ForeColor = UiStyle.TextMuted;
-
-        const string importTooltipText = "Nhập tệp ở màn hình Xuất/nhập và sao lưu – Bạn 2 phụ trách";
-        _toolTip.ShowAlways = true;
-        _toolTip.SetToolTip(_btnImportFile, importTooltipText);
-        _toolTip.SetToolTip(_importButtonHost, importTooltipText);
-
-        _importButtonHost.Controls.Add(_btnImportFile);
-
         _studentActionsPanel.Controls.Add(_btnAddStudent);
         _studentActionsPanel.Controls.Add(_btnEditStudent);
         _studentActionsPanel.Controls.Add(_btnDeleteStudent);
-        _studentActionsPanel.Controls.Add(_importButtonHost);
 
         _studentCardLayout.Controls.Add(_studentHeaderRow, 0, 0);
         _studentCardLayout.Controls.Add(_studentSearchLayout, 0, 1);
         _studentCardLayout.Controls.Add(_studentGridBorder, 0, 2);
         _studentCardLayout.Controls.Add(_studentActionsPanel, 0, 3);
         _studentCardBorder.Controls.Add(_studentCardLayout);
+        UiStyle.StyleCard(_studentCardBorder, 10);
 
         _splitLayout.Controls.Add(_classCardBorder, 0, 0);
         _splitLayout.Controls.Add(_studentCardBorder, 1, 0);
@@ -570,7 +542,6 @@ partial class ClassStudentControl
         ((System.ComponentModel.ISupportInitialize)_dgvStudents).EndInit();
         _studentActionsPanel.ResumeLayout(false);
         _studentActionsPanel.PerformLayout();
-        _importButtonHost.ResumeLayout(false);
         ResumeLayout(false);
     }
 }

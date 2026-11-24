@@ -17,6 +17,7 @@ partial class GradingReviewControl
     private Label _lblSearch = null!;
     private TextBox _txtSearch = null!;
     private Button _btnClearFilter = null!;
+    private Button _btnRefresh = null!;
     private Label _lblCount = null!;
 
     private Panel _gridPanel = null!;
@@ -44,6 +45,7 @@ partial class GradingReviewControl
         _lblSearch = new Label();
         _txtSearch = new TextBox();
         _btnClearFilter = new Button();
+        _btnRefresh = new Button();
         _lblCount = new Label();
 
         _gridPanel = new Panel();
@@ -55,7 +57,7 @@ partial class GradingReviewControl
         _rootLayout.SuspendLayout();
         SuspendLayout();
 
-        // Khung chính chia 4 hàng(gồmm Tiêu đề, Bộ lọc, Bảng kết quả, Nút dưới)
+        // Khung chính chia 4 hàng (Tiêu đề, Bộ lọc, Bảng kết quả, Nút dưới)
         _rootLayout.Dock = DockStyle.Fill;
         _rootLayout.BackColor = UiStyle.Background;
         _rootLayout.Padding = new Padding(24);
@@ -111,7 +113,12 @@ partial class GradingReviewControl
         _btnClearFilter.Text = "Xóa lọc";
         _btnClearFilter.Width = 90;
         UiStyle.StyleSecondaryButton(_btnClearFilter);
-        _btnClearFilter.Margin = new Padding(0, 0, 16, 0);
+        _btnClearFilter.Margin = new Padding(0, 0, 8, 0);
+
+        _btnRefresh.Text = "Tải lại";
+        _btnRefresh.Width = 90;
+        UiStyle.StyleSecondaryButton(_btnRefresh);
+        _btnRefresh.Margin = new Padding(0, 0, 16, 0);
 
         _lblCount.AutoSize = true;
         _lblCount.ForeColor = UiStyle.TextMuted;
@@ -124,11 +131,12 @@ partial class GradingReviewControl
         _filterPanel.Controls.Add(_lblSearch);
         _filterPanel.Controls.Add(_txtSearch);
         _filterPanel.Controls.Add(_btnClearFilter);
+        _filterPanel.Controls.Add(_btnRefresh);
         _filterPanel.Controls.Add(_lblCount);
 
         _rootLayout.Controls.Add(_filterPanel, 0, 1);
 
-                // Hàng 2: Bảng kết quả + nhãn trống
+        // Hàng 2: Bảng kết quả + nhãn trống
         _gridPanel.Dock = DockStyle.Fill;
         _gridPanel.BackColor = UiStyle.Surface;
         _gridPanel.Margin = new Padding(0, 0, 0, 16);
@@ -136,20 +144,22 @@ partial class GradingReviewControl
         UiStyle.StyleGrid(_dgvResults);
         _dgvResults.Dock = DockStyle.Fill;
         _dgvResults.AutoGenerateColumns = false;
-        _dgvResults.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Mssv", HeaderText = "MSSV", FillWeight = 80 });
-        _dgvResults.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "HoTen", HeaderText = "Họ và tên", FillWeight = 130 });
-        _dgvResults.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Lop", HeaderText = "Lớp", FillWeight = 75 });
-        _dgvResults.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Ca", HeaderText = "Ca thi", FillWeight = 150 });
-        _dgvResults.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "CauDung", HeaderText = "Đúng", FillWeight = 55 });
-        _dgvResults.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "CauSai", HeaderText = "Sai", FillWeight = 55 });
-        _dgvResults.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "CauBoTrong", HeaderText = "Bỏ trống", FillWeight = 65 });
-        _dgvResults.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "Diem", HeaderText = "Điểm", FillWeight = 65, DefaultCellStyle = { Format = "0.00" } });
-        _dgvResults.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = "CachNop", HeaderText = "Hình thức nộp", FillWeight = 85 });
+        _dgvResults.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Services.AttemptSummaryItem.StudentCode), HeaderText = "MSSV", FillWeight = 80 });
+        _dgvResults.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Services.AttemptSummaryItem.StudentName), HeaderText = "Họ và tên", FillWeight = 130 });
+        _dgvResults.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Services.AttemptSummaryItem.ClassName), HeaderText = "Lớp", FillWeight = 70 });
+        _dgvResults.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Services.AttemptSummaryItem.SessionName), HeaderText = "Ca thi", FillWeight = 135 });
+        _dgvResults.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Services.AttemptSummaryItem.PaperTitle), HeaderText = "Đề thi", FillWeight = 115 });
+        _dgvResults.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Services.AttemptSummaryItem.CorrectCount), HeaderText = "Đúng", FillWeight = 50 });
+        _dgvResults.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Services.AttemptSummaryItem.WrongCount), HeaderText = "Sai", FillWeight = 50 });
+        _dgvResults.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Services.AttemptSummaryItem.BlankCount), HeaderText = "Bỏ trống", FillWeight = 60 });
+        _dgvResults.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Services.AttemptSummaryItem.Score), HeaderText = "Điểm", FillWeight = 60, DefaultCellStyle = { Format = "0.00" } });
+        _dgvResults.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Services.AttemptSummaryItem.SubmitMethodText), HeaderText = "Hình thức nộp", FillWeight = 80 });
+        _dgvResults.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(Services.AttemptSummaryItem.SubmittedAtText), HeaderText = "Thời điểm nộp", FillWeight = 110 });
 
         _lblEmpty.Dock = DockStyle.Fill;
         _lblEmpty.TextAlign = ContentAlignment.MiddleCenter;
         _lblEmpty.ForeColor = UiStyle.TextMuted;
-        _lblEmpty.Text = "Không có bài thi nào khớp với điều kiện lọc.";
+        _lblEmpty.Text = "Chưa có bài thi nào được nộp trong cơ sở dữ liệu.";
         _lblEmpty.Visible = false;
 
         _gridPanel.Controls.Add(_lblEmpty);
@@ -165,15 +175,13 @@ partial class GradingReviewControl
         UiStyle.StylePrimaryButton(_btnViewDetail);
         _btnViewDetail.Margin = new Padding(0, 0, 12, 0);
 
-        _btnStatistics.Text = "Xem phổ điểm (GV-14)";
-        _btnStatistics.Width = 180;
+        _btnStatistics.Text = "Xem phổ điểm";
+        _btnStatistics.Width = 160;
         UiStyle.StyleSecondaryButton(_btnStatistics);
 
         _bottomPanel.Controls.Add(_btnViewDetail);
         _bottomPanel.Controls.Add(_btnStatistics);
         _rootLayout.Controls.Add(_bottomPanel, 0, 3);
-
-
 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;

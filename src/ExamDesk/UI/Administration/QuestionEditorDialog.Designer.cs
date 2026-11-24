@@ -224,9 +224,9 @@ partial class QuestionEditorDialog
         _metaLayout.AutoSize = true;
         _metaLayout.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _metaLayout.ColumnCount = 3;
-        _metaLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42F));
-        _metaLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 20F));
         _metaLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 38F));
+        _metaLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 17F));
+        _metaLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 45F));
         _metaLayout.RowCount = 3;
         _metaLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Labels
         _metaLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // Inputs
@@ -424,6 +424,7 @@ partial class QuestionEditorDialog
         _btnRemoveImage.Click += OnRemoveImageClick;
 
         _lblImageFileName.AutoSize = true;
+        _lblImageFileName.AutoEllipsis = true;
         _lblImageFileName.Font = UiStyle.SmallFont;
         _lblImageFileName.ForeColor = UiStyle.TextMuted;
         _lblImageFileName.Margin = new Padding(0, 10, 0, 4);
@@ -458,16 +459,16 @@ partial class QuestionEditorDialog
         _optionsHeaderLayout.Margin = new Padding(0, 4, 0, 8);
 
         _lblOptionsSection.AutoSize = true;
-        _lblOptionsSection.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+        _lblOptionsSection.Font = UiStyle.BodyBoldFont;
         _lblOptionsSection.ForeColor = UiStyle.Text;
         _lblOptionsSection.Margin = new Padding(0);
-        _lblOptionsSection.Text = "Các phương án trả lời (4 đáp án không được trùng nhau) *";
+        _lblOptionsSection.Text = "Các phương án trả lời (không trùng nhau) *";
 
         _lblCorrectColumnHint.AutoSize = true;
         _lblCorrectColumnHint.Font = UiStyle.SmallFont;
         _lblCorrectColumnHint.ForeColor = UiStyle.TextMuted;
-        _lblCorrectColumnHint.Margin = new Padding(0, 2, 8, 0);
-        _lblCorrectColumnHint.Text = "Đánh dấu 1 đáp án đúng *";
+        _lblCorrectColumnHint.Margin = new Padding(8, 2, 8, 0);
+        _lblCorrectColumnHint.Text = "Đáp án đúng *";
 
         _optionsHeaderLayout.Controls.Add(_lblOptionsSection, 0, 0);
         _optionsHeaderLayout.Controls.Add(_lblCorrectColumnHint, 1, 0);

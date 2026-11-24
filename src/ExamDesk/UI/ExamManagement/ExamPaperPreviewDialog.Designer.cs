@@ -41,6 +41,7 @@ partial class ExamPaperPreviewDialog
         // Root layout
         _rootLayout.Dock = DockStyle.Fill;
         _rootLayout.ColumnCount = 1;
+        _rootLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         _rootLayout.RowCount = 3;
         _rootLayout.Padding = new Padding(24);
         _rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -59,13 +60,16 @@ partial class ExamPaperPreviewDialog
         _headerTable.RowCount = 3;
         _headerTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         _headerTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        _headerTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        _headerTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        _headerTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         _lblPaperTitle.AutoSize = true;
         _lblPaperTitle.Anchor = AnchorStyles.Left;
         _lblPaperTitle.Margin = new Padding(0, 0, 12, 6);
 
         _lblStatusBadge.AutoSize = true;
-        _lblStatusBadge.Anchor = AnchorStyles.Right;
+        _lblStatusBadge.Anchor = AnchorStyles.Top | AnchorStyles.Right;
         _lblStatusBadge.Padding = new Padding(10, 4, 10, 4);
         _lblStatusBadge.Margin = new Padding(0, 0, 0, 6);
 

@@ -32,13 +32,15 @@ public partial class ClassEditDialog : Form
         _service = service ?? throw new ArgumentNullException(nameof(service));
         InitializeComponent();
         _lblDemoBadge.Visible = false;
+        _cardPanel.SizeChanged += (_, _) => UpdateWrappedLabelWidths();
         CaptureInitialSnapshot();
     }
 
     protected override void OnLoad(EventArgs e)
     {
         base.OnLoad(e);
-        UiStyle.ClampToWorkingArea(this);
+        UpdateWrappedLabelWidths();
+        EnsureHeightFitsContent();
     }
 
     public void LoadClass(ClassInfo classItem)
@@ -291,6 +293,21 @@ public partial class ClassEditDialog : Form
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Warning);
         }
+    }
+
+    private void UpdateWrappedLabelWidths()
+    {
+        if (_cardPanel.ClientSize.Width <= 0)
+        {
+            return;
+        }
+
+        var maxWidth = Math.Max(220, _cardPanel.ClientSize.Width - _cardPanel.Padding.Horizontal - 4);
+        _lblCodeHint.MaximumSize = new Size(maxWidth, 0);
+        _lblCodeError.MaximumSize = new Size(maxWidth, 0);
+        _lblNameError.MaximumSize = new Size(maxWidth, 0);
+        _lblSchoolYearHint.MaximumSize = new Size(maxWidth, 0);
+        _lblSchoolYearError.MaximumSize = new Size(maxWidth, 0);
     }
 
     private void EnsureHeightFitsContent()

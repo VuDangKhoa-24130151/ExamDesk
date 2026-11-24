@@ -239,6 +239,7 @@ public partial class HelpControl : UserControl, IUnsavedChangesGuard
             };
 
             stepCard.Controls.Add(lblStep);
+            UiStyle.ApplyRoundedCorners(stepCard, 8);
             _stepsFlow.Controls.Add(stepCard);
         }
 

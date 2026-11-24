@@ -261,16 +261,30 @@ public sealed class AdministrationRepository
         using var transaction = connection.BeginTransaction();
         try
         {
-            using var command = connection.CreateCommand();
-            command.Transaction = transaction;
-            command.CommandText = @"
-                UPDATE Users
-                SET ClassName = $newCode
-                WHERE Role = 'Student'
-                  AND UPPER(TRIM(ClassName)) = UPPER(TRIM($oldCode));";
-            command.Parameters.AddWithValue("$newCode", newCode);
-            command.Parameters.AddWithValue("$oldCode", oldCode);
-            command.ExecuteNonQuery();
+            using (var command = connection.CreateCommand())
+            {
+                command.Transaction = transaction;
+                command.CommandText = @"
+                    UPDATE Users
+                    SET ClassName = $newCode
+                    WHERE Role = 'Student'
+                      AND UPPER(TRIM(ClassName)) = UPPER(TRIM($oldCode));";
+                command.Parameters.AddWithValue("$newCode", newCode);
+                command.Parameters.AddWithValue("$oldCode", oldCode);
+                command.ExecuteNonQuery();
+            }
+
+            using (var attemptCmd = connection.CreateCommand())
+            {
+                attemptCmd.Transaction = transaction;
+                attemptCmd.CommandText = @"
+                    UPDATE ExamAttempts
+                    SET ClassName = $newCode
+                    WHERE UPPER(TRIM(ClassName)) = UPPER(TRIM($oldCode));";
+                attemptCmd.Parameters.AddWithValue("$newCode", newCode);
+                attemptCmd.Parameters.AddWithValue("$oldCode", oldCode);
+                attemptCmd.ExecuteNonQuery();
+            }
 
             transaction.Commit();
         }

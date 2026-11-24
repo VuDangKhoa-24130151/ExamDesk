@@ -138,6 +138,7 @@ partial class SubjectEditDialog
 
         // _lblCodeHint
         _lblCodeHint.AutoSize = true;
+        _lblCodeHint.Dock = DockStyle.Fill;
         _lblCodeHint.Font = UiStyle.SmallFont;
         _lblCodeHint.ForeColor = UiStyle.TextMuted;
         _lblCodeHint.Margin = new Padding(0, 0, 0, 4);
