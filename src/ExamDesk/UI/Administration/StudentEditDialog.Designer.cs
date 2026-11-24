@@ -143,6 +143,7 @@ partial class StudentEditDialog
 
         // _lblStudentCodeHint
         _lblStudentCodeHint.AutoSize = true;
+        _lblStudentCodeHint.Dock = DockStyle.Fill;
         _lblStudentCodeHint.Font = UiStyle.SmallFont;
         _lblStudentCodeHint.ForeColor = UiStyle.TextMuted;
         _lblStudentCodeHint.Margin = new Padding(0, 0, 0, 4);

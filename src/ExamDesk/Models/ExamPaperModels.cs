@@ -33,7 +33,8 @@ public sealed class ExamPaperSummary
     public string SubjectName { get; set; } = string.Empty;
     public int AssignedQuestionCount { get; set; }
     public int SessionCount { get; set; }
-    public bool IsLocked => SessionCount > 0;
+    public bool HasAttemptOrDraft { get; set; }
+    public bool IsLocked => SessionCount > 0 || HasAttemptOrDraft;
 }
 
 /// <summary>
