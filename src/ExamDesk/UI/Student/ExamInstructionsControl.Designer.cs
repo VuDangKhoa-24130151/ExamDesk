@@ -107,6 +107,7 @@ partial class ExamInstructionsControl
             TextLabel("Chọn đáp án bằng A/B/C/D hoặc 1–4."),
             TextLabel("Có thể đánh dấu để quay lại xem sau."),
             TextLabel("Tiến độ được lưu khi thay đổi. Đóng cửa sổ không dừng đồng hồ."),
+            TextLabel("Không chụp màn hình hoặc rời cửa sổ thi. Vi phạm lần thứ 3 sẽ bị tự động nộp bài."),
             TextLabel("Hết giờ, hệ thống tự động nộp bài."),
             TextLabel("Sau khi nộp bài, bạn không thể thay đổi đáp án.")
         ];

@@ -44,7 +44,7 @@ public sealed class StudentResultControl : UserControl
         page.Controls.Add(metrics);
 
         page.Controls.Add(StudentLayout.Label($"Thời điểm nộp bài: {result.SubmittedAt.ToLocalTime():dd/MM/yyyy HH:mm:ss}"));
-        page.Controls.Add(StudentLayout.Label($"Lý do: {(result.IsAutoSubmitted ? "Hết giờ" : "Nộp bài chủ động")}"));
+        page.Controls.Add(StudentLayout.Label($"Hình thức: {(result.IsAutoSubmitted ? "Nộp bài tự động" : "Nộp bài chủ động")}"));
         var actions = new BufferedStudentFlow { Dock = DockStyle.Top, AutoSize = true, WrapContents = true };
         actions.Controls.Add(StudentLayout.CreateButton("&Quay lại chọn ca",
             (_, _) => BackRequested?.Invoke(this, EventArgs.Empty),
