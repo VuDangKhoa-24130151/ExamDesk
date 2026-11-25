@@ -373,6 +373,8 @@ public partial class StudentExamForm : Form
         previous?.Dispose();
         Text = "UniExam — " + title;
         if (screen is StudentExamControl exam) exam.FocusInitialControl();
+        // Enter sau khi tra cứu sẽ tiếp tục, thay vì chọn nút nhập lại mã theo thứ tự Tab.
+        else if (screen is StudentProfileConfirmationControl profile) profile.FocusInitialControl();
         else screen.SelectNextControl(null, true, true, true, false);
     }
 

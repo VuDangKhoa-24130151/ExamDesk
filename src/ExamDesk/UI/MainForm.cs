@@ -18,6 +18,7 @@ public sealed class MainForm : Form
     private static readonly Color SidebarDividerColor = ColorTranslator.FromHtml("#234575");
 
     private readonly Panel _content = new() { Dock = DockStyle.Fill, Padding = new Padding(0) };
+    private readonly Panel _sidebarPanel;
     private readonly FlowLayoutPanel _menu;
     private readonly List<Button> _menuButtons = [];
     private readonly List<Button> _lecturerOnlyMenuButtons = [];
@@ -33,7 +34,6 @@ public sealed class MainForm : Form
     private readonly Button _classStudentButton;
     private readonly Button _questionBankButton;
     private readonly Button _examPaperButton;
-    private readonly Button _helpButton;
 
     private Button? _activeMenuButton;
     private string _loggedInUsername = string.Empty;
@@ -52,7 +52,7 @@ public sealed class MainForm : Form
         BackColor = UiStyle.Background;
         ForeColor = UiStyle.Text;
 
-        var sidebarPanel = new Panel
+        _sidebarPanel = new Panel
         {
             Dock = DockStyle.Left,
             Width = 236,
@@ -115,10 +115,6 @@ public sealed class MainForm : Form
             gradingReviewButton,
             dataManagementButton
         ]);
-
-        // 4. Trợ giúp
-        AddMenuSeparator(_menu);
-        _helpButton = AddMenu(_menu, "Trợ giúp", () => new HelpControl(), "F1");
 
         // Vùng trạng thái đăng nhập ở cuối sidebar
         var authFooter = new Panel
@@ -188,8 +184,8 @@ public sealed class MainForm : Form
         authFooter.Controls.Add(authLayout);
         authFooter.Controls.Add(footerDivider);
 
-        sidebarPanel.Controls.Add(_menu);
-        sidebarPanel.Controls.Add(authFooter);
+        _sidebarPanel.Controls.Add(_menu);
+        _sidebarPanel.Controls.Add(authFooter);
 
         _lblBottomNote = new Label
         {
@@ -205,7 +201,7 @@ public sealed class MainForm : Form
         };
 
         Controls.Add(_content);
-        Controls.Add(sidebarPanel);
+        Controls.Add(_sidebarPanel);
         Controls.Add(_lblBottomNote);
 
         UpdateLoginStatusUi();
@@ -229,7 +225,7 @@ public sealed class MainForm : Form
             case Keys.Control | Keys.NumPad1:
                 if (isLoggedIn)
                 {
-                    _dashboardButton.PerformClick();
+                    TryOpenScreen("Tổng quan", () => CreateDashboardScreen(), _dashboardButton);
                 }
                 return true;
 
@@ -237,7 +233,7 @@ public sealed class MainForm : Form
             case Keys.Control | Keys.NumPad2:
                 if (isLoggedIn)
                 {
-                    _subjectChapterButton.PerformClick();
+                    TryOpenScreen("Môn và chương", () => new SubjectChapterControl(), _subjectChapterButton);
                 }
                 return true;
 
@@ -245,7 +241,7 @@ public sealed class MainForm : Form
             case Keys.Control | Keys.NumPad3:
                 if (isLoggedIn)
                 {
-                    _classStudentButton.PerformClick();
+                    TryOpenScreen("Lớp và sinh viên", () => new ClassStudentControl(), _classStudentButton);
                 }
                 return true;
 
@@ -253,12 +249,8 @@ public sealed class MainForm : Form
             case Keys.Control | Keys.NumPad4:
                 if (isLoggedIn)
                 {
-                    _questionBankButton.PerformClick();
+                    TryOpenScreen("Ngân hàng câu hỏi", () => new QuestionBankControl(), _questionBankButton);
                 }
-                return true;
-
-            case Keys.F1:
-                _helpButton.PerformClick();
                 return true;
         }
 
@@ -279,13 +271,10 @@ public sealed class MainForm : Form
     private UserControl CreateRoleSelectionScreen()
     {
         var roleControl = new RoleSelectionControl();
+        roleControl.SetLoginStatus(_loggedInUsername);
         roleControl.LecturerLoggedIn += (_, _) =>
         {
             HandleLecturerLoggedIn(roleControl.LoggedInUsername);
-        };
-        roleControl.OpenHelpRequested += (_, _) =>
-        {
-            _helpButton.PerformClick();
         };
         return roleControl;
     }
@@ -433,18 +422,6 @@ public sealed class MainForm : Form
             Margin = new Padding(0, 8, 0, 2)
         };
         menu.Controls.Add(label);
-    }
-
-    private static void AddMenuSeparator(FlowLayoutPanel menu)
-    {
-        var line = new Panel
-        {
-            Width = 200,
-            Height = 1,
-            BackColor = SidebarDividerColor,
-            Margin = new Padding(0, 6, 0, 6)
-        };
-        menu.Controls.Add(line);
     }
 
     private Button AddMenu(FlowLayoutPanel menu, string text, Func<UserControl> createScreen, string? shortcutHint = null)
@@ -642,6 +619,9 @@ public sealed class MainForm : Form
         }
 
         screen.Dock = DockStyle.Fill;
+        // Màn chào mừng dùng toàn bộ cửa sổ; các màn còn lại có menu điều hướng.
+        _sidebarPanel.Visible = screen is not RoleSelectionControl;
+        _lblBottomNote.Visible = screen is not RoleSelectionControl;
         _content.Controls.Add(screen);
     }
 
