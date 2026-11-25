@@ -162,6 +162,8 @@ public partial class ExamPaperPreviewDialog : Form
         var card = new Panel
         {
             Width = cardWidth,
+            MinimumSize = new Size(cardWidth, 0),
+            MaximumSize = new Size(cardWidth, 0),
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
             BackColor = UiStyle.Surface,
@@ -358,6 +360,8 @@ public partial class ExamPaperPreviewDialog : Form
                     continue;
                 }
 
+                card.MinimumSize = new Size(cardWidth, 0);
+                card.MaximumSize = new Size(cardWidth, 0);
                 card.Width = cardWidth;
                 foreach (Control innerCtrl in card.Controls)
                 {
