@@ -110,7 +110,10 @@ public sealed class AttemptSummaryItem
     public int WrongCount => Math.Max(0, TotalQuestions - CorrectCount - BlankCount);
     public double Score { get; set; }
     public bool IsAutoSubmitted { get; set; }
-    public string SubmitMethodText => IsAutoSubmitted ? "Hết giờ" : "Nộp bài";
+    public bool IsViolationSubmitted { get; set; }
+    public string SubmitMethodText => !IsAutoSubmitted ? "Nộp bài"
+        : IsViolationSubmitted ? "Vi phạm (3 lần)"
+        : "Hết giờ";
     public DateTimeOffset SubmittedAt { get; set; }
     public string SubmittedAtText => SubmittedAt.ToLocalTime().ToString("HH:mm dd/MM/yyyy", CultureInfo.InvariantCulture);
 }
@@ -129,7 +132,6 @@ public sealed class AttemptReviewDetailItem
     public bool IsCorrect { get; set; }
     public string ResultStatus => string.IsNullOrWhiteSpace(SelectedOption) ? "Bỏ trống"
                                 : IsCorrect ? "Đúng" : "Sai";
-    public string ChangeHistory { get; set; } = string.Empty;
     public string OptionsFormatted => $"A. {OptionA}\nB. {OptionB}\nC. {OptionC}\nD. {OptionD}";
 }
 

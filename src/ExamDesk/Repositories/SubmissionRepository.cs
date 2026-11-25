@@ -84,6 +84,9 @@ public sealed class SubmissionRepository
             if (saved.AutoSubmitted && saved.DeadlineUtc != default && submittedAt > saved.DeadlineUtc)
                 submittedAt = saved.DeadlineUtc;
 
+            // Tự động nộp trước hạn (AutoSubmitted == true nhưng SubmittedAt < DeadlineUtc) là do vi phạm 3 lần.
+            bool isViolationAutoSubmit = saved.AutoSubmitted && saved.DeadlineUtc != default && submittedAt < saved.DeadlineUtc;
+
             var attempt = new ExamAttempt
             {
                 SessionId = saved.SessionId,
@@ -97,7 +100,7 @@ public sealed class SubmissionRepository
                 CorrectCount = correctCount,
                 Score = score,
                 IsAutoSubmitted = saved.AutoSubmitted,
-                ReviewNote = string.Empty
+                ReviewNote = isViolationAutoSubmit ? "VIOLATION_3" : string.Empty
             };
 
             InsertAttemptAndAnswers(connection, transaction, attempt, attemptAnswers);
