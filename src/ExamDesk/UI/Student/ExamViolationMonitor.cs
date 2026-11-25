@@ -12,6 +12,7 @@ internal sealed class ExamViolationMonitor : IDisposable
     private readonly HashSet<int> _pressed = [];
     private nint _hook;
     private bool _wasInside = true;
+    private bool _paused;
     private bool _disposed;
 
     internal ExamViolationMonitor(Form owner, Action<string> report)
@@ -22,6 +23,21 @@ internal sealed class ExamViolationMonitor : IDisposable
         _hook = SetWindowsHookEx(13, _callback, GetModuleHandle(null), 0);
         if (_hook == 0) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
         _timer.Tick += (_, _) => CheckForeground();
+        _timer.Start();
+    }
+
+    internal void Pause()
+    {
+        _paused = true;
+        _timer.Stop();
+    }
+
+    internal void Resume()
+    {
+        if (_disposed) return;
+        // Lấy lại cửa sổ hiện tại, tránh tính việc đóng cảnh báo là rời bài.
+        _wasInside = IsInside();
+        _paused = false;
         _timer.Start();
     }
 
@@ -36,6 +52,7 @@ internal sealed class ExamViolationMonitor : IDisposable
 
     private void CheckForeground()
     {
+        if (_paused || _disposed) return;
         bool inside = IsInside();
         bool left = _wasInside && !inside;
         _wasInside = inside;
@@ -56,10 +73,10 @@ internal sealed class ExamViolationMonitor : IDisposable
                     (IsDown(Keys.LWin) || IsDown(Keys.RWin)));
             if (down && capture && IsInside())
             {
-                if (first)
+                if (first && !_paused)
                     _owner.BeginInvoke((Action)(() =>
                     {
-                        if (!_disposed) _report("Sử dụng phím chụp màn hình");
+                        if (!_disposed && !_paused) _report("Sử dụng phím chụp màn hình");
                     }));
                 // Chặn phím chụp để cùng một thao tác không mở Snipping Tool rồi bị đếm hai lần.
                 return 1;

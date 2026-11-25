@@ -149,7 +149,7 @@ public partial class StudentExamControl : UserControl
         var instructions = new Label
         {
             Dock = DockStyle.Fill, AutoSize = false, UseMnemonic = false,
-            Text = "A–D / 1–4: chọn đáp án\nN / P hoặc PageDown / PageUp: câu tiếp / trước\nTab / Shift+Tab: chuyển vùng thao tác\nMũi tên: đổi đáp án hoặc di chuyển trong lưới\nEnter trong lưới: mở câu đang có focus\nSpace: chọn đáp án đang có focus\nBỏ chọn: xóa lựa chọn; đánh dấu xem lại độc lập\nEsc: đóng trợ giúp, không nộp bài\n\nNộp bài luôn mở bước kiểm tra và xác nhận.\nĐồng hồ vẫn chạy khi mở trợ giúp."
+            Text = "A–D / 1–4: chọn đáp án\n→ / ← hoặc PageDown / PageUp: câu tiếp / trước\nTab / Shift+Tab: chuyển vùng thao tác\n↑ / ↓: đổi đáp án hoặc di chuyển trong lưới\nEnter trong lưới: mở câu đang có focus\nSpace: chọn đáp án đang có focus\nBỏ chọn: xóa lựa chọn; đánh dấu xem lại độc lập\nEsc: đóng trợ giúp, không nộp bài\n\nNộp bài luôn mở bước kiểm tra và xác nhận.\nĐồng hồ vẫn chạy khi mở trợ giúp."
         };
         var close = StudentLayout.Button("Đóng", (_, _) => popup.Close());
         close.Dock = DockStyle.Bottom;
@@ -548,8 +548,8 @@ public partial class StudentExamControl : UserControl
     {
         int offset = e.KeyData switch
         {
-            Keys.Left or Keys.Up => -1,
-            Keys.Right or Keys.Down => 1,
+            Keys.Up => -1,
+            Keys.Down => 1,
             Keys.Space => 0,
             _ => int.MinValue
         };
@@ -565,16 +565,14 @@ public partial class StudentExamControl : UserControl
 
     private static void KeepArrowKeys(object? sender, PreviewKeyDownEventArgs e)
     {
-        // Để KeyDown xử lý mũi tên trong nhóm thay vì điều hướng mặc định.
-        if (e.KeyData is Keys.Left or Keys.Right or Keys.Up or Keys.Down) e.IsInputKey = true;
+        // Giữ lên/xuống trong nhóm; trái/phải để ProcessCmdKey chuyển câu.
+        if (e.KeyData is Keys.Up or Keys.Down) e.IsInputKey = true;
     }
 
     private void HandleQuestionKey(int index, KeyEventArgs e)
     {
         int target = e.KeyData switch
         {
-            Keys.Left => index - 1,
-            Keys.Right => index + 1,
             Keys.Up => index - _questionGridColumns,
             Keys.Down => index + _questionGridColumns,
             _ => -1
@@ -614,8 +612,8 @@ public partial class StudentExamControl : UserControl
         };
         int direction = keyData switch
         {
-            Keys.N or Keys.PageDown => 1,
-            Keys.P or Keys.PageUp => -1,
+            Keys.Right or Keys.PageDown => 1,
+            Keys.Left or Keys.PageUp => -1,
             _ => 0
         };
         if (choice < 0 && direction == 0)
@@ -632,7 +630,6 @@ public partial class StudentExamControl : UserControl
         else GoToQuestion(_attempt.Current + direction);
         return true;
     }
-    internal bool IsDeadlineReached => _attempt.IsExpired;
 
     private void ChangeChoice(int? choice, Control? source = null) =>
         SaveChange(() => _attempt.Choose(choice), source ?? _clearChoice);
