@@ -14,11 +14,38 @@ public partial class DataManagementControl : UserControl
     public DataManagementControl()
     {
         InitializeComponent();
+        RefreshSummary();
         _btnExportCsv.Click += (_, _) => ExportResultsCsv();
+        _btnRefresh.Click += (_, _) =>
+        {
+            RefreshSummary();
+            SetStatus("Đã cập nhật số liệu mới nhất từ cơ sở dữ liệu.", UiStyle.TextMuted, UiStyle.Surface);
+        };
+    }
+
+    private void RefreshSummary()
+    {
+        int totalCount = _gradingService.GetTotalAttemptCount();
+        bool hasData = totalCount > 0;
+
+        _btnExportCsv.Enabled = hasData;
+        _lblSummary.ForeColor = hasData ? UiStyle.Primary : UiStyle.WarningText;
+        _lblSummary.BackColor = hasData ? UiStyle.Background : UiStyle.WarningBack;
+        _lblSummary.Text = hasData
+            ? $"Hiện có {totalCount} bài thi đã chấm sẵn sàng để xuất."
+            : "Chưa có bài thi nào trong cơ sở dữ liệu để xuất.";
     }
 
     private void ExportResultsCsv()
     {
+        var attempts = _gradingService.GetAttemptSummaries();
+        if (attempts.Count == 0)
+        {
+            RefreshSummary();
+            SetStatus("Chưa có bài thi nào để xuất ra tệp CSV.", UiStyle.WarningText, UiStyle.WarningBack);
+            return;
+        }
+
         using var dialog = new SaveFileDialog
         {
             Title = "Xuất danh sách kết quả thi",
@@ -31,8 +58,6 @@ public partial class DataManagementControl : UserControl
 
         try
         {
-            var attempts = _gradingService.GetAttemptSummaries();
-
             var sb = new StringBuilder();
             sb.AppendLine("MSSV,HoTen,Lop,CaThi,DeThi,SoCau,CauDung,CauSai,CauBoTrong,Diem,CachNop,NopLuc");
 
@@ -48,14 +73,25 @@ public partial class DataManagementControl : UserControl
             }
 
             File.WriteAllText(dialog.FileName, sb.ToString(), new UTF8Encoding(true));
-            _lblStatus.ForeColor = UiStyle.SuccessText;
-            _lblStatus.Text = $"Trạng thái: Đã xuất {attempts.Count} kết quả thi từ SQLite ra tệp {Path.GetFileName(dialog.FileName)}.";
+            SetStatus(
+                $"Đã xuất {attempts.Count} kết quả thi ra tệp {Path.GetFileName(dialog.FileName)}.",
+                UiStyle.SuccessText,
+                UiStyle.SuccessBack);
         }
         catch (Exception ex)
         {
-            _lblStatus.ForeColor = UiStyle.ErrorText;
-            _lblStatus.Text = $"Trạng thái: Không thể xuất tệp CSV ({ex.Message}).";
+            SetStatus(
+                $"Không thể ghi tệp CSV ({ex.Message}). Hãy đóng tệp nếu đang mở bằng Excel và thử lại.",
+                UiStyle.ErrorText,
+                UiStyle.ErrorBack);
         }
+    }
+
+    private void SetStatus(string message, Color textColor, Color backColor)
+    {
+        _statusBanner.BackColor = backColor;
+        _lblStatus.ForeColor = textColor;
+        _lblStatus.Text = $"Trạng thái: {message}";
     }
 
     private static string EscapeCsv(string? value)
