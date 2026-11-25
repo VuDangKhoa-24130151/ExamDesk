@@ -353,10 +353,8 @@ public partial class StudentExamForm : Form
         _studentContent.SuspendLayout();
         try
         {
-            // Hiện tên ca thi khi đang ở màn làm bài, các màn khác trở về tên UniExam.
-            _examLabel.Text = screen is StudentExamControl && !string.IsNullOrWhiteSpace(_attempt?.Title)
-                ? _attempt.Title
-                : "UniExam";
+            // Giữ tên ứng dụng UniExam nhất quán trên thanh đầu ở mọi màn hình.
+            _examLabel.Text = "UniExam";
             if (_examLabel.Parent is Control header)
                 header.Visible = true;
             _studentContent.Controls.Add(screen);
@@ -375,6 +373,8 @@ public partial class StudentExamForm : Form
         if (screen is StudentExamControl exam) exam.FocusInitialControl();
         // Enter sau khi tra cứu sẽ tiếp tục, thay vì chọn nút nhập lại mã theo thứ tự Tab.
         else if (screen is StudentProfileConfirmationControl profile) profile.FocusInitialControl();
+        // Enter ở màn chọn ca thi không kích hoạt nút quay lại nhập MSSV.
+        else if (screen is SessionSelectionControl sessions) sessions.FocusInitialControl();
         else screen.SelectNextControl(null, true, true, true, false);
     }
 
