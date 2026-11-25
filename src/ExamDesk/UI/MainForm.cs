@@ -102,7 +102,7 @@ public sealed class MainForm : Form
         _examPaperButton = AddMenu(_menu, "Đề thi", () => new ExamPaperControl());
         var sessionManagementButton = AddMenu(_menu, "Ca thi", () => new SessionManagementControl());
         var gradingReviewButton = AddMenu(_menu, "Kết quả và phúc khảo", () => new GradingReviewControl());
-        var dataManagementButton = AddMenu(_menu, "Xuất/nhập và sao lưu", () => new DataManagementControl());
+        var dataManagementButton = AddMenu(_menu, "Xuất dữ liệu", () => new DataManagementControl());
 
         _lecturerOnlyMenuButtons.AddRange(
         [
