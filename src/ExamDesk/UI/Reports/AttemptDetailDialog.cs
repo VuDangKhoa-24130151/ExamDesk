@@ -163,12 +163,23 @@ internal sealed class AttemptDetailDialog : Form
 
     private Control BuildFilterBar()
     {
+        var borderHost = new Panel
+        {
+            Dock = DockStyle.Fill,
+            AutoSize = true,
+            BackColor = UiStyle.Border,
+            Padding = new Padding(1),
+            Margin = new Padding(0, 0, 0, 12)
+        };
+
         var bar = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
             AutoSize = true,
             WrapContents = true,
-            Margin = new Padding(0, 0, 0, 10)
+            BackColor = UiStyle.Surface,
+            Padding = new Padding(12, 8, 12, 8),
+            Margin = new Padding(0)
         };
 
         var lblFilter = new Label
@@ -194,11 +205,19 @@ internal sealed class AttemptDetailDialog : Form
         bar.Controls.Add(lblFilter);
         bar.Controls.Add(_cboFilter);
         bar.Controls.Add(_lblFilterCount);
-        return bar;
+        borderHost.Controls.Add(bar);
+        return borderHost;
     }
 
     private Control BuildGridPanel()
     {
+        var borderHost = new Panel
+        {
+            Dock = DockStyle.Fill,
+            BackColor = UiStyle.Border,
+            Padding = new Padding(1)
+        };
+
         var host = new Panel
         {
             Dock = DockStyle.Fill,
@@ -207,11 +226,15 @@ internal sealed class AttemptDetailDialog : Form
 
         UiStyle.StyleGrid(_dgv);
         _dgv.Dock = DockStyle.Fill;
+        _dgv.BorderStyle = BorderStyle.None;
+        _dgv.CellBorderStyle = DataGridViewCellBorderStyle.Single;
+        _dgv.GridColor = UiStyle.Border;
         _dgv.TabIndex = 1;
         _dgv.AutoGenerateColumns = false;
+        _dgv.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
         _dgv.AlternatingRowsDefaultCellStyle.BackColor = ColorTranslator.FromHtml("#FAFBFD");
         _dgv.DefaultCellStyle.WrapMode = DataGridViewTriState.True;
-        _dgv.DefaultCellStyle.Padding = new Padding(6, 8, 6, 8);
+        _dgv.DefaultCellStyle.Padding = new Padding(12, 8, 12, 8);
         _dgv.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
 
         var orderCol = new DataGridViewTextBoxColumn
@@ -219,19 +242,21 @@ internal sealed class AttemptDetailDialog : Form
             DataPropertyName = nameof(AttemptReviewDetailItem.QuestionOrder),
             HeaderText = "Câu",
             FillWeight = 36,
-            DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter }
+            DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Padding = new Padding(6, 8, 6, 8) }
         };
         var contentCol = new DataGridViewTextBoxColumn
         {
             DataPropertyName = nameof(AttemptReviewDetailItem.QuestionContent),
             HeaderText = "Nội dung câu hỏi",
-            FillWeight = 185
+            FillWeight = 185,
+            DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleLeft, Padding = new Padding(14, 8, 14, 8) }
         };
         var optionsCol = new DataGridViewTextBoxColumn
         {
             DataPropertyName = nameof(AttemptReviewDetailItem.OptionsFormatted),
             HeaderText = "Các lựa chọn (A–D)",
-            FillWeight = 185
+            FillWeight = 185,
+            DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleLeft, Padding = new Padding(14, 8, 14, 8) }
         };
         _selectedCol = new DataGridViewTextBoxColumn
         {
@@ -239,7 +264,7 @@ internal sealed class AttemptDetailDialog : Form
             DataPropertyName = nameof(AttemptReviewDetailItem.SelectedOption),
             HeaderText = "SV chọn",
             FillWeight = 55,
-            DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter }
+            DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Padding = new Padding(6, 8, 6, 8) }
         };
         var correctCol = new DataGridViewTextBoxColumn
         {
@@ -249,6 +274,7 @@ internal sealed class AttemptDetailDialog : Form
             DefaultCellStyle =
             {
                 Alignment = DataGridViewContentAlignment.MiddleCenter,
+                Padding = new Padding(6, 8, 6, 8),
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold)
             }
         };
@@ -258,7 +284,7 @@ internal sealed class AttemptDetailDialog : Form
             DataPropertyName = nameof(AttemptReviewDetailItem.ResultStatus),
             HeaderText = "Kết quả",
             FillWeight = 68,
-            DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter }
+            DefaultCellStyle = { Alignment = DataGridViewContentAlignment.MiddleCenter, Padding = new Padding(6, 8, 6, 8) }
         };
 
         _dgv.Columns.AddRange(orderCol, contentCol, optionsCol, _selectedCol, correctCol, _resultCol);
@@ -271,7 +297,8 @@ internal sealed class AttemptDetailDialog : Form
 
         host.Controls.Add(_lblEmpty);
         host.Controls.Add(_dgv);
-        return host;
+        borderHost.Controls.Add(host);
+        return borderHost;
     }
 
     private void OnGridCellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
