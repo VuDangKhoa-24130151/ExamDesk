@@ -129,7 +129,6 @@ public sealed class AttemptReviewDetailItem
     public bool IsCorrect { get; set; }
     public string ResultStatus => string.IsNullOrWhiteSpace(SelectedOption) ? "Bỏ trống"
                                 : IsCorrect ? "Đúng" : "Sai";
-    public string ChangeHistory { get; set; } = string.Empty;
     public string OptionsFormatted => $"A. {OptionA}\nB. {OptionB}\nC. {OptionC}\nD. {OptionD}";
 }
 

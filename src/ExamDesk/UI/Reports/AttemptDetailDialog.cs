@@ -4,7 +4,7 @@ using ExamDesk.UI.Shared;
 
 namespace ExamDesk.UI.Reports;
 
-// Bạn 2: Hộp thoại tra cứu chi tiết bài làm và lịch sử chọn đáp án (chỉ đọc)
+// Bạn 2: Hộp thoại tra cứu chi tiết bài làm để phúc khảo (chỉ đọc)
 internal sealed class AttemptDetailDialog : Form
 {
     private readonly GradingReviewService _gradingService = new();
@@ -51,7 +51,7 @@ internal sealed class AttemptDetailDialog : Form
         };
         infoPanel.Controls.Add(lblInfo);
 
-        // Hàng 1: Bảng chi tiết từng câu, đáp án A–D và lịch sử đổi đáp án
+        // Hàng 1: Bảng chi tiết từng câu và đáp án A–D
         var details = _gradingService.GetAttemptReviewDetails(item.AttemptId);
         var dgv = new DataGridView { Dock = DockStyle.Fill, AutoGenerateColumns = false };
         UiStyle.StyleGrid(dgv);
@@ -97,12 +97,6 @@ internal sealed class AttemptDetailDialog : Form
             FillWeight = 65
         };
         dgv.Columns.Add(resultCol);
-        dgv.Columns.Add(new DataGridViewTextBoxColumn
-        {
-            DataPropertyName = nameof(AttemptReviewDetailItem.ChangeHistory),
-            HeaderText = "Lịch sử đổi đáp án",
-            FillWeight = 110
-        });
 
         dgv.CellFormatting += (_, e) =>
         {

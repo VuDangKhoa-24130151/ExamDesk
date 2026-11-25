@@ -189,7 +189,6 @@ public sealed class GradingRepository
         }
 
         var snapshotByQuestionId = new Dictionary<int, StudentQuestion>();
-        var historyByQuestionId = new Dictionary<int, string>();
 
         using (var draftCmd = connection.CreateCommand())
         {
@@ -211,16 +210,6 @@ public sealed class GradingRepository
                     {
                         foreach (var q in draft.Questions)
                             snapshotByQuestionId[q.Id] = q;
-
-                        foreach (var group in draft.History.GroupBy(h => h.QuestionId))
-                        {
-                            var steps = group
-                                .Select(h => h.Choice is >= 0 and <= 3 ? ((char)('A' + h.Choice.Value)).ToString() : "(bỏ chọn)")
-                                .ToList();
-
-                            if (steps.Count > 0)
-                                historyByQuestionId[group.Key] = string.Join(" → ", steps);
-                        }
                     }
                 }
                 catch (JsonException)
@@ -271,11 +260,6 @@ public sealed class GradingRepository
                     if (snap.Options.Length > 3) optD = snap.Options[3];
                 }
 
-                if (!historyByQuestionId.TryGetValue(questionId, out var historyText) || string.IsNullOrWhiteSpace(historyText))
-                {
-                    historyText = string.IsNullOrWhiteSpace(selected) ? "(không chọn)" : selected;
-                }
-
                 details.Add(new AttemptReviewDetailItem
                 {
                     QuestionOrder = questionOrder,
@@ -287,8 +271,7 @@ public sealed class GradingRepository
                     OptionD = optD,
                     SelectedOption = selected,
                     CorrectOption = correct,
-                    IsCorrect = isCorrect,
-                    ChangeHistory = historyText
+                    IsCorrect = isCorrect
                 });
             }
         }
