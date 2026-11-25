@@ -84,11 +84,13 @@ public sealed class GradingRepository
                    COALESCE(p.PaperCode || ' - ' || p.Title, 'Đề #' || a.PaperId) AS PaperDisplay,
                    a.TotalQuestions, a.CorrectCount,
                    a.TotalQuestions - COUNT(CASE WHEN aa.SelectedOption <> '' THEN 1 END) AS BlankCount,
-                   a.Score, a.IsAutoSubmitted, a.SubmittedAt
+                   a.Score, a.IsAutoSubmitted, a.SubmittedAt, a.ReviewNote, d.Payload
             FROM ExamAttempts a
             LEFT JOIN AttemptAnswers aa ON aa.AttemptId = a.Id
             LEFT JOIN ExamSessions s ON s.Id = a.SessionId
             LEFT JOIN ExamPapers p ON p.Id = a.PaperId
+            LEFT JOIN StudentDrafts d ON d.SessionId = a.SessionId
+                                     AND UPPER(TRIM(d.StudentCode)) = UPPER(TRIM(a.StudentCode))
             WHERE 1 = 1";
 
         if (sessionId.HasValue && sessionId.Value > 0)
@@ -115,6 +117,34 @@ public sealed class GradingRepository
         using var reader = command.ExecuteReader();
         while (reader.Read())
         {
+            bool isAutoSubmitted = reader.GetInt32(12) == 1;
+            var submittedAt = DateTimeOffset.Parse(reader.GetString(13), CultureInfo.InvariantCulture);
+            string reviewNote = reader.IsDBNull(14) ? string.Empty : reader.GetString(14);
+            string? draftPayload = reader.IsDBNull(15) ? null : reader.GetString(15);
+
+            // Phân biệt nộp tự động do vi phạm 3 lần (nộp trước DeadlineUtc) với nộp tự động do hết giờ.
+            bool isViolationSubmitted = false;
+            if (isAutoSubmitted)
+            {
+                if (string.Equals(reviewNote, "VIOLATION_3", StringComparison.Ordinal))
+                {
+                    isViolationSubmitted = true;
+                }
+                else if (!string.IsNullOrWhiteSpace(draftPayload))
+                {
+                    try
+                    {
+                        var draft = JsonSerializer.Deserialize<StudentDraft>(draftPayload);
+                        if (draft is not null && draft.DeadlineUtc != default && submittedAt < draft.DeadlineUtc)
+                            isViolationSubmitted = true;
+                    }
+                    catch (JsonException)
+                    {
+                        // Bỏ qua nếu Payload cũ không đọc được
+                    }
+                }
+            }
+
             list.Add(new AttemptSummaryItem
             {
                 AttemptId = reader.GetInt32(0),
@@ -129,8 +159,9 @@ public sealed class GradingRepository
                 CorrectCount = reader.GetInt32(9),
                 BlankCount = Math.Max(0, reader.GetInt32(10)),
                 Score = reader.GetDouble(11),
-                IsAutoSubmitted = reader.GetInt32(12) == 1,
-                SubmittedAt = DateTimeOffset.Parse(reader.GetString(13), CultureInfo.InvariantCulture)
+                IsAutoSubmitted = isAutoSubmitted,
+                IsViolationSubmitted = isViolationSubmitted,
+                SubmittedAt = submittedAt
             });
         }
 
