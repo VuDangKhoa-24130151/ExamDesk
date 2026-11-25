@@ -288,6 +288,12 @@ internal sealed class AttemptDetailDialog : Form
         };
 
         _dgv.Columns.AddRange(orderCol, contentCol, optionsCol, _selectedCol, correctCol, _resultCol);
+        foreach (DataGridViewColumn col in _dgv.Columns)
+        {
+            // Tắt mũi tên sort mặc định để chữ tiêu đề không bị lệch sang trái, rồi căn giữa tuyệt đối.
+            col.SortMode = DataGridViewColumnSortMode.NotSortable;
+            col.HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+        }
         _dgv.CellFormatting += OnGridCellFormatting;
 
         _lblEmpty.Dock = DockStyle.Fill;
