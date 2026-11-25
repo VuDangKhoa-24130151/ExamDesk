@@ -32,8 +32,8 @@ public partial class DataManagementControl : UserControl
         _lblSummary.ForeColor = hasData ? UiStyle.Primary : UiStyle.WarningText;
         _lblSummary.BackColor = hasData ? UiStyle.Background : UiStyle.WarningBack;
         _lblSummary.Text = hasData
-            ? $"Hiện có {totalCount} bài thi đã chấm sẵn sàng để xuất."
-            : "Chưa có bài thi nào trong cơ sở dữ liệu để xuất.";
+            ? $"Số bài thi hiện có: {totalCount}"
+            : "Chưa có bài thi nào để xuất.";
     }
 
     private void ExportResultsCsv()
