@@ -14,35 +14,16 @@ public partial class DataManagementControl : UserControl
     public DataManagementControl()
     {
         InitializeComponent();
-        RefreshSummary();
         _btnExportCsv.Click += (_, _) => ExportResultsCsv();
-        _btnRefresh.Click += (_, _) =>
-        {
-            RefreshSummary();
-            SetStatus("Đã cập nhật số liệu mới nhất từ cơ sở dữ liệu.", UiStyle.TextMuted, UiStyle.Surface);
-        };
-    }
-
-    private void RefreshSummary()
-    {
-        int totalCount = _gradingService.GetTotalAttemptCount();
-        bool hasData = totalCount > 0;
-
-        _btnExportCsv.Enabled = hasData;
-        _lblSummary.ForeColor = hasData ? UiStyle.Primary : UiStyle.WarningText;
-        _lblSummary.BackColor = hasData ? UiStyle.Background : UiStyle.WarningBack;
-        _lblSummary.Text = hasData
-            ? $"Số bài thi hiện có: {totalCount}"
-            : "Chưa có bài thi nào để xuất.";
     }
 
     private void ExportResultsCsv()
     {
+        // Đọc thẳng từ SQLite mỗi lần bấm xuất để luôn có dữ liệu mới nhất
         var attempts = _gradingService.GetAttemptSummaries();
         if (attempts.Count == 0)
         {
-            RefreshSummary();
-            SetStatus("Chưa có bài thi nào để xuất ra tệp CSV.", UiStyle.WarningText, UiStyle.WarningBack);
+            SetStatus("Chưa có bài thi nào trong cơ sở dữ liệu để xuất.", UiStyle.WarningText, UiStyle.WarningBack);
             return;
         }
 
@@ -63,6 +44,7 @@ public partial class DataManagementControl : UserControl
 
             foreach (var a in attempts)
             {
+                // Dùng InvariantCulture để dấu thập phân của điểm luôn là dấu chấm (.) thay vì bị đổi theo máy Windows
                 string submittedAtText = a.SubmittedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
                 string scoreText = a.Score.ToString("0.00", CultureInfo.InvariantCulture);
 
@@ -72,6 +54,7 @@ public partial class DataManagementControl : UserControl
                     $"{scoreText},{EscapeCsv(a.SubmitMethodText)},{EscapeCsv(submittedAtText)}");
             }
 
+            // Ghi UTF-8 có BOM (true) để mở bằng Excel không bị lỗi font tiếng Việt
             File.WriteAllText(dialog.FileName, sb.ToString(), new UTF8Encoding(true));
             SetStatus(
                 $"Đã xuất {attempts.Count} kết quả thi ra tệp {Path.GetFileName(dialog.FileName)}.",
@@ -99,6 +82,7 @@ public partial class DataManagementControl : UserControl
         if (string.IsNullOrEmpty(value))
             return "\"\"";
 
+        // Bọc ngoặc kép và nhân đôi dấu " bên trong để không vỡ cột khi tên/đề thi có dấu phẩy
         return $"\"{value.Replace("\"", "\"\"")}\"";
     }
 }

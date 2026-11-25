@@ -12,10 +12,7 @@ partial class DataManagementControl
     private TableLayoutPanel _exportCard = null!;
     private Label _lblExportHeading = null!;
     private Label _lblExportInfo = null!;
-    private Label _lblSummary = null!;
-    private FlowLayoutPanel _exportActions = null!;
     private Button _btnExportCsv = null!;
-    private Button _btnRefresh = null!;
     private Panel _statusBannerBorder = null!;
     private Panel _statusBanner = null!;
     private Label _lblStatus = null!;
@@ -34,10 +31,7 @@ partial class DataManagementControl
         _exportCard = new TableLayoutPanel();
         _lblExportHeading = new Label();
         _lblExportInfo = new Label();
-        _lblSummary = new Label();
-        _exportActions = new FlowLayoutPanel();
         _btnExportCsv = new Button();
-        _btnRefresh = new Button();
         _statusBannerBorder = new Panel();
         _statusBanner = new Panel();
         _lblStatus = new Label();
@@ -45,7 +39,6 @@ partial class DataManagementControl
         _rootLayout.SuspendLayout();
         _exportCardBorder.SuspendLayout();
         _exportCard.SuspendLayout();
-        _exportActions.SuspendLayout();
         _statusBannerBorder.SuspendLayout();
         _statusBanner.SuspendLayout();
         SuspendLayout();
@@ -59,7 +52,7 @@ partial class DataManagementControl
         _rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         _rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         _rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        // Hàng đệm 100% ở cuối để khung trạng thái không bị kéo giãn to hết chiều cao màn hình
+        // Thêm hàng đệm 100% ở dưới cùng để WinForms không kéo giãn khung trạng thái chiếm hết phần trống.
         _rootLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
         // Hàng 0: Tiêu đề
@@ -69,7 +62,7 @@ partial class DataManagementControl
         _lblTitle.Margin = new Padding(0, 0, 0, 16);
         _lblTitle.Text = "Xuất dữ liệu kết quả thi";
 
-        // Hàng 1: Thẻ Xuất kết quả thi có viền mảnh (co giãn theo DPI)
+        // Hàng 1: Thẻ Xuất kết quả thi (bọc viền 1px bằng Panel ngoài để nổi trên nền xám nhạt)
         _exportCardBorder.Dock = DockStyle.Fill;
         _exportCardBorder.AutoSize = true;
         _exportCardBorder.BackColor = UiStyle.Border;
@@ -82,8 +75,7 @@ partial class DataManagementControl
         _exportCard.Padding = new Padding(20);
         _exportCard.ColumnCount = 1;
         _exportCard.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        _exportCard.RowCount = 4;
-        _exportCard.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        _exportCard.RowCount = 3;
         _exportCard.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         _exportCard.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         _exportCard.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -96,41 +88,20 @@ partial class DataManagementControl
 
         _lblExportInfo.AutoSize = true;
         _lblExportInfo.ForeColor = UiStyle.TextMuted;
-        _lblExportInfo.Margin = new Padding(0, 0, 0, 12);
+        _lblExportInfo.Margin = new Padding(0, 0, 0, 16);
         _lblExportInfo.Text = "Các cột được xuất: MSSV, Họ tên, Lớp, Ca thi, Đề thi, Số câu, Đúng, Sai, Bỏ trống, Điểm, Hình thức nộp, Thời điểm nộp.";
-
-        _lblSummary.AutoSize = true;
-        _lblSummary.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
-        _lblSummary.ForeColor = UiStyle.Primary;
-        _lblSummary.BackColor = UiStyle.Background;
-        _lblSummary.Padding = new Padding(10, 6, 10, 6);
-        _lblSummary.Margin = new Padding(0, 0, 0, 16);
-
-        _exportActions.Dock = DockStyle.Fill;
-        _exportActions.AutoSize = true;
-        _exportActions.WrapContents = true;
-        _exportActions.Margin = new Padding(0);
 
         _btnExportCsv.Text = "Xuất kết quả (.csv)";
         _btnExportCsv.TabIndex = 0;
-        _btnExportCsv.Margin = new Padding(0, 0, 12, 4);
+        _btnExportCsv.Margin = new Padding(0);
         UiStyle.StylePrimaryButton(_btnExportCsv);
-
-        _btnRefresh.Text = "Tải lại số liệu";
-        _btnRefresh.TabIndex = 1;
-        _btnRefresh.Margin = new Padding(0, 0, 0, 4);
-        UiStyle.StyleSecondaryButton(_btnRefresh);
-
-        _exportActions.Controls.Add(_btnExportCsv);
-        _exportActions.Controls.Add(_btnRefresh);
 
         _exportCard.Controls.Add(_lblExportHeading, 0, 0);
         _exportCard.Controls.Add(_lblExportInfo, 0, 1);
-        _exportCard.Controls.Add(_lblSummary, 0, 2);
-        _exportCard.Controls.Add(_exportActions, 0, 3);
+        _exportCard.Controls.Add(_btnExportCsv, 0, 2);
         _exportCardBorder.Controls.Add(_exportCard);
 
-        // Hàng 2: Thanh trạng thái gọn nhẹ (AutoSize, có viền mảnh)
+        // Hàng 2: Thanh trạng thái gọn 1 dòng
         _statusBannerBorder.Dock = DockStyle.Top;
         _statusBannerBorder.AutoSize = true;
         _statusBannerBorder.BackColor = UiStyle.Border;
@@ -166,8 +137,6 @@ partial class DataManagementControl
         _exportCardBorder.PerformLayout();
         _exportCard.ResumeLayout(false);
         _exportCard.PerformLayout();
-        _exportActions.ResumeLayout(false);
-        _exportActions.PerformLayout();
         _statusBannerBorder.ResumeLayout(false);
         _statusBannerBorder.PerformLayout();
         _statusBanner.ResumeLayout(false);
