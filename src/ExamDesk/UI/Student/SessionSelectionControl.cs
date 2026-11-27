@@ -19,12 +19,24 @@ public partial class SessionSelectionControl : UserControl
     private bool? _submittedExpanded;
     private BufferedStudentTable _header = null!;
     private SessionList _list = null!;
+    private FocusAnchor _focusAnchor = null!;
     private Label _summary = null!;
     private ProgressBar _loading = null!;
     private Label _status = null!;
     private BufferedStudentTable _notice = null!;
     private Button _reload = null!;
     private Button _retry = null!;
+
+    private sealed class FocusAnchor : Control
+    {
+        internal FocusAnchor()
+        {
+            SetStyle(ControlStyles.Selectable, true);
+            TabStop = false;
+            Size = Size.Empty;
+            AccessibleRole = AccessibleRole.None;
+        }
+    }
 
     private sealed class SessionList : FlowLayoutPanel
     {
@@ -121,8 +133,9 @@ public partial class SessionSelectionControl : UserControl
     private void BuildShell()
     {
         SuspendLayout();
+        _focusAnchor = new FocusAnchor { TabIndex = 0 };
         _header = Table();
-        _header.TabIndex = 0;
+        _header.TabIndex = 1;
 
         var toolbar = Table(2);
         toolbar.ColumnStyles.Clear();
@@ -177,26 +190,35 @@ public partial class SessionSelectionControl : UserControl
             FlowDirection = FlowDirection.TopDown,
             WrapContents = false,
             AutoScroll = true,
-            TabIndex = 1,
+            TabIndex = 2,
             TabStop = false,
             Margin = Padding.Empty
         };
         Controls.Add(_list);
         Controls.Add(_header);
+        Controls.Add(_focusAnchor);
         SizeChanged += (_, _) => UpdateLayout();
         _list.SizeChanged += (_, _) => UpdateLayout();
 #if DEBUG
         _list.Scroll += (_, _) => DumpState("list.Scroll");
 #endif
-        Load += (_, _) => SelectNextControl(null, true, true, true, false);
+        Load += (_, _) => FocusInitialControl();
         UpdateLayout();
         ResumeLayout(true);
+    }
+
+    internal void FocusInitialControl()
+    {
+        if (!_shellBuilt || IsDisposed || Disposing) return;
+        // Giữ focus trên điểm neo vô hình thay vì nút quay lại để bấm Enter không đẩy về màn nhập MSSV.
+        _focusAnchor.Focus();
     }
 
     private async Task Reload()
     {
         if (_reloading || _selecting || _student is null || !_shellBuilt || IsDisposed || Disposing) return;
         _reloading = true;
+        if (_reload.Focused || _retry.Focused || _list.ContainsFocus) FocusInitialControl();
         _reload.Enabled = _retry.Enabled = false;
         _reload.Text = "Đang tải…";
         _list.Enabled = false;
@@ -393,6 +415,7 @@ public partial class SessionSelectionControl : UserControl
     {
         if (_student is null || !entry.CanEnter || _reloading || _selecting || IsDisposed || Disposing) return;
         _selecting = true;
+        if (_list.ContainsFocus || _reload.Focused || _retry.Focused) FocusInitialControl();
         _list.Enabled = _reload.Enabled = _retry.Enabled = false;
         try
         {

@@ -1,30 +1,25 @@
 #nullable enable
 using ExamDesk.UI.Shared;
+using ExamDesk.UI.Student;
 
 namespace ExamDesk.UI.Administration;
 
 partial class RoleSelectionControl
 {
     private System.ComponentModel.IContainer? components = null;
-    private TableLayoutPanel _rootLayout = null!;
-    private FlowLayoutPanel _headerPanel = null!;
+    private TableLayoutPanel _topBar = null!;
+    private Label _logoBadge = null!;
+    private Panel _viewport = null!;
+    private TableLayoutPanel _contentLayout = null!;
     private Label _lblTitle = null!;
     private Label _lblSubtitle = null!;
     private TableLayoutPanel _cardsLayout = null!;
-    private Panel _lecturerCardBorder = null!;
-    private TableLayoutPanel _lecturerCardContent = null!;
-    private Label _lblLecturerTag = null!;
-    private Label _lblLecturerTitle = null!;
-    private Label _lblLecturerDesc = null!;
-    private Button _btnLecturerLogin = null!;
-    private Panel _studentCardBorder = null!;
-    private TableLayoutPanel _studentCardContent = null!;
-    private Label _lblStudentTag = null!;
-    private Label _lblStudentTitle = null!;
-    private Label _lblStudentDesc = null!;
-    private Button _btnStudentArea = null!;
-    private FlowLayoutPanel _footerPanel = null!;
-    private LinkLabel _lnkHelp = null!;
+    private CardPanel _lecturerCard = null!;
+    private CardPanel _studentCard = null!;
+    private RoundedButton _btnLecturerLogin = null!;
+    private RoundedButton _btnStudentArea = null!;
+    private TableLayoutPanel _footer = null!;
+    private Label _loginStatus = null!;
 
     protected override void Dispose(bool disposing)
     {
@@ -34,262 +29,144 @@ partial class RoleSelectionControl
 
     private void InitializeComponent()
     {
-        _rootLayout = new TableLayoutPanel();
-        _headerPanel = new FlowLayoutPanel();
-        _lblTitle = new Label();
-        _lblSubtitle = new Label();
-        _cardsLayout = new TableLayoutPanel();
-        _lecturerCardBorder = new Panel();
-        _lecturerCardContent = new TableLayoutPanel();
-        _lblLecturerTag = new Label();
-        _lblLecturerTitle = new Label();
-        _lblLecturerDesc = new Label();
-        _btnLecturerLogin = new Button();
-        _studentCardBorder = new Panel();
-        _studentCardContent = new TableLayoutPanel();
-        _lblStudentTag = new Label();
-        _lblStudentTitle = new Label();
-        _lblStudentDesc = new Label();
-        _btnStudentArea = new Button();
-        _footerPanel = new FlowLayoutPanel();
-        _lnkHelp = new LinkLabel();
-
-        _rootLayout.SuspendLayout();
-        _headerPanel.SuspendLayout();
-        _cardsLayout.SuspendLayout();
-        _lecturerCardBorder.SuspendLayout();
-        _lecturerCardContent.SuspendLayout();
-        _studentCardBorder.SuspendLayout();
-        _studentCardContent.SuspendLayout();
-        _footerPanel.SuspendLayout();
         SuspendLayout();
-
-        // _rootLayout
-        _rootLayout.Dock = DockStyle.Fill;
-        _rootLayout.AutoScroll = true;
-        _rootLayout.BackColor = UiStyle.Background;
-        _rootLayout.Padding = new Padding(24);
-        _rootLayout.ColumnCount = 3;
-        _rootLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 5F));
-        _rootLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 90F));
-        _rootLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 5F));
-        _rootLayout.RowCount = 5;
-        _rootLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 45F));
-        _rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        _rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        _rootLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 55F));
-        _rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-
-        // _headerPanel
-        _headerPanel.Dock = DockStyle.Fill;
-        _headerPanel.AutoSize = true;
-        _headerPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        _headerPanel.FlowDirection = FlowDirection.TopDown;
-        _headerPanel.WrapContents = false;
-        _headerPanel.Margin = new Padding(8, 0, 8, 24);
-
-        // _lblTitle
-        _lblTitle.AutoSize = true;
-        _lblTitle.Font = UiStyle.TitleFont;
-        _lblTitle.ForeColor = UiStyle.Text;
-        _lblTitle.Margin = new Padding(0, 0, 0, 8);
-        _lblTitle.Text = "Chào mừng đến với UniExam";
-
-        // _lblSubtitle
-        _lblSubtitle.AutoSize = true;
-        _lblSubtitle.Font = UiStyle.BodyFont;
-        _lblSubtitle.ForeColor = UiStyle.TextMuted;
-        _lblSubtitle.Margin = new Padding(0);
-        _lblSubtitle.Text = "Chọn vai trò để tiếp tục";
-
-        _headerPanel.Controls.Add(_lblTitle);
-        _headerPanel.Controls.Add(_lblSubtitle);
-
-        // _cardsLayout
-        _cardsLayout.Dock = DockStyle.Fill;
-        _cardsLayout.AutoSize = true;
-        _cardsLayout.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        _cardsLayout.ColumnCount = 2;
-        _cardsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-        _cardsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
-        _cardsLayout.RowCount = 1;
-        _cardsLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        _cardsLayout.Margin = new Padding(0);
-
-        // _lecturerCardBorder
-        _lecturerCardBorder.Dock = DockStyle.Fill;
-        _lecturerCardBorder.AutoSize = true;
-        _lecturerCardBorder.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        _lecturerCardBorder.BackColor = UiStyle.Border;
-        _lecturerCardBorder.Padding = new Padding(1);
-        _lecturerCardBorder.Margin = new Padding(8, 0, 12, 0);
-
-        // _lecturerCardContent
-        _lecturerCardContent.Dock = DockStyle.Fill;
-        _lecturerCardContent.AutoSize = true;
-        _lecturerCardContent.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        _lecturerCardContent.BackColor = UiStyle.Surface;
-        _lecturerCardContent.Padding = new Padding(24);
-        _lecturerCardContent.ColumnCount = 1;
-        _lecturerCardContent.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        _lecturerCardContent.RowCount = 4;
-        _lecturerCardContent.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        _lecturerCardContent.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        _lecturerCardContent.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        _lecturerCardContent.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-
-        // _lblLecturerTag
-        _lblLecturerTag.AutoSize = true;
-        _lblLecturerTag.Font = UiStyle.SmallFont;
-        _lblLecturerTag.ForeColor = UiStyle.Primary;
-        _lblLecturerTag.Margin = new Padding(0, 0, 0, 4);
-        _lblLecturerTag.Text = "PHÂN HỆ QUẢN TRỊ & TỔ CHỨC THI";
-
-        // _lblLecturerTitle
-        _lblLecturerTitle.AutoSize = true;
-        _lblLecturerTitle.Font = UiStyle.TitleFont;
-        _lblLecturerTitle.ForeColor = UiStyle.Text;
-        _lblLecturerTitle.Margin = new Padding(0, 0, 0, 12);
-        _lblLecturerTitle.Text = "Giảng viên";
-
-        // _lblLecturerDesc
-        _lblLecturerDesc.AutoSize = true;
-        _lblLecturerDesc.Dock = DockStyle.Fill;
-        _lblLecturerDesc.Font = UiStyle.BodyFont;
-        _lblLecturerDesc.ForeColor = UiStyle.TextMuted;
-        _lblLecturerDesc.Margin = new Padding(0, 0, 0, 20);
-        _lblLecturerDesc.Text = "Quản lý môn, chương, lớp, sinh viên, câu hỏi, đề thi, ca thi và kết quả.";
-
-        // _btnLecturerLogin
-        _btnLecturerLogin.Dock = DockStyle.Fill;
-        _btnLecturerLogin.Height = 42;
-        _btnLecturerLogin.MinimumSize = new Size(0, 40);
-        _btnLecturerLogin.Margin = new Padding(0);
-        _btnLecturerLogin.TabIndex = 0;
-        _btnLecturerLogin.Text = "Đăng nhập giảng viên";
-        UiStyle.StylePrimaryButton(_btnLecturerLogin);
-        _btnLecturerLogin.Click += OnLecturerLoginClick;
-
-        _lecturerCardContent.Controls.Add(_lblLecturerTag, 0, 0);
-        _lecturerCardContent.Controls.Add(_lblLecturerTitle, 0, 1);
-        _lecturerCardContent.Controls.Add(_lblLecturerDesc, 0, 2);
-        _lecturerCardContent.Controls.Add(_btnLecturerLogin, 0, 3);
-        _lecturerCardBorder.Controls.Add(_lecturerCardContent);
-
-        // _studentCardBorder
-        _studentCardBorder.Dock = DockStyle.Fill;
-        _studentCardBorder.AutoSize = true;
-        _studentCardBorder.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        _studentCardBorder.BackColor = UiStyle.Border;
-        _studentCardBorder.Padding = new Padding(1);
-        _studentCardBorder.Margin = new Padding(12, 0, 8, 0);
-
-        // _studentCardContent
-        _studentCardContent.Dock = DockStyle.Fill;
-        _studentCardContent.AutoSize = true;
-        _studentCardContent.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        _studentCardContent.BackColor = UiStyle.Surface;
-        _studentCardContent.Padding = new Padding(24);
-        _studentCardContent.ColumnCount = 1;
-        _studentCardContent.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-        _studentCardContent.RowCount = 4;
-        _studentCardContent.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        _studentCardContent.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        _studentCardContent.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-        _studentCardContent.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-
-        // _lblStudentTag
-        _lblStudentTag.AutoSize = true;
-        _lblStudentTag.Font = UiStyle.SmallFont;
-        _lblStudentTag.ForeColor = UiStyle.TextMuted;
-        _lblStudentTag.Margin = new Padding(0, 0, 0, 4);
-        _lblStudentTag.Text = "PHÂN HỆ LÀM BÀI THI";
-
-        // _lblStudentTitle
-        _lblStudentTitle.AutoSize = true;
-        _lblStudentTitle.Font = UiStyle.TitleFont;
-        _lblStudentTitle.ForeColor = UiStyle.Text;
-        _lblStudentTitle.Margin = new Padding(0, 0, 0, 12);
-        _lblStudentTitle.Text = "Sinh viên";
-
-        // _lblStudentDesc
-        _lblStudentDesc.AutoSize = true;
-        _lblStudentDesc.Dock = DockStyle.Fill;
-        _lblStudentDesc.Font = UiStyle.BodyFont;
-        _lblStudentDesc.ForeColor = UiStyle.TextMuted;
-        _lblStudentDesc.Margin = new Padding(0, 0, 0, 20);
-        _lblStudentDesc.Text = "Nhận diện sinh viên, chọn ca thi và làm bài thi trắc nghiệm.";
-
-        // _btnStudentArea
-        _btnStudentArea.Dock = DockStyle.Fill;
-        _btnStudentArea.Height = 42;
-        _btnStudentArea.MinimumSize = new Size(0, 40);
-        _btnStudentArea.Margin = new Padding(0);
-        _btnStudentArea.TabIndex = 1;
-        _btnStudentArea.Text = "Vào khu sinh viên";
-        UiStyle.StyleSecondaryButton(_btnStudentArea);
-        _btnStudentArea.Click += OnStudentAreaClick;
-
-        _studentCardContent.Controls.Add(_lblStudentTag, 0, 0);
-        _studentCardContent.Controls.Add(_lblStudentTitle, 0, 1);
-        _studentCardContent.Controls.Add(_lblStudentDesc, 0, 2);
-        _studentCardContent.Controls.Add(_btnStudentArea, 0, 3);
-        _studentCardBorder.Controls.Add(_studentCardContent);
-
-        _cardsLayout.Controls.Add(_lecturerCardBorder, 0, 0);
-        _cardsLayout.Controls.Add(_studentCardBorder, 1, 0);
-
-        // _footerPanel
-        _footerPanel.Dock = DockStyle.Fill;
-        _footerPanel.AutoSize = true;
-        _footerPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        _footerPanel.FlowDirection = FlowDirection.LeftToRight;
-        _footerPanel.WrapContents = false;
-        _footerPanel.Margin = new Padding(8, 12, 8, 0);
-
-        // _lnkHelp
-        _lnkHelp.AutoSize = true;
-        _lnkHelp.Font = UiStyle.BodyFont;
-        _lnkHelp.LinkColor = UiStyle.Primary;
-        _lnkHelp.ActiveLinkColor = UiStyle.Primary;
-        _lnkHelp.VisitedLinkColor = UiStyle.Primary;
-        _lnkHelp.TabStop = true;
-        _lnkHelp.TabIndex = 2;
-        _lnkHelp.Text = "Trợ giúp";
-        _lnkHelp.LinkClicked += OnHelpLinkClicked;
-
-        _footerPanel.Controls.Add(_lnkHelp);
-
-        _rootLayout.Controls.Add(_headerPanel, 1, 1);
-        _rootLayout.Controls.Add(_cardsLayout, 1, 2);
-        _rootLayout.Controls.Add(_footerPanel, 1, 4);
-
-        // RoleSelectionControl
-        AutoScaleDimensions = new SizeF(7F, 15F);
+        Font = UiStyle.BodyFont;
+        AutoScaleDimensions = new SizeF(7F, 19F);
         AutoScaleMode = AutoScaleMode.Font;
         BackColor = UiStyle.Background;
         ForeColor = UiStyle.Text;
-        Font = UiStyle.BodyFont;
-        Controls.Add(_rootLayout);
+        DoubleBuffered = true;
         Name = "RoleSelectionControl";
-        Size = new Size(1000, 600);
+        Size = new Size(1100, 620);
 
-        _rootLayout.ResumeLayout(false);
-        _rootLayout.PerformLayout();
-        _headerPanel.ResumeLayout(false);
-        _headerPanel.PerformLayout();
-        _cardsLayout.ResumeLayout(false);
-        _cardsLayout.PerformLayout();
-        _lecturerCardBorder.ResumeLayout(false);
-        _lecturerCardBorder.PerformLayout();
-        _lecturerCardContent.ResumeLayout(false);
-        _lecturerCardContent.PerformLayout();
-        _studentCardBorder.ResumeLayout(false);
-        _studentCardBorder.PerformLayout();
-        _studentCardContent.ResumeLayout(false);
-        _studentCardContent.PerformLayout();
-        _footerPanel.ResumeLayout(false);
-        _footerPanel.PerformLayout();
+        _topBar = new TableLayoutPanel
+        {
+            Dock = DockStyle.Top, Height = 48, ColumnCount = 2, RowCount = 1,
+            Padding = new Padding(24, 8, 24, 8), BackColor = UiStyle.Surface,
+            TabStop = false, TabIndex = 1
+        };
+        _topBar.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        _topBar.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        _topBar.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+
+        _logoBadge = new Label { Size = new Size(28, 28), Anchor = AnchorStyles.Left, Margin = Padding.Empty };
+        _logoBadge.Paint += OnLogoBadgePaint;
+
+        var brand = CreateLabel("UniExam", UiStyle.SectionTitleFont, UiStyle.Text);
+        brand.Anchor = AnchorStyles.Left;
+        brand.Margin = new Padding(10, 0, 0, 0);
+
+        _topBar.Controls.Add(_logoBadge, 0, 0);
+        _topBar.Controls.Add(brand, 1, 0);
+
+        _viewport = new Panel { Dock = DockStyle.Fill, AutoScroll = true, BackColor = UiStyle.Background, TabStop = false, TabIndex = 0 };
+        _contentLayout = new TableLayoutPanel
+        {
+            ColumnCount = 1, RowCount = 3, BackColor = UiStyle.Background,
+            Margin = Padding.Empty, TabStop = false
+        };
+        _contentLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        for (int i = 0; i < 3; i++) _contentLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
+        _lblTitle = CreateLabel("Chào mừng đến với UniExam", UiStyle.TitleFont, UiStyle.Text);
+        _lblTitle.TextAlign = ContentAlignment.MiddleCenter;
+        _lblTitle.Dock = DockStyle.Fill;
+        _lblTitle.Margin = new Padding(0, 0, 0, 10);
+
+        _lblSubtitle = CreateLabel("Chọn vai trò của bạn để bắt đầu", UiStyle.BodyFont, UiStyle.TextMuted);
+        _lblSubtitle.TextAlign = ContentAlignment.MiddleCenter;
+        _lblSubtitle.Dock = DockStyle.Fill;
+        _lblSubtitle.Margin = new Padding(0, 0, 0, 32);
+
+        _cardsLayout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1,
+            BackColor = UiStyle.Background, Margin = Padding.Empty, TabStop = false
+        };
+        _cardsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        _cardsLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        _cardsLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+
+        _btnLecturerLogin = CreateRoleButton("Đăng nhập giảng viên", false);
+        _btnLecturerLogin.Click += OnLecturerLoginClick;
+        _btnStudentArea = CreateRoleButton("Đăng nhập sinh viên", true);
+        _btnStudentArea.Click += OnStudentAreaClick;
+
+        _lecturerCard = CreateRoleCard("QUẢN TRỊ & TỔ CHỨC THI", "Giảng viên",
+            "Quản lý câu hỏi, đề thi, ca thi và theo dõi kết quả sinh viên.", _btnLecturerLogin);
+        _lecturerCard.TabIndex = 0;
+        _studentCard = CreateRoleCard("HỌC TẬP & KIỂM TRA", "Sinh viên",
+            "Xác nhận thông tin, chọn ca thi và bắt đầu làm bài trắc nghiệm.", _btnStudentArea);
+        _studentCard.TabIndex = 1;
+
+        _cardsLayout.Controls.Add(_lecturerCard, 0, 0);
+        _cardsLayout.Controls.Add(_studentCard, 1, 0);
+        _contentLayout.Controls.Add(_lblTitle, 0, 0);
+        _contentLayout.Controls.Add(_lblSubtitle, 0, 1);
+        _contentLayout.Controls.Add(_cardsLayout, 0, 2);
+        _viewport.Controls.Add(_contentLayout);
+
+        _footer = new TableLayoutPanel
+        {
+            Dock = DockStyle.Bottom, Height = 40, ColumnCount = 2, RowCount = 1,
+            BackColor = UiStyle.Surface, Padding = new Padding(24, 0, 24, 0), TabStop = false, TabIndex = 2
+        };
+        _footer.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        _footer.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        _footer.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+
+        var footerText = CreateLabel("UniExam • Hệ thống thi trắc nghiệm", UiStyle.SmallFont, UiStyle.TextMuted);
+        footerText.Anchor = AnchorStyles.Left;
+        _loginStatus = CreateLabel("Chưa đăng nhập", UiStyle.SmallFont, UiStyle.TextMuted);
+        _loginStatus.Anchor = AnchorStyles.Right;
+        _footer.Controls.Add(footerText, 0, 0);
+        _footer.Controls.Add(_loginStatus, 1, 0);
+
+        Controls.Add(_viewport);
+        Controls.Add(_topBar);
+        Controls.Add(_footer);
         ResumeLayout(false);
+    }
+
+    private static Label CreateLabel(string text, Font font, Color color) => new()
+    {
+        Text = text, Font = font, ForeColor = color, AutoSize = true,
+        UseMnemonic = false, Margin = Padding.Empty
+    };
+
+    private static RoundedButton CreateRoleButton(string text, bool primary) => new(text, primary)
+    {
+        Dock = DockStyle.Fill, Height = 40, MinimumSize = new Size(0, 40),
+        Margin = Padding.Empty, Font = UiStyle.BodyBoldFont, TabIndex = 0
+    };
+
+    private static CardPanel CreateRoleCard(string category, string title, string description, RoundedButton button)
+    {
+        // Dùng CardPanel có sẵn và để bảng con nền trong suốt khỏi đè lên viền bo góc.
+        var card = new CardPanel { Dock = DockStyle.Fill, Padding = new Padding(24), TabStop = false };
+        var content = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill, BackColor = Color.Transparent, Padding = Padding.Empty,
+            Margin = Padding.Empty, ColumnCount = 1, RowCount = 4, TabStop = false
+        };
+        content.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        content.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        content.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
+        var tag = CreateLabel(category, UiStyle.SmallBoldFont, UiStyle.TextMuted);
+        tag.Margin = new Padding(0, 0, 0, 10);
+        var heading = CreateLabel(title, UiStyle.TitleFont, UiStyle.Text);
+        heading.Margin = new Padding(0, 0, 0, 10);
+        var detail = CreateLabel(description, UiStyle.BodyFont, UiStyle.TextMuted);
+        detail.Margin = new Padding(0, 0, 0, 24);
+
+        content.Controls.Add(tag, 0, 0);
+        content.Controls.Add(heading, 0, 1);
+        content.Controls.Add(detail, 0, 2);
+        content.Controls.Add(button, 0, 3);
+        card.Controls.Add(content);
+        return card;
     }
 }
