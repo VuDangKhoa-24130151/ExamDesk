@@ -14,10 +14,7 @@
     <Compile Remove="Services/StudentTestDataService.cs" Condition="'$(Configuration)' != 'Debug'" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="../../database/bootstrap/**/*">
-      <Link>database/bootstrap/%(RecursiveDir)%(Filename)%(Extension)</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
+    <!-- Nhúng luôn thư mục database mẫu vào trong exe để khi đóng gói chỉ còn 1 file duy nhất -->
+    <EmbeddedResource Include="../../database/bootstrap/**/*" LogicalName="ExamDesk.Bootstrap.%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>
