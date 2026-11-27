@@ -292,9 +292,10 @@ partial class LoginForm
         ForeColor = UiStyle.Text;
         Font = UiStyle.BodyFont;
         ClientSize = new Size(440, 430);
-        FormBorderStyle = FormBorderStyle.FixedDialog;
-        MaximizeBox = false;
-        MinimizeBox = false;
+        MinimumSize = new Size(440, 430);
+        FormBorderStyle = FormBorderStyle.Sizable;
+        MaximizeBox = true;
+        MinimizeBox = true;
         StartPosition = FormStartPosition.CenterParent;
         AcceptButton = _btnLogin;
         CancelButton = _btnCancel;
