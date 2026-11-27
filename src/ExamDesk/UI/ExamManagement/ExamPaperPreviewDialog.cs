@@ -7,9 +7,6 @@ namespace ExamDesk.UI.ExamManagement;
 public partial class ExamPaperPreviewDialog : Form
 {
     private static readonly Font PaperTitleFont = new("Segoe UI", 13F, FontStyle.Bold);
-    private static readonly Font CardHeaderFont = new(UiStyle.SmallFont, FontStyle.Bold);
-    private static readonly Font CardContentFont = new(UiStyle.BodyFont, FontStyle.Bold);
-    private static readonly Font CorrectOptionFont = new(UiStyle.BodyFont, FontStyle.Bold);
 
     private readonly ExamPaperService _examPaperService;
     private readonly ExamPaperSummary _summary;
@@ -33,6 +30,7 @@ public partial class ExamPaperPreviewDialog : Form
     {
         base.OnShown(e);
         UiStyle.ClampToWorkingArea(this);
+        UpdateHeaderWrapWidths();
         AdjustCardWidths();
     }
 
@@ -50,7 +48,8 @@ public partial class ExamPaperPreviewDialog : Form
         Font = UiStyle.BodyFont;
 
         _headerCard.BackColor = UiStyle.Surface;
-        _headerCard.BorderStyle = BorderStyle.FixedSingle;
+        _headerCard.BorderStyle = BorderStyle.None;
+        UiStyle.ApplyRoundedCorners(_headerCard, 10, UiStyle.Border);
 
         _lblPaperTitle.Font = PaperTitleFont;
         _lblPaperTitle.ForeColor = UiStyle.Text;
@@ -59,6 +58,7 @@ public partial class ExamPaperPreviewDialog : Form
         _lblMetaInfo.ForeColor = UiStyle.TextMuted;
 
         _lblStatusBadge.Font = UiStyle.SmallFont;
+        UiStyle.StyleBadge(_lblStatusBadge, 6);
         _chkShowAnswerKey.Font = UiStyle.BodyFont;
         _chkShowAnswerKey.ForeColor = UiStyle.Text;
 
@@ -95,6 +95,7 @@ public partial class ExamPaperPreviewDialog : Form
 
     private void WireEvents()
     {
+        _headerCard.SizeChanged += (_, _) => UpdateHeaderWrapWidths();
         _chkShowAnswerKey.CheckedChanged += (_, _) => RenderQuestions();
         _btnRegenerate.Click += (_, _) => RegeneratePaperQuestions();
         _btnClose.Click += (_, _) => Close();
@@ -161,13 +162,16 @@ public partial class ExamPaperPreviewDialog : Form
         var card = new Panel
         {
             Width = cardWidth,
+            MinimumSize = new Size(cardWidth, 0),
+            MaximumSize = new Size(cardWidth, 0),
             AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink,
             BackColor = UiStyle.Surface,
-            BorderStyle = BorderStyle.FixedSingle,
+            BorderStyle = BorderStyle.None,
             Padding = new Padding(14),
             Margin = new Padding(0, 0, 0, 10)
         };
+        UiStyle.ApplyRoundedCorners(card, 10, UiStyle.Border);
 
         var inner = new FlowLayoutPanel
         {
@@ -185,7 +189,7 @@ public partial class ExamPaperPreviewDialog : Form
         {
             AutoSize = true,
             MaximumSize = new Size(textMaxWidth, 0),
-            Font = CardHeaderFont,
+            Font = UiStyle.SmallBoldFont,
             ForeColor = UiStyle.Primary,
             Text = $"Câu {q.OrderIndex}  •  {FormatDifficulty(q.Difficulty)}  •  Chương {q.Chapter}",
             Margin = new Padding(0, 0, 0, 6)
@@ -195,7 +199,7 @@ public partial class ExamPaperPreviewDialog : Form
         {
             AutoSize = true,
             MaximumSize = new Size(textMaxWidth, 0),
-            Font = CardContentFont,
+            Font = UiStyle.BodyBoldFont,
             ForeColor = UiStyle.Text,
             Text = q.Content,
             Margin = new Padding(0, 0, 0, 8)
@@ -269,13 +273,18 @@ public partial class ExamPaperPreviewDialog : Form
             MaximumSize = new Size(maxWidth, 0),
             Padding = new Padding(8, 5, 8, 5),
             Margin = new Padding(0, 2, 0, 2),
-            Font = isCorrect ? CorrectOptionFont : UiStyle.BodyFont,
+            Font = isCorrect ? UiStyle.BodyBoldFont : UiStyle.BodyFont,
             BackColor = isCorrect ? UiStyle.SuccessBack : UiStyle.Surface,
             ForeColor = isCorrect ? UiStyle.SuccessText : UiStyle.Text,
             Text = isCorrect
                 ? $"{key}. {optionText}   ✓ Đáp án đúng"
                 : $"{key}. {optionText}"
         };
+
+        if (isCorrect)
+        {
+            UiStyle.StyleBadge(label, 6);
+        }
 
         return label;
     }
@@ -311,6 +320,19 @@ public partial class ExamPaperPreviewDialog : Form
         }
     }
 
+    private void UpdateHeaderWrapWidths()
+    {
+        if (_headerCard.ClientSize.Width <= 0)
+        {
+            return;
+        }
+
+        var innerWidth = _headerCard.ClientSize.Width - _headerCard.Padding.Horizontal;
+        var badgeWidth = Math.Max(_lblStatusBadge.Width, _lblStatusBadge.PreferredWidth);
+        _lblPaperTitle.MaximumSize = new Size(Math.Max(200, innerWidth - badgeWidth - 28), 0);
+        _lblMetaInfo.MaximumSize = new Size(Math.Max(240, innerWidth - 4), 0);
+    }
+
     private int GetTargetCardWidth()
     {
         var available = _questionsPanel.ClientSize.Width - SystemInformation.VerticalScrollBarWidth - 8;
@@ -319,6 +341,7 @@ public partial class ExamPaperPreviewDialog : Form
 
     private void AdjustCardWidths()
     {
+        UpdateHeaderWrapWidths();
         if (_questionsPanel.Controls.Count == 0)
         {
             return;
@@ -337,6 +360,8 @@ public partial class ExamPaperPreviewDialog : Form
                     continue;
                 }
 
+                card.MinimumSize = new Size(cardWidth, 0);
+                card.MaximumSize = new Size(cardWidth, 0);
                 card.Width = cardWidth;
                 foreach (Control innerCtrl in card.Controls)
                 {

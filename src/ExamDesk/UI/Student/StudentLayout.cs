@@ -34,7 +34,6 @@ internal static class StudentLayout
     internal const int SmallRadius = 4;
     internal const int ButtonRadius = 6;
     internal const int CardRadius = 8;
-    internal const int FocusRadius = 12;
     internal const int ChipRadius = 16;
     internal const int PillRadius = 20;
 

@@ -204,7 +204,7 @@ partial class SubjectChapterControl
         _subjectHeaderRow.Margin = new Padding(0, 0, 0, 8);
 
         _lblSubjectSectionTitle.AutoSize = true;
-        _lblSubjectSectionTitle.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+        _lblSubjectSectionTitle.Font = UiStyle.SectionTitleFont;
         _lblSubjectSectionTitle.ForeColor = UiStyle.Text;
         _lblSubjectSectionTitle.Margin = new Padding(0);
         _lblSubjectSectionTitle.Text = "Môn học";
@@ -239,17 +239,15 @@ partial class SubjectChapterControl
         _txtSearchSubject.Dock = DockStyle.Fill;
         _txtSearchSubject.Font = UiStyle.BodyFont;
         _txtSearchSubject.PlaceholderText = "Nhập mã hoặc tên môn…";
-        _txtSearchSubject.Margin = new Padding(0, 4, 8, 0);
+        _txtSearchSubject.Margin = new Padding(0, 2, 8, 0);
         _txtSearchSubject.TabIndex = 0;
         _txtSearchSubject.TextChanged += OnSubjectSearchTextChanged;
 
         _btnClearSubjectSearch.Width = 84;
-        _btnClearSubjectSearch.Height = 34;
         _btnClearSubjectSearch.Margin = new Padding(0);
         _btnClearSubjectSearch.TabIndex = 1;
         _btnClearSubjectSearch.Text = "Xóa lọc";
-        UiStyle.StyleSecondaryButton(_btnClearSubjectSearch);
-        _btnClearSubjectSearch.Height = 34;
+        UiStyle.StyleCompactSecondaryButton(_btnClearSubjectSearch);
         _btnClearSubjectSearch.Click += OnClearSubjectSearchClick;
 
         _subjectSearchLayout.Controls.Add(_lblSearchSubject, 0, 0);
@@ -272,25 +270,25 @@ partial class SubjectChapterControl
         _dgvSubjects.ShowCellToolTips = true;
         _dgvSubjects.TabIndex = 2;
 
-        _colSubjectCode.HeaderText = "Mã môn";
+        _colSubjectCode.HeaderText = "Mã";
         _colSubjectCode.Name = "_colSubjectCode";
-        _colSubjectCode.FillWeight = 22F;
-        _colSubjectCode.MinimumWidth = 58;
+        _colSubjectCode.FillWeight = 20F;
+        _colSubjectCode.MinimumWidth = 54;
 
         _colSubjectName.HeaderText = "Tên môn";
         _colSubjectName.Name = "_colSubjectName";
-        _colSubjectName.FillWeight = 42F;
-        _colSubjectName.MinimumWidth = 85;
+        _colSubjectName.FillWeight = 48F;
+        _colSubjectName.MinimumWidth = 95;
 
-        _colSubjectChapterCount.HeaderText = "Số chương";
+        _colSubjectChapterCount.HeaderText = "Chương";
         _colSubjectChapterCount.Name = "_colSubjectChapterCount";
-        _colSubjectChapterCount.FillWeight = 18F;
-        _colSubjectChapterCount.MinimumWidth = 60;
+        _colSubjectChapterCount.FillWeight = 16F;
+        _colSubjectChapterCount.MinimumWidth = 54;
 
-        _colSubjectQuestionCount.HeaderText = "Số câu hỏi";
+        _colSubjectQuestionCount.HeaderText = "Số câu";
         _colSubjectQuestionCount.Name = "_colSubjectQuestionCount";
-        _colSubjectQuestionCount.FillWeight = 18F;
-        _colSubjectQuestionCount.MinimumWidth = 60;
+        _colSubjectQuestionCount.FillWeight = 16F;
+        _colSubjectQuestionCount.MinimumWidth = 54;
 
         _dgvSubjects.Columns.AddRange(
             _colSubjectCode,
@@ -356,6 +354,7 @@ partial class SubjectChapterControl
         _subjectCardLayout.Controls.Add(_subjectGridBorder, 0, 2);
         _subjectCardLayout.Controls.Add(_subjectActionsPanel, 0, 3);
         _subjectCardBorder.Controls.Add(_subjectCardLayout);
+        UiStyle.StyleCard(_subjectCardBorder, 10);
 
         // ================= RIGHT COLUMN: CHAPTERS =================
         _chapterCardBorder.Dock = DockStyle.Fill;
@@ -386,9 +385,9 @@ partial class SubjectChapterControl
 
         _lblChapterSectionTitle.AutoSize = false;
         _lblChapterSectionTitle.Dock = DockStyle.Fill;
-        _lblChapterSectionTitle.Height = 26;
+        _lblChapterSectionTitle.Height = Math.Max(30, UiStyle.SectionTitleFont.Height + 8);
         _lblChapterSectionTitle.AutoEllipsis = true;
-        _lblChapterSectionTitle.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+        _lblChapterSectionTitle.Font = UiStyle.SectionTitleFont;
         _lblChapterSectionTitle.ForeColor = UiStyle.Text;
         _lblChapterSectionTitle.TextAlign = ContentAlignment.MiddleLeft;
         _lblChapterSectionTitle.Margin = new Padding(0);
@@ -495,6 +494,7 @@ partial class SubjectChapterControl
         _chapterCardLayout.Controls.Add(_chapterGridBorder, 0, 1);
         _chapterCardLayout.Controls.Add(_chapterActionsPanel, 0, 2);
         _chapterCardBorder.Controls.Add(_chapterCardLayout);
+        UiStyle.StyleCard(_chapterCardBorder, 10);
 
         _splitLayout.Controls.Add(_subjectCardBorder, 0, 0);
         _splitLayout.Controls.Add(_chapterCardBorder, 1, 0);

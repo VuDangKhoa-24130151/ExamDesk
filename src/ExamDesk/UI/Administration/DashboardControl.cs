@@ -1,3 +1,4 @@
+using System.Drawing.Drawing2D;
 using System.Globalization;
 using ExamDesk.Models;
 using ExamDesk.Services;
@@ -13,10 +14,6 @@ public partial class DashboardControl : UserControl, IUnsavedChangesGuard
     private readonly QuestionBankService _questionBankService;
     private readonly ExamPaperService _examPaperService;
     private readonly AdministrationService _administrationService;
-
-    private Panel _cardExamPapersBorder = null!;
-    private Label _lblExamPapersValue = null!;
-    private Label _lblExamPapersLabel = null!;
 
     private string? _lecturerName;
 
@@ -56,38 +53,105 @@ public partial class DashboardControl : UserControl, IUnsavedChangesGuard
         // Đã kết nối SQLite thật: ẩn nhãn số liệu minh họa
         _lblDemoBadge.Visible = false;
 
-        InitializeExamPaperMetricCard();
+        StyleMetricCards();
+        UiStyle.StyleCard(_difficultyCardBorder, 10);
+        UiStyle.StyleCard(_attentionCardBorder, 10);
+        UiStyle.StyleCard(_quickActionsCardBorder, 10);
+
         WireEvents();
         RefreshDashboard();
     }
 
-    private void InitializeExamPaperMetricCard()
+    private void StyleMetricCards()
     {
-        _cardExamPapersBorder = new Panel();
-        _lblExamPapersValue = new Label();
-        _lblExamPapersLabel = new Label();
-
-        ConfigureMetricCard(_cardExamPapersBorder, _lblExamPapersValue, _lblExamPapersLabel, "Đề thi", "exams");
-
-        // Đặt thẻ Đề thi ngay sau thẻ Câu hỏi và thu gọn độ rộng thẻ để 6 thẻ dàn đều trên 1 hàng ở 1280px.
-        _metricsFlow.Controls.Add(_cardExamPapersBorder);
-        _metricsFlow.Controls.SetChildIndex(_cardExamPapersBorder, 3);
-
         foreach (Control card in _metricsFlow.Controls)
         {
-            card.Width = 150;
+            if (card is not Panel cardBorder)
+            {
+                continue;
+            }
+
+            UiStyle.StyleCard(cardBorder, 10);
+            if (cardBorder.Controls.Count == 0 || cardBorder.Controls[0] is not TableLayoutPanel surface)
+            {
+                continue;
+            }
+
+            void SetHover(bool hovered)
+            {
+                var targetColor = hovered ? UiStyle.CardHoverBack : UiStyle.Surface;
+                cardBorder.BackColor = targetColor;
+                surface.BackColor = targetColor;
+            }
+
+            void HookHover(Control target)
+            {
+                target.MouseEnter += (_, _) => SetHover(true);
+                target.MouseLeave += (_, _) =>
+                {
+                    var cursorPos = cardBorder.PointToClient(Cursor.Position);
+                    if (!cardBorder.ClientRectangle.Contains(cursorPos))
+                    {
+                        SetHover(false);
+                    }
+                };
+            }
+
+            HookHover(cardBorder);
+            HookHover(surface);
+            foreach (Control child in surface.Controls)
+            {
+                HookHover(child);
+            }
         }
+    }
+
+    protected override void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+        AdjustResponsiveLayout();
     }
 
     private void WireEvents()
     {
+        _scrollPanel.SizeChanged += (_, _) => AdjustResponsiveLayout();
+        _attentionCardLayout.SizeChanged += (_, _) => AdjustAttentionBannerWidths();
         VisibleChanged += (_, _) =>
         {
             if (Visible && IsHandleCreated)
             {
                 RefreshDashboard();
+                AdjustResponsiveLayout();
             }
         };
+    }
+
+    private void AdjustResponsiveLayout()
+    {
+        if (_scrollPanel.ClientSize.Width <= 0)
+        {
+            return;
+        }
+
+        var cardsCount = _metricsFlow.Controls.Count;
+        if (cardsCount > 0)
+        {
+            var innerWidth = Math.Max(320, _scrollPanel.ClientSize.Width - _rootLayout.Padding.Horizontal - SystemInformation.VerticalScrollBarWidth - 4);
+            var columns = innerWidth >= 860 ? cardsCount : (innerWidth >= 480 ? 3 : 2);
+            const int marginPerCard = 12;
+            var cardWidth = Math.Max(136, (innerWidth - columns * marginPerCard - 4) / columns);
+            var cardHeight = Math.Max(96, UiStyle.MetricValueFont.Height + UiStyle.BodyFont.Height + 34);
+
+            _metricsFlow.SuspendLayout();
+            foreach (Control card in _metricsFlow.Controls)
+            {
+                card.MinimumSize = new Size(136, cardHeight);
+                card.Size = new Size(cardWidth, cardHeight);
+            }
+            _metricsFlow.ResumeLayout();
+        }
+
+        AdjustAttentionBannerWidths();
     }
 
     public void RefreshDashboard()
@@ -216,22 +280,32 @@ public partial class DashboardControl : UserControl, IUnsavedChangesGuard
             return;
         }
 
+        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+        using (var surfaceBrush = new SolidBrush(UiStyle.Surface))
+        {
+            e.Graphics.FillRectangle(surfaceBrush, bounds);
+        }
+
+        var trackRect = new Rectangle(0, 0, bounds.Width - 1, bounds.Height - 1);
+        using var trackPath = UiStyle.CreateRoundedRectPath(trackRect, 6);
         using (var bgBrush = new SolidBrush(UiStyle.Background))
         {
-            e.Graphics.FillRectangle(bgBrush, bounds);
+            e.Graphics.FillPath(bgBrush, trackPath);
         }
 
         if (panel.Tag is BarPaintState state && state.Ratio > 0)
         {
-            var fillWidth = Math.Max(4, (int)Math.Round((bounds.Width - 2) * state.Ratio));
+            var fillWidth = Math.Max(8, (int)Math.Round((bounds.Width - 2) * state.Ratio));
             fillWidth = Math.Min(bounds.Width - 2, fillWidth);
             var fillRect = new Rectangle(1, 1, fillWidth, Math.Max(1, bounds.Height - 2));
+            using var fillPath = UiStyle.CreateRoundedRectPath(fillRect, 5);
             using var fillBrush = new SolidBrush(state.FillColor);
-            e.Graphics.FillRectangle(fillBrush, fillRect);
+            e.Graphics.FillPath(fillBrush, fillPath);
         }
 
         using var borderPen = new Pen(UiStyle.Border);
-        e.Graphics.DrawRectangle(borderPen, 0, 0, bounds.Width - 1, bounds.Height - 1);
+        e.Graphics.DrawPath(borderPen, trackPath);
     }
 
     private void PopulateAttentionWarnings(
@@ -337,7 +411,7 @@ public partial class DashboardControl : UserControl, IUnsavedChangesGuard
 
     private static Label CreateAlertBannerLabel(string text, Color backColor, Color foreColor)
     {
-        return new Label
+        var label = new Label
         {
             AutoSize = true,
             BackColor = backColor,
@@ -347,6 +421,8 @@ public partial class DashboardControl : UserControl, IUnsavedChangesGuard
             Margin = new Padding(0, 0, 0, 6),
             Text = text
         };
+        UiStyle.StyleBadge(label, 6);
+        return label;
     }
 
     private void OnAttentionListSizeChanged(object? sender, EventArgs e)
@@ -356,7 +432,12 @@ public partial class DashboardControl : UserControl, IUnsavedChangesGuard
 
     private void AdjustAttentionBannerWidths()
     {
-        var width = Math.Max(180, _attentionListFlow.ClientSize.Width - _attentionListFlow.Padding.Horizontal - 4);
+        if (_attentionCardLayout.ClientSize.Width <= 0)
+        {
+            return;
+        }
+
+        var width = Math.Max(180, _attentionCardLayout.ClientSize.Width - _attentionCardLayout.Padding.Horizontal - 4);
         foreach (Control control in _attentionListFlow.Controls)
         {
             if (control is Label label)

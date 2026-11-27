@@ -1,3 +1,6 @@
+using ExamDesk.Models;
+using ExamDesk.Services;
+
 namespace ExamDesk.UI.Student;
 
 // Bạn 3: Form độc lập. Thêm các UserControl/Dialog của phân hệ trong cùng thư mục.
@@ -19,7 +22,7 @@ public partial class StudentExamForm : Form
     }
 
     private StudentAttemptState? _attempt;
-    private ExamDesk.Models.User? _student;
+    private User? _student;
     private bool _submitting;
     private bool _submitAfterSave;
     private bool _handlingExpiredAttempt;
@@ -27,6 +30,8 @@ public partial class StudentExamForm : Form
     private ExamViolationDialog? _violationDialog;
     private bool _violationSubmitPending;
     private readonly System.Windows.Forms.Timer _deadlineTimer = new() { Interval = 1000 };
+    private StudentExamControl? CurrentExam => _studentContent.Controls.OfType<StudentExamControl>().FirstOrDefault();
+
     public StudentExamForm()
     {
         DoubleBuffered = true;
@@ -37,7 +42,6 @@ public partial class StudentExamForm : Form
             header.Paint += (_, e) => StudentLayout.DrawHeaderBorder(header, e.Graphics);
         ShowIdentity();
         FormClosing += ConfirmClose;
-        FormClosed += (_, _) => _deadlineTimer.Dispose();
         _deadlineTimer.Tick += (_, _) => TrySubmitExpiredAttempt();
     }
 
@@ -55,13 +59,12 @@ public partial class StudentExamForm : Form
     {
         _student = null;
         var screen = new StudentIdentityControl();
-        _examLabel.Text = "UniExam";
         _studentLabel.Text = string.Empty;
         screen.CloseRequested += (_, _) => Close();
         screen.StudentIdentified += ShowProfileConfirmation;
         ShowScreen(screen, "Nhập mã sinh viên");
     }
-    private void ShowProfileConfirmation(ExamDesk.Models.User student)
+    private void ShowProfileConfirmation(User student)
     {
         var screen = new StudentProfileConfirmationControl(student);
         screen.Confirmed += (_, _) => ShowRealSessions(student);
@@ -69,28 +72,28 @@ public partial class StudentExamForm : Form
         ShowScreen(screen, "Xác nhận hồ sơ sinh viên");
     }
 
-    private void ShowRealSessions(ExamDesk.Models.User student)
+    private void ShowRealSessions(User student)
     {
         _student = student;
-        var screen=new SessionSelectionControl(student);
-        screen.CloseRequested+=(_,_)=>ShowIdentity();
-        screen.SessionSelected+=(session,paper)=>ShowRealInstructions(student,session,paper);
+        var screen = new SessionSelectionControl(student);
+        screen.CloseRequested += (_, _) => ShowIdentity();
+        screen.SessionSelected += (session, paper) => ShowRealInstructions(student, session, paper);
         screen.ResultSelected += ShowResult;
-        _studentLabel.Text=$"{student.FullName} · {student.StudentCode}";
-        _examLabel.Text="UniExam";
-        ShowScreen(screen,"Chọn ca thi");
+        _studentLabel.Text = $"{student.FullName} · {student.StudentCode}";
+        ShowScreen(screen, "Chọn ca thi");
     }
 
-    private void ShowRealInstructions(ExamDesk.Models.User student, ExamDesk.Models.ExamSession session, ExamDesk.Models.ExamPaper paper)
+    private void ShowRealInstructions(User student, ExamSession session, ExamPaper paper)
     {
-        var draft = new ExamDesk.Services.StudentDraftService().FindDraft(session.Id, student.StudentCode);
+        var draftService = new StudentDraftService();
+        var draft = draftService.FindDraft(session.Id, student.StudentCode);
         var screen = new ExamInstructionsControl(student, session, paper, draft);
-        screen.BackRequested+=(_,_)=>ShowRealSessions(student);
-        screen.StartRequested+=(_,_)=>
+        screen.BackRequested += (_, _) => ShowRealSessions(student);
+        screen.StartRequested += (_, _) =>
         {
             try
             {
-                _attempt=new StudentAttemptState(new ExamDesk.Services.StudentDraftService().StartOrResume(session.Id, student), screen.ResumeClock);
+                _attempt = new StudentAttemptState(draftService.StartOrResume(session.Id, student), screen.ResumeClock);
                 // Hoàn tất lượt mà phiên bản cũ chỉ lưu trạng thái khóa.
                 if (_attempt.Draft!.PendingSubmission)
                     SubmitAttempt();
@@ -104,7 +107,7 @@ public partial class StudentExamForm : Form
                     "Không mở được lượt thi");
             }
         };
-        ShowScreen(screen,"Hướng dẫn trước khi thi");
+        ShowScreen(screen, "Hướng dẫn trước khi thi");
     }
     private void ShowExam()
     {
@@ -114,11 +117,7 @@ public partial class StudentExamForm : Form
         var screen = new StudentExamControl(_attempt);
         screen.SubmitRequested += (_, _) => ReviewSubmission(screen);
         screen.SaveExpired += (_, _) => TrySubmitExpiredAttempt(expiredDuringSave: true);
-        screen.SaveCompleted += (_, _) =>
-        {
-            if (_violationSubmitPending) SubmitForViolation();
-            else TrySubmitExpiredAttempt();
-        };
+        screen.SaveCompleted += (_, _) => TrySubmitExpiredAttempt();
         screen.DraftLocked += (_, _) => SubmitAttempt();
         ShowScreen(screen, "Làm bài");
         _deadlineTimer.Start();
@@ -128,13 +127,14 @@ public partial class StudentExamForm : Form
     {
         if (_submitting || _handlingExpiredAttempt || _violationSubmitPending ||
             _violationDialog is not null || _attempt is not { Submitted: false } attempt ||
-            _studentContent.Controls.OfType<StudentExamControl>().FirstOrDefault() is not { } exam)
+            CurrentExam is not { } exam)
             return;
         if (TrySubmitExpiredAttempt()) return;
         attempt.ViolationCount++;
         _violationSubmitPending = attempt.ViolationCount >= 3;
 
         // Không dùng MessageBox: giữ timer chạy và có thể đóng cảnh cáo khi hết giờ.
+        _violationMonitor?.Pause();
         exam.Enabled = false;
         foreach (Form dialog in OwnedForms) dialog.Close();
         var warning = new ExamViolationDialog(attempt.ViolationCount, reason);
@@ -145,16 +145,32 @@ public partial class StudentExamForm : Form
             if (_violationSubmitPending && warning.Acknowledged)
                 SubmitForViolation();
             else if (!exam.IsDisposed && !_violationSubmitPending && !_submitting)
-                exam.Enabled = true;
+                // Chờ cảnh báo đóng hẳn rồi mới đưa sinh viên về bài đang làm.
+                BeginInvoke((Action)(() => ResumeExamAfterWarning(exam)));
         };
         warning.Show(this);
+    }
+
+    private void ResumeExamAfterWarning(StudentExamControl exam)
+    {
+        if (IsDisposed || Disposing || exam.IsDisposed || _violationMonitor is null ||
+            _violationDialog is not null || _submitting || _attempt is not { Submitted: false })
+            return;
+        if (TrySubmitExpiredAttempt()) return;
+
+        if (WindowState == FormWindowState.Minimized) WindowState = FormWindowState.Normal;
+        exam.Enabled = true;
+        BringToFront();
+        Activate();
+        exam.FocusInitialControl();
+        _violationMonitor?.Resume();
     }
 
     private void SubmitForViolation()
     {
         // Lần 3 phải chờ bấm xác nhận; lưu xong hoặc timer tick cũng không được bỏ qua màn này.
         if (_violationDialog is not null) return;
-        if (_studentContent.Controls.OfType<StudentExamControl>().Any(exam => exam.IsSaving)) return;
+        if (CurrentExam?.IsSaving == true) return;
         SubmitAttempt();
     }
 
@@ -167,8 +183,8 @@ public partial class StudentExamForm : Form
         }
         if (_handlingExpiredAttempt) return true;
         if (_submitting || _attempt is not { Submitted: false } attempt) return false;
-        var exam = _studentContent.Controls.OfType<StudentExamControl>().FirstOrDefault();
-        if (!_submitAfterSave && !expiredDuringSave && !(exam?.IsDeadlineReached ?? attempt.IsExpired))
+        var exam = CurrentExam;
+        if (!_submitAfterSave && !expiredDuringSave && !attempt.IsExpired)
             return false;
 
         if (exam is { IsSaving: true })
@@ -221,7 +237,7 @@ public partial class StudentExamForm : Form
             var result = await Task.Run(() =>
             {
                 if (!attempt.Submitted) attempt.Submit();
-                return attempt.Draft is { } draft ? new ExamDesk.Services.StudentExamService().GetResult(draft) : null;
+                return attempt.Draft is { } draft ? new StudentExamService().GetResult(draft) : null;
             });
             if (IsDisposed) return;
             if (result is not null)
@@ -249,7 +265,7 @@ public partial class StudentExamForm : Form
         }
     }
 
-    private void ShowResult(ExamDesk.Models.StudentResult result)
+    private void ShowResult(StudentResult result)
     {
         var screen = new StudentResultControl(result);
         screen.EndSessionRequested += (_, _) =>
@@ -257,7 +273,6 @@ public partial class StudentExamForm : Form
             _deadlineTimer.Stop();
             _submitAfterSave = false;
             _attempt = null;
-            _student = null;
             ShowIdentity();
         };
         screen.CloseRequested += (_, _) => Close();
@@ -312,7 +327,7 @@ public partial class StudentExamForm : Form
         if (e.CloseReason is CloseReason.WindowsShutDown or CloseReason.ApplicationExitCall or CloseReason.TaskManagerClosing)
             return;
 
-        if (_submitting || _studentContent.Controls.OfType<StudentExamControl>().Any(screen => screen.IsSaving))
+        if (_submitting || CurrentExam?.IsSaving == true)
         {
             e.Cancel = true;
             return;
@@ -338,10 +353,8 @@ public partial class StudentExamForm : Form
         _studentContent.SuspendLayout();
         try
         {
-            // Hiện tên ca thi khi đang ở màn làm bài, các màn khác trở về tên UniExam.
-            _examLabel.Text = screen is StudentExamControl && !string.IsNullOrWhiteSpace(_attempt?.Title)
-                ? _attempt.Title
-                : "UniExam";
+            // Giữ tên ứng dụng UniExam nhất quán trên thanh đầu ở mọi màn hình.
+            _examLabel.Text = "UniExam";
             if (_examLabel.Parent is Control header)
                 header.Visible = true;
             _studentContent.Controls.Add(screen);
@@ -358,6 +371,10 @@ public partial class StudentExamForm : Form
         previous?.Dispose();
         Text = "UniExam — " + title;
         if (screen is StudentExamControl exam) exam.FocusInitialControl();
+        // Enter sau khi tra cứu sẽ tiếp tục, thay vì chọn nút nhập lại mã theo thứ tự Tab.
+        else if (screen is StudentProfileConfirmationControl profile) profile.FocusInitialControl();
+        // Enter ở màn chọn ca thi không kích hoạt nút quay lại nhập MSSV.
+        else if (screen is SessionSelectionControl sessions) sessions.FocusInitialControl();
         else screen.SelectNextControl(null, true, true, true, false);
     }
 

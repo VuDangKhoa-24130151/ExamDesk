@@ -146,6 +146,7 @@ partial class ClassEditDialog
 
         // _lblCodeHint
         _lblCodeHint.AutoSize = true;
+        _lblCodeHint.Dock = DockStyle.Fill;
         _lblCodeHint.Font = UiStyle.SmallFont;
         _lblCodeHint.ForeColor = UiStyle.TextMuted;
         _lblCodeHint.Margin = new Padding(0, 0, 0, 4);
@@ -205,6 +206,7 @@ partial class ClassEditDialog
 
         // _lblSchoolYearHint
         _lblSchoolYearHint.AutoSize = true;
+        _lblSchoolYearHint.Dock = DockStyle.Fill;
         _lblSchoolYearHint.Font = UiStyle.SmallFont;
         _lblSchoolYearHint.ForeColor = UiStyle.TextMuted;
         _lblSchoolYearHint.Margin = new Padding(0, 0, 0, 4);

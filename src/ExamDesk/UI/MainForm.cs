@@ -14,9 +14,11 @@ public sealed class MainForm : Form
     private static readonly Font GroupHeaderFont = new("Segoe UI", 8.5F, FontStyle.Bold);
     private static readonly Color MenuHoverColor = ColorTranslator.FromHtml("#1E4276");
     private static readonly Color SidebarMutedTextColor = ControlPaint.Light(UiStyle.TextMuted, 0.7F);
+    private static readonly Color SidebarDisabledTextColor = ColorTranslator.FromHtml("#7F98BD");
     private static readonly Color SidebarDividerColor = ColorTranslator.FromHtml("#234575");
 
     private readonly Panel _content = new() { Dock = DockStyle.Fill, Padding = new Padding(0) };
+    private readonly Panel _sidebarPanel;
     private readonly FlowLayoutPanel _menu;
     private readonly List<Button> _menuButtons = [];
     private readonly List<Button> _lecturerOnlyMenuButtons = [];
@@ -32,7 +34,6 @@ public sealed class MainForm : Form
     private readonly Button _classStudentButton;
     private readonly Button _questionBankButton;
     private readonly Button _examPaperButton;
-    private readonly Button _helpButton;
 
     private Button? _activeMenuButton;
     private string _loggedInUsername = string.Empty;
@@ -43,7 +44,7 @@ public sealed class MainForm : Form
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         KeyPreview = true;
-        Text = "UniExam — Khung tích hợp UI";
+        Text = "UniExam — Quản lý và thi trắc nghiệm";
         ClientSize = new Size(1280, 680);
         MinimumSize = new Size(1000, 600);
         StartPosition = FormStartPosition.CenterScreen;
@@ -51,7 +52,7 @@ public sealed class MainForm : Form
         BackColor = UiStyle.Background;
         ForeColor = UiStyle.Text;
 
-        var sidebarPanel = new Panel
+        _sidebarPanel = new Panel
         {
             Dock = DockStyle.Left,
             Width = 236,
@@ -101,7 +102,7 @@ public sealed class MainForm : Form
         _examPaperButton = AddMenu(_menu, "Đề thi", () => new ExamPaperControl());
         var sessionManagementButton = AddMenu(_menu, "Ca thi", () => new SessionManagementControl());
         var gradingReviewButton = AddMenu(_menu, "Kết quả và phúc khảo", () => new GradingReviewControl());
-        var dataManagementButton = AddMenu(_menu, "Xuất/nhập và sao lưu", () => new DataManagementControl());
+        var dataManagementButton = AddMenu(_menu, "Xuất dữ liệu", () => new DataManagementControl());
 
         _lecturerOnlyMenuButtons.AddRange(
         [
@@ -114,15 +115,6 @@ public sealed class MainForm : Form
             gradingReviewButton,
             dataManagementButton
         ]);
-
-        // 4. Trợ giúp
-        AddMenuSeparator(_menu);
-        _helpButton = AddMenu(_menu, "Trợ giúp", () => new HelpControl(), "F1");
-
-        // 5. Nhóm "Công cụ dựng UI"
-        AddMenuGroupHeader(_menu, "Công cụ dựng UI");
-        AddActionMenu(_menu, "Mở UI đăng nhập GV", "Đăng nhập giảng viên", OpenLoginDialogTool);
-        AddActionMenu(_menu, "Mở UI sinh viên", "Khu vực sinh viên", OpenStudentDialogTool);
 
         // Vùng trạng thái đăng nhập ở cuối sidebar
         var authFooter = new Panel
@@ -157,6 +149,8 @@ public sealed class MainForm : Form
         _lblLoginStatus = new Label
         {
             AutoSize = true,
+            AutoEllipsis = true,
+            MaximumSize = new Size(204, 0),
             Dock = DockStyle.Fill,
             Font = UiStyle.SmallFont,
             ForeColor = SidebarMutedTextColor,
@@ -180,18 +174,18 @@ public sealed class MainForm : Form
             TabStop = true,
             TabIndex = _nextTabIndex++
         };
-        _btnLogout.FlatAppearance.BorderSize = 1;
-        _btnLogout.FlatAppearance.BorderColor = SidebarDividerColor;
+        _btnLogout.FlatAppearance.BorderSize = 0;
         _btnLogout.FlatAppearance.MouseOverBackColor = UiStyle.Primary;
         _btnLogout.Click += OnLogoutClick;
+        UiStyle.ApplyRoundedCorners(_btnLogout, 6, SidebarDividerColor);
 
         authLayout.Controls.Add(_lblLoginStatus, 0, 0);
         authLayout.Controls.Add(_btnLogout, 0, 1);
         authFooter.Controls.Add(authLayout);
         authFooter.Controls.Add(footerDivider);
 
-        sidebarPanel.Controls.Add(_menu);
-        sidebarPanel.Controls.Add(authFooter);
+        _sidebarPanel.Controls.Add(_menu);
+        _sidebarPanel.Controls.Add(authFooter);
 
         _lblBottomNote = new Label
         {
@@ -207,7 +201,7 @@ public sealed class MainForm : Form
         };
 
         Controls.Add(_content);
-        Controls.Add(sidebarPanel);
+        Controls.Add(_sidebarPanel);
         Controls.Add(_lblBottomNote);
 
         UpdateLoginStatusUi();
@@ -231,7 +225,7 @@ public sealed class MainForm : Form
             case Keys.Control | Keys.NumPad1:
                 if (isLoggedIn)
                 {
-                    _dashboardButton.PerformClick();
+                    TryOpenScreen("Tổng quan", () => CreateDashboardScreen(), _dashboardButton);
                 }
                 return true;
 
@@ -239,7 +233,7 @@ public sealed class MainForm : Form
             case Keys.Control | Keys.NumPad2:
                 if (isLoggedIn)
                 {
-                    _subjectChapterButton.PerformClick();
+                    TryOpenScreen("Môn và chương", () => new SubjectChapterControl(), _subjectChapterButton);
                 }
                 return true;
 
@@ -247,7 +241,7 @@ public sealed class MainForm : Form
             case Keys.Control | Keys.NumPad3:
                 if (isLoggedIn)
                 {
-                    _classStudentButton.PerformClick();
+                    TryOpenScreen("Lớp và sinh viên", () => new ClassStudentControl(), _classStudentButton);
                 }
                 return true;
 
@@ -255,12 +249,8 @@ public sealed class MainForm : Form
             case Keys.Control | Keys.NumPad4:
                 if (isLoggedIn)
                 {
-                    _questionBankButton.PerformClick();
+                    TryOpenScreen("Ngân hàng câu hỏi", () => new QuestionBankControl(), _questionBankButton);
                 }
-                return true;
-
-            case Keys.F1:
-                _helpButton.PerformClick();
                 return true;
         }
 
@@ -281,13 +271,10 @@ public sealed class MainForm : Form
     private UserControl CreateRoleSelectionScreen()
     {
         var roleControl = new RoleSelectionControl();
+        roleControl.SetLoginStatus(_loggedInUsername);
         roleControl.LecturerLoggedIn += (_, _) =>
         {
             HandleLecturerLoggedIn(roleControl.LoggedInUsername);
-        };
-        roleControl.OpenHelpRequested += (_, _) =>
-        {
-            _helpButton.PerformClick();
         };
         return roleControl;
     }
@@ -335,6 +322,11 @@ public sealed class MainForm : Form
                         {
                             BeginInvoke(() =>
                             {
+                                if (questionBank.IsDisposed)
+                                {
+                                    return;
+                                }
+
                                 try
                                 {
                                     questionBank.StartAddQuestion();
@@ -358,21 +350,6 @@ public sealed class MainForm : Form
             _loggedInUsername = resolvedUsername;
             UpdateLoginStatusUi();
         }
-    }
-
-    private void OpenLoginDialogTool()
-    {
-        using var form = new LoginForm();
-        if (form.ShowDialog(this) == DialogResult.OK)
-        {
-            HandleLecturerLoggedIn(form.LoggedInUsername);
-        }
-    }
-
-    private void OpenStudentDialogTool()
-    {
-        using var form = new StudentExamForm();
-        form.ShowDialog(this);
     }
 
     private void OnLogoutClick(object? sender, EventArgs e)
@@ -447,18 +424,6 @@ public sealed class MainForm : Form
         menu.Controls.Add(label);
     }
 
-    private static void AddMenuSeparator(FlowLayoutPanel menu)
-    {
-        var line = new Panel
-        {
-            Width = 200,
-            Height = 1,
-            BackColor = SidebarDividerColor,
-            Margin = new Padding(0, 6, 0, 6)
-        };
-        menu.Controls.Add(line);
-    }
-
     private Button AddMenu(FlowLayoutPanel menu, string text, Func<UserControl> createScreen, string? shortcutHint = null)
     {
         var button = CreateSidebarButton(text, shortcutHint);
@@ -468,24 +433,6 @@ public sealed class MainForm : Form
         };
 
         _menuButtons.Add(button);
-        menu.Controls.Add(button);
-        return button;
-    }
-
-    private Button AddActionMenu(FlowLayoutPanel menu, string text, string screenNameForError, Action action)
-    {
-        var button = CreateSidebarButton(text, shortcutHint: null);
-        button.Click += (_, _) =>
-        {
-            try
-            {
-                action();
-            }
-            catch (Exception ex)
-            {
-                ReplaceContentScreen(CreateErrorScreen(screenNameForError, ex.Message));
-            }
-        };
         menu.Controls.Add(button);
         return button;
     }
@@ -513,6 +460,30 @@ public sealed class MainForm : Form
         button.FlatAppearance.BorderSize = 0;
         button.FlatAppearance.MouseOverBackColor = MenuHoverColor;
         button.FlatAppearance.MouseDownBackColor = UiStyle.Primary;
+        UiStyle.ApplyRoundedCorners(button, 6);
+        button.Paint += (sender, e) =>
+        {
+            if (sender is not Button b || b.Enabled)
+            {
+                return;
+            }
+
+            using var backBrush = new SolidBrush(UiStyle.Sidebar);
+            e.Graphics.FillRectangle(backBrush, b.ClientRectangle);
+
+            var textRect = new Rectangle(
+                b.Padding.Left,
+                b.Padding.Top,
+                Math.Max(0, b.ClientSize.Width - b.Padding.Horizontal),
+                Math.Max(0, b.ClientSize.Height - b.Padding.Vertical));
+            TextRenderer.DrawText(
+                e.Graphics,
+                b.Text,
+                b.Font,
+                textRect,
+                SidebarDisabledTextColor,
+                TextFormatFlags.Left | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+        };
 
         if (!string.IsNullOrWhiteSpace(shortcutHint))
         {
@@ -648,6 +619,9 @@ public sealed class MainForm : Form
         }
 
         screen.Dock = DockStyle.Fill;
+        // Màn chào mừng dùng toàn bộ cửa sổ; các màn còn lại có menu điều hướng.
+        _sidebarPanel.Visible = screen is not RoleSelectionControl;
+        _lblBottomNote.Visible = screen is not RoleSelectionControl;
         _content.Controls.Add(screen);
     }
 

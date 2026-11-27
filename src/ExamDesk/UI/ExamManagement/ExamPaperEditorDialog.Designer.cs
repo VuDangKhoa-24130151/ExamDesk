@@ -6,6 +6,7 @@ partial class ExamPaperEditorDialog
     private System.ComponentModel.IContainer? components = null;
     private TableLayoutPanel _rootLayout = null!;
     private Label _lblDialogTitle = null!;
+    private Panel _scrollPanel = null!;
     private TableLayoutPanel _formTable = null!;
 
     private Label _lblPaperCode = null!;
@@ -52,6 +53,7 @@ partial class ExamPaperEditorDialog
     {
         _rootLayout = new TableLayoutPanel();
         _lblDialogTitle = new Label();
+        _scrollPanel = new Panel();
         _formTable = new TableLayoutPanel();
 
         _lblPaperCode = new Label();
@@ -92,13 +94,18 @@ partial class ExamPaperEditorDialog
         ((System.ComponentModel.ISupportInitialize)_numEasy).BeginInit();
         ((System.ComponentModel.ISupportInitialize)_numMedium).BeginInit();
         ((System.ComponentModel.ISupportInitialize)_numHard).BeginInit();
+        _rootLayout.SuspendLayout();
+        _scrollPanel.SuspendLayout();
+        _formTable.SuspendLayout();
+        _buttonPanel.SuspendLayout();
         SuspendLayout();
 
         // Root layout
         _rootLayout.Dock = DockStyle.Fill;
         _rootLayout.ColumnCount = 1;
+        _rootLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         _rootLayout.RowCount = 5;
-        _rootLayout.Padding = new Padding(24);
+        _rootLayout.Padding = new Padding(24, 20, 24, 20);
         _rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         _rootLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
         _rootLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
@@ -108,16 +115,28 @@ partial class ExamPaperEditorDialog
         // Title
         _lblDialogTitle.AutoSize = true;
         _lblDialogTitle.Text = "Cấu hình tạo đề thi mới";
-        _lblDialogTitle.Margin = new Padding(0, 0, 0, 16);
+        _lblDialogTitle.Margin = new Padding(0, 0, 0, 12);
+
+        // Scrollable form container
+        _scrollPanel.Dock = DockStyle.Fill;
+        _scrollPanel.AutoScroll = true;
+        _scrollPanel.BorderStyle = BorderStyle.FixedSingle;
+        _scrollPanel.Padding = new Padding(20, 16, 20, 16);
+        _scrollPanel.Margin = Padding.Empty;
 
         // Form table (3 columns: Label | Input | Available info)
         _formTable.Dock = DockStyle.Top;
         _formTable.AutoSize = true;
+        _formTable.AutoSizeMode = AutoSizeMode.GrowAndShrink;
         _formTable.ColumnCount = 3;
         _formTable.RowCount = 10;
-        _formTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 165F));
+        _formTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         _formTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
         _formTable.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        for (var i = 0; i < 10; i++)
+        {
+            _formTable.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        }
 
         // Row 0: Mã đề
         _lblPaperCode.AutoSize = true;
@@ -129,6 +148,7 @@ partial class ExamPaperEditorDialog
         _txtPaperCode.MaxLength = 50;
         _txtPaperCode.PlaceholderText = "Ví dụ: DE01";
         _txtPaperCode.Margin = new Padding(0, 4, 0, 8);
+        _txtPaperCode.TabIndex = 0;
         _formTable.SetColumnSpan(_txtPaperCode, 2);
 
         // Row 1: Tiêu đề
@@ -141,6 +161,7 @@ partial class ExamPaperEditorDialog
         _txtTitle.MaxLength = 200;
         _txtTitle.PlaceholderText = "Ví dụ: Đề kiểm tra giữa kỳ";
         _txtTitle.Margin = new Padding(0, 4, 0, 8);
+        _txtTitle.TabIndex = 1;
         _formTable.SetColumnSpan(_txtTitle, 2);
 
         // Row 2: Môn học
@@ -152,6 +173,7 @@ partial class ExamPaperEditorDialog
         _cboSubject.Dock = DockStyle.Fill;
         _cboSubject.DropDownStyle = ComboBoxStyle.DropDownList;
         _cboSubject.Margin = new Padding(0, 4, 0, 8);
+        _cboSubject.TabIndex = 2;
         _formTable.SetColumnSpan(_cboSubject, 2);
 
         // Row 3: Thời lượng
@@ -166,6 +188,7 @@ partial class ExamPaperEditorDialog
         _numDuration.Width = 140;
         _numDuration.Anchor = AnchorStyles.Left;
         _numDuration.Margin = new Padding(0, 4, 0, 8);
+        _numDuration.TabIndex = 3;
 
         // Row 4: Số câu Dễ
         _lblEasy.AutoSize = true;
@@ -176,12 +199,10 @@ partial class ExamPaperEditorDialog
         _numEasy.Minimum = 0;
         _numEasy.Maximum = 500;
         _numEasy.Value = 10;
-        _numEasy.Enabled = false;
-        _numEasy.ReadOnly = true;
-        _numEasy.TabStop = false;
         _numEasy.Width = 140;
         _numEasy.Anchor = AnchorStyles.Left;
         _numEasy.Margin = new Padding(0, 4, 12, 2);
+        _numEasy.TabIndex = 4;
 
         _lblEasyAvailable.AutoSize = true;
         _lblEasyAvailable.Anchor = AnchorStyles.Left;
@@ -205,12 +226,10 @@ partial class ExamPaperEditorDialog
         _numMedium.Minimum = 0;
         _numMedium.Maximum = 500;
         _numMedium.Value = 15;
-        _numMedium.Enabled = false;
-        _numMedium.ReadOnly = true;
-        _numMedium.TabStop = false;
         _numMedium.Width = 140;
         _numMedium.Anchor = AnchorStyles.Left;
         _numMedium.Margin = new Padding(0, 4, 12, 2);
+        _numMedium.TabIndex = 5;
 
         _lblMediumAvailable.AutoSize = true;
         _lblMediumAvailable.Anchor = AnchorStyles.Left;
@@ -234,12 +253,10 @@ partial class ExamPaperEditorDialog
         _numHard.Minimum = 0;
         _numHard.Maximum = 500;
         _numHard.Value = 5;
-        _numHard.Enabled = false;
-        _numHard.ReadOnly = true;
-        _numHard.TabStop = false;
         _numHard.Width = 140;
         _numHard.Anchor = AnchorStyles.Left;
         _numHard.Margin = new Padding(0, 4, 12, 2);
+        _numHard.TabIndex = 6;
 
         _lblHardAvailable.AutoSize = true;
         _lblHardAvailable.Anchor = AnchorStyles.Left;
@@ -275,6 +292,8 @@ partial class ExamPaperEditorDialog
         _formTable.Controls.Add(_lblHardAvailable, 2, 8);
         _formTable.Controls.Add(_lblHardError, 1, 9);
 
+        _scrollPanel.Controls.Add(_formTable);
+
         // Total summary
         _lblTotalSummary.AutoSize = true;
         _lblTotalSummary.Text = "Tổng số câu: 0";
@@ -284,7 +303,7 @@ partial class ExamPaperEditorDialog
         _lblFormError.Dock = DockStyle.Top;
         _lblFormError.AutoSize = true;
         _lblFormError.Padding = new Padding(10, 8, 10, 8);
-        _lblFormError.Margin = new Padding(0, 4, 0, 12);
+        _lblFormError.Margin = new Padding(0, 4, 0, 8);
         _lblFormError.Visible = false;
 
         // Bottom buttons
@@ -294,17 +313,19 @@ partial class ExamPaperEditorDialog
         _buttonPanel.WrapContents = false;
         _buttonPanel.Margin = new Padding(0, 8, 0, 0);
 
-        _btnCancel.Text = "Hủy";
-        _btnCancel.Margin = new Padding(8, 0, 0, 0);
-
-        _btnSave.Text = "Chọn câu hỏi ngẫu nhiên";
+        _btnSave.Text = "Tạo đề thi";
         _btnSave.Margin = new Padding(0);
+        _btnSave.TabIndex = 7;
 
-        _buttonPanel.Controls.Add(_btnCancel);
+        _btnCancel.Text = "Hủy";
+        _btnCancel.Margin = new Padding(0, 0, 10, 0);
+        _btnCancel.TabIndex = 8;
+
         _buttonPanel.Controls.Add(_btnSave);
+        _buttonPanel.Controls.Add(_btnCancel);
 
         _rootLayout.Controls.Add(_lblDialogTitle, 0, 0);
-        _rootLayout.Controls.Add(_formTable, 0, 1);
+        _rootLayout.Controls.Add(_scrollPanel, 0, 1);
         _rootLayout.Controls.Add(_lblTotalSummary, 0, 2);
         _rootLayout.Controls.Add(_lblFormError, 0, 3);
         _rootLayout.Controls.Add(_buttonPanel, 0, 4);
@@ -315,7 +336,7 @@ partial class ExamPaperEditorDialog
         CancelButton = _btnCancel;
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(640, 540);
+        ClientSize = new Size(640, 560);
         MinimumSize = new Size(560, 480);
         MaximizeBox = false;
         MinimizeBox = false;
@@ -327,6 +348,14 @@ partial class ExamPaperEditorDialog
         ((System.ComponentModel.ISupportInitialize)_numEasy).EndInit();
         ((System.ComponentModel.ISupportInitialize)_numMedium).EndInit();
         ((System.ComponentModel.ISupportInitialize)_numHard).EndInit();
+        _rootLayout.ResumeLayout(false);
+        _rootLayout.PerformLayout();
+        _scrollPanel.ResumeLayout(false);
+        _scrollPanel.PerformLayout();
+        _formTable.ResumeLayout(false);
+        _formTable.PerformLayout();
+        _buttonPanel.ResumeLayout(false);
+        _buttonPanel.PerformLayout();
         ResumeLayout(false);
         PerformLayout();
     }

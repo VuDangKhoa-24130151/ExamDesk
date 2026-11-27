@@ -14,6 +14,7 @@ internal sealed class StudentProfileConfirmationControl : UserControl
         ColumnCount = 1, TabStop = false
     };
     private readonly Label _status;
+    private readonly StudentButton _confirm;
     private readonly TableLayoutPanel _actions = new BufferedStudentTable()
     {
         Dock = DockStyle.Fill, AutoSize = true, ColumnCount = 2, TabStop = false
@@ -43,18 +44,18 @@ internal sealed class StudentProfileConfirmationControl : UserControl
         string className = string.IsNullOrWhiteSpace(student.ClassName) ? "Chưa có thông tin" : student.ClassName;
         AddRow(StudentLayout.Label($"Lớp: {className}"));
 
-        var confirm = StudentLayout.CreateButton("Đúng thông tin, tiếp tục",
+        _confirm = StudentLayout.CreateButton("Đúng thông tin, tiếp tục",
             (_, _) => Confirmed?.Invoke(this, EventArgs.Empty), StudentButtonKind.Primary, StudentArrow.Right);
         var retry = StudentLayout.CreateButton("Nhập lại mã",
             (_, _) => RetryRequested?.Invoke(this, EventArgs.Empty), StudentButtonKind.Secondary);
         retry.TabIndex = 0;
-        confirm.TabIndex = 1;
+        _confirm.TabIndex = 1;
         _actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         _actions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
         retry.Anchor = AnchorStyles.Left;
-        confirm.Anchor = AnchorStyles.Right;
+        _confirm.Anchor = AnchorStyles.Right;
         _actions.Controls.Add(retry, 0, 0);
-        _actions.Controls.Add(confirm, 1, 0);
+        _actions.Controls.Add(_confirm, 1, 0);
         AddRow(_actions);
 
         _viewport.Controls.Add(_page);
@@ -63,6 +64,8 @@ internal sealed class StudentProfileConfirmationControl : UserControl
         DpiChangedAfterParent += (_, _) => LayoutPage();
         Load += (_, _) => LayoutPage();
     }
+
+    internal void FocusInitialControl() => _confirm.Select();
 
     private void AddRow(Control control)
     {
