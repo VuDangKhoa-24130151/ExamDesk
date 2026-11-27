@@ -273,6 +273,11 @@ public partial class LoginForm : Form
 
     private void EnsureHeightFitsContent()
     {
+        if (WindowState != FormWindowState.Normal)
+        {
+            return;
+        }
+
         _rootLayout.PerformLayout();
         var width = ClientSize.Width;
         var preferredClientHeight = _pnlAccentBar.Height + _rootLayout.GetPreferredSize(new Size(width, 0)).Height;
